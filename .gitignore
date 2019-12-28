@@ -1,0 +1,5 @@
+# ignore .Rproj
+.Rproj.user
+
+# ignore Folders
+exclude/
