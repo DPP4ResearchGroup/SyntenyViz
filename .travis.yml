@@ -1,0 +1,8 @@
+language: r
+
+r:
+  - 3.6.1
+  - release
+  - devel
+
+
