@@ -1,8 +1,10 @@
 language: r
 
 r:
-  - 3.6.1
-  - release
-  - devel
+  - bioc-release 
 
-
+cache:
+  directories:
+    - $TRAVIS_BUILD_DIR/packrat/src
+    - $TRAVIS_BUILD_DIR/packrat/lib
+  packages: true
