@@ -3,7 +3,7 @@ language: r
 r:
   - bioc-release 
 
-before_install:
+before_script:
   - R -e 'devtools::document()'
 
 cache:
