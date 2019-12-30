@@ -3,6 +3,10 @@ language: r
 r:
   - bioc-release 
 
+# R environment 
+r_packages:
+  - devtools
+
 before_script:
   - R -e 'devtools::document()'
 
