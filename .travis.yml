@@ -4,11 +4,8 @@ r:
   - bioc-release 
 
 before_install:
-  - echo "before"
+  - R -e 'devtools::document()'
 
-script:
-  - echo "after"
-  
 cache:
   directories:
     - $TRAVIS_BUILD_DIR/packrat/src
