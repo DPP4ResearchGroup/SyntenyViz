@@ -8,6 +8,7 @@
 #' @export
 #' @return a target search range as a GRanges object
 #' @examples
+#' library(dplyr)
 #' coordFormat("2:16e7:16.5e7")
 
 coordFormat <- function (mycoords.list) {
