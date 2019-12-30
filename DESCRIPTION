@@ -5,7 +5,7 @@ Authors@R: person(given = "Robert", family = "QIAO", email = "robert.qiao@flinde
                   comment = c(ORCID = "0000-0003-4569-6921"), 
                   role = c("aut", "cre"))
 Description: What the package does (one paragraph).
-Depends: R (>= 3.6.1)
+Depends: R (>= 3.6)
 License: MIT
 Encoding: UTF-8
 LazyData: true
@@ -14,3 +14,6 @@ Imports:
     dplyr (>= 0.8.3),
     BiocManager (>= 1.30.10), 
     GenomicRanges (>= 1.36.0)
+Suggests: 
+    testthat
+    
