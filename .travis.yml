@@ -1,3 +1,6 @@
+# require the branch name to be develop
+if: branch = develop
+
 language: r
 
 r:
@@ -16,3 +19,7 @@ cache:
     - $TRAVIS_BUILD_DIR/packrat/src
     - $TRAVIS_BUILD_DIR/packrat/lib
   packages: true
+
+after_success:
+    # upload R package docs
+    - .script/R_doc.sh
