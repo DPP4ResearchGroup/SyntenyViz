@@ -10,7 +10,7 @@ commit_R_docs() {
   git add DESCRIPTION	# commit new DESCRIPTION
   git add NAMESPACE     # commit new NAMESPACE
   git add man 		# commit manual 
-  git commit --message "robqbot travis build: $TRAVIS_BUILD_NUMBER"
+  git commit --m "[skip travis] robqbot travis build: $TRAVIS_BUILD_NUMBER"
 }
 
 upload_R_docs() {
