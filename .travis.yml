@@ -1,4 +1,5 @@
 if: branch = develop
+[skip travis] robqbot travis build 
 language: r
 r:
   - bioc-release
