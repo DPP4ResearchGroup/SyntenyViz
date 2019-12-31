@@ -13,8 +13,8 @@ cache:
   - "$TRAVIS_BUILD_DIR/packrat/lib"
   packages: true
 after_success:
-- echo $robqbot_NAME $robqbot_EMAIL
-# - bash .scripts/R_doc.sh
+# - echo $robqbot_NAME $robqbot_EMAIL	# debug
+  - bash .scripts/R_doc.sh
 env:
   global:
   - secure: fiOlChR7kCAL6HP2csNeaJuTV2vzet4t1jtYGrNCmOTD+iao0ReE9FALXlwN3G+YrDEJbpAqrIVoVhmX0j4fBGpecJ1Old/+mWlRLSPsCK0YHFzK3WnEmgvy8A6+GjmCcwZUVZkz2FEdxKvGpQ2Jo1h8kP/Ia9nDIwba/nxjprsosrxe0dds9YN9HL8nhOplz6r5KL7t3w7yKGBRK+bL1FLRP1ODjRmwkYhsMNKAFWvE5aqJN+czceLB0jeCw33wCMc0w0N76badMkquJrn5JW/yP06ocmzjlQA8IjMMlNGEboBDY3u5nodeFWj6IcCwAWQCWKMbuArzSkJ6slnHVduVejefRuCsCIsCiE0sKkNJRPMOsdfVK/9aOKhayQGnYLUqkXbjqpvfC2pS94p/A+/lcSctZFcuyLITn4g7CcI0/SGorNM56QYXcHiM7H+kAgysko2KOirNi39VUItYRvXRQTZCxSQjqbU8YFFQnLXieF9LRlu7jGETZH37lZSUVNYpoakg76SluH5TANkINka4nCJwnfaIzAImma5QGRSM6yDrUgVfKGl3ecYU3YTQqqixLdituj0vr4lOK9+tQ4Rv/V9v4qg8ikvdqqRjEXEFmBCaBnkzjovvjNEQzV2ZSRm14GYujj7DfweG0STpm0FeEJp2HbOo0ywur7eixIc=
