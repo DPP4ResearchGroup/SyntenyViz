@@ -6,7 +6,7 @@ setup_git() {
 }
 
 commit_R_docs() {
-  git checkout -b develop
+  git checkout develop
   git add DESCRIPTION	# commit new DESCRIPTION
   git add NAMESPACE     # commit new NAMESPACE
   git add man 		# commit manual 
