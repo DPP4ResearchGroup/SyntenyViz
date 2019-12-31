@@ -1,8 +1,15 @@
+###
+# secure:
+#   robqbot_TOKEN
+#   robqbot_EMAIL
+#   robqbot_NAME
+###
+
 #!/bin/bash 
 
 setup_git() {
-  git config --global user.email "qiao0015@flinders.edu.au"
-  git config --global user.name  "robqbot"
+  git config --global user.email $robqbot_EMAIL
+  git config --global user.name  $robqbot_NAME
 }
 
 commit_R_docs() {
