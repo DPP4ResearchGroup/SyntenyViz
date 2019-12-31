@@ -22,4 +22,4 @@ cache:
 
 after_success:
     # upload R package docs
-    - .script/R_doc.sh
+    # - .script/R_doc.sh
