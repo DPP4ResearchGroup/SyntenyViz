@@ -8,8 +8,9 @@
 #' @export
 #' @return a target search range as a GRanges object
 #' @examples
-#' library(dplyr)
-#' coordFormat("2:16e7:16.5e7")
+#' if (requireNamespace("dplyr", quietly = TRUE)) {
+#'   coordFormat("2:16e7:16.5e7")
+#' }
 
 coordFormat <- function (mycoords.list) {
   GRangeObj <- lapply(mycoords.list, function (x) {res=strsplit(x, ':')}) %>% unlist  %>%
