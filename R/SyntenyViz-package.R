@@ -5,5 +5,4 @@
 #' @docType package
 #' @name SyntenyViz
 #' @import dplyr
-
 NULL
