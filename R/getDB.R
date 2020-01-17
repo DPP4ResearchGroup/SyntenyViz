@@ -77,7 +77,7 @@ getOrgDB <- function (orgm, orgOrgDB) {
 #' orgm <- "Hsapiens"
 #' getTxDB (orgm, orgmTxDB)
 getTxDB <- function (orgm, orgTxDB) {
-  orgIndex <- match (orgm, orgTxDB$dbSpecies)
+  orgIndex <- grep (orgm, orgTxDB$dbSpecies, ignore.case = TRUE)
   if (!is.na(orgIndex)) {
     orgmTargetDb <- paste (orgTxDB$dbClass[orgIndex],
                            orgTxDB$dbSpecies[orgIndex],
@@ -106,8 +106,10 @@ getTxDB <- function (orgm, orgTxDB) {
 #'       e.g. \code{\link{orgmTxDB}} or \code{\link{orgmOrgDB}}.
 #' @family getDB
 #' @examples
-#' orgm <- "Hsapiens"
-#' getPkgs (orgm, orgmTxDB)
+#' \dontrun{
+#'   orgm <- "Hsapiens"
+#'   getPkgs (orgm, orgmTxDB)
+#' }
 getPkgs <- function (orgm, orgDB) {
   if (orgDB$dbClass[1] == "org") {
     pkg <- getOrgDB (orgm, orgDB)
@@ -116,8 +118,8 @@ getPkgs <- function (orgm, orgDB) {
   }
   if  (!is.null(pkg)) {
     if (!requireNamespace(pkg, quietly = TRUE)) {
-      BiocManager::install(pkg)
-      library(pkg)}
+      BiocManager::install(pkg)}
+    library (pkg, character.only = TRUE)
   } else {
     pkg <- "NA"
     warning (paste(orgm, " is not a valid organism name"))
