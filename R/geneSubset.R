@@ -16,13 +16,13 @@
 
 geneSubset <- function (mycoords.gr, orgm) {
   orgmTargetDB <- getPkgs (orgm, orgmOrgDB)
-  targetGenesPool <- sub(".db", "SYMBOL", orgmTargetDB)
-  genes <- as.data.frame (get (targetGenesPool))
 
   # v0.0.9000 adapts TxDb
   # TxDb is available for Human = Hs, Mouse = Mm, Rat = Rn, Yeast = Sc, Zebrafish = Dr, Cow = Bt
 
-  if (!is.na (orgmTargetDB)) {
+  if (!"NA" %in% orgmTargetDB) {
+    targetGenesPool <- sub(".db", "SYMBOL", orgmTargetDB)
+    genes <- as.data.frame (get (targetGenesPool))
     # seqinfo class function restoreSeqlevels to set seqlevels in TxDb obj to original values
     targetTxDB <- getPkgs (orgm, orgmTxDB)
 
@@ -35,9 +35,11 @@ geneSubset <- function (mycoords.gr, orgm) {
     chr <- as.character (unique (seqnames (geneList)))
     seqlevels (geneList) <- as.character (chr)
     geneListsorted$gene_name <- lapply (geneListsorted$gene_id, function(x) {genes[genes$gene_id %in% x, ]$symbol})
-    return (geneListsorted)
+    returnList <- list (geneListsorted = geneListsorted, chr = chr)
+    return (returnList)
   } else {
     warning (paste("due to", orgm, "is not available, geneSubset function is not callable"))
-    returnValue ()
+    returnList <- list (returnValue(), returnValue())
+    return (returnList)
   }
 }

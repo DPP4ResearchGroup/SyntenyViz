@@ -5,4 +5,6 @@
 #' @docType package
 #' @name SyntenyViz
 #' @import dplyr
+#' @import GenomicRanges
+#' @import Gviz
 NULL

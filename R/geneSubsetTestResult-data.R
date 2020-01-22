@@ -13,6 +13,8 @@
 #'
 #' @family geneSubset
 #'
+#' @source org.Hs.eg.db and TxDb.Hsapiens.UCSC.hg38.knownGene
+#'
 #' @examples
 #' data(geneSubsetTestResult)
 
