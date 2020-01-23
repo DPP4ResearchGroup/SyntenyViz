@@ -3,6 +3,7 @@
 #'
 #' @inheritParams getOrgDB
 #' @inheritParams coordFormat
+#' @param mycoords.gr A target search range in form of a GRanges object
 #'
 #' @export
 #' @return A target search range as a GRanges object

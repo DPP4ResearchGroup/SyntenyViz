@@ -3,10 +3,10 @@
 #'
 #' Split input string with deliminator ":" then transform into GRange object
 #'
-#' @param mycoords.list a string list with the format of "2:16e7:16.5e7"
+#' @param mycoords.list A string list with the format of "2:16e7:16.5e7"
 #'
 #' @export
-#' @return a target search range as a GRanges object
+#' @return A target search range as a GRanges object
 #' @examples
 #'
 #' if (requireNamespace("dplyr", quietly = TRUE)) {

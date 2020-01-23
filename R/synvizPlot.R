@@ -8,6 +8,7 @@
 #' to feed into the function \code{synvizPlot}
 #'
 #' @export
+#' @family SynvizPlot
 #' @examples
 #' \dontrun{
 #'   orgm <- "Hsapiens"
@@ -36,7 +37,7 @@ synvizPlotData <- function (mycoords.gr, orgm) {
 #' @inheritParams geneSubset
 #'
 #' @export
-#'
+#' @family SynvizPlot
 #' @return A synteny plot of a given gene region within a given organism
 #'
 #' @examples
