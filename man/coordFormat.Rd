@@ -16,6 +16,9 @@ a target search range as a GRanges object
 Split input string with deliminator ":" then transform into GRange object
 }
 \examples{
-library(dplyr)
-coordFormat("2:16e7:16.5e7")
+
+if (requireNamespace("dplyr", quietly = TRUE)) {
+  mycoords.list <- "2:16e7:16.5e7"
+  coordFormat (mycoords.list)
+}
 }
