@@ -7,10 +7,10 @@
 coordFormat(mycoords.list)
 }
 \arguments{
-\item{mycoords.list}{a string list with the format of "2:16e7:16.5e7"}
+\item{mycoords.list}{A string list with the format of "2:16e7:16.5e7"}
 }
 \value{
-a target search range as a GRanges object
+A target search range as a GRanges object
 }
 \description{
 Split input string with deliminator ":" then transform into GRange object

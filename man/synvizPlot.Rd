@@ -8,6 +8,8 @@ A plot function to plot synteny conversation across species.}
 synvizPlot(mycoords.gr, orgm)
 }
 \arguments{
+\item{mycoords.gr}{A target search range in form of a GRanges object}
+
 \item{orgm}{An organism that of interest. Options include:\cr
 Btaurus(Bt) - Bos taurus - Cow \cr
 Celegans(Ce) - Caenorhabditis elegans - Roundworm \cr
@@ -30,3 +32,17 @@ A synteny plot of a given gene region within a given organism
 synvizPlot
 A plot function to plot synteny conversation across species.
 }
+\examples{
+\dontrun{
+  orgm <- "Hsapiens"
+  mycoords.list <- "2:16e7:16.5e7"
+  mycoords.gr <- coordFormat (mycoords.list)
+  synvizPlot (mycoords.gr, orgm)
+}
+}
+\seealso{
+Other SynvizPlot: 
+\code{\link{synvizDataTest}},
+\code{\link{synvizPlotData}()}
+}
+\concept{SynvizPlot}

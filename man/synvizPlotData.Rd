@@ -8,6 +8,8 @@ A data retrive function to prepare the data for \code{synvizPlot}.}
 synvizPlotData(mycoords.gr, orgm)
 }
 \arguments{
+\item{mycoords.gr}{A target search range in form of a GRanges object}
+
 \item{orgm}{An organism that of interest. Options include:\cr
 Btaurus(Bt) - Bos taurus - Cow \cr
 Celegans(Ce) - Caenorhabditis elegans - Roundworm \cr
@@ -24,13 +26,24 @@ Scerevisiae(Sc) - Saccharomyces cerevisiae - Brewer's yeast \cr
 Sscrofa(Ss) - Sus scrofa - Wild swine}
 }
 \value{
-
+A list that consists of AnnotationTrack, GenomeAxisTrack and IdeogramTrack
+to feed into the function \code{synvizPlot}
 }
 \description{
 synvizPlotData
 A data retrive function to prepare the data for \code{synvizPlot}.
 }
 \examples{
-\dontrun {
+\dontrun{
+  orgm <- "Hsapiens"
+  mycoords.list <- "2:16e7:16.5e7"
+  mycoords.gr <- coordFormat (mycoords.list)
+  synvizPlotData (mycoords.gr, orgm)
 }
 }
+\seealso{
+Other SynvizPlot: 
+\code{\link{synvizDataTest}},
+\code{\link{synvizPlot}()}
+}
+\concept{SynvizPlot}

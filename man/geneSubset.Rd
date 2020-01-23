@@ -7,6 +7,8 @@
 geneSubset(mycoords.gr, orgm)
 }
 \arguments{
+\item{mycoords.gr}{A target search range in form of a GRanges object}
+
 \item{orgm}{An organism that of interest. Options include:\cr
 Btaurus(Bt) - Bos taurus - Cow \cr
 Celegans(Ce) - Caenorhabditis elegans - Roundworm \cr
