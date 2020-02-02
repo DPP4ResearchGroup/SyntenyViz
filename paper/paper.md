@@ -20,4 +20,6 @@ bibliography: paper.bib
 
 # Introduction
 
+# Methods
+
 # References
