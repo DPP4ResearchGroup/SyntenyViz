@@ -7,4 +7,6 @@
 #' @import dplyr
 #' @import GenomicRanges
 #' @import Gviz
+#' @import stringr
+#' @import rlist
 NULL

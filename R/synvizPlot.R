@@ -51,3 +51,18 @@ synvizPlot <- function (mycoords.gr, orgm) {
   synvizData <- synvizPlotData (mycoords.gr, orgm)
   plotTracks(synvizData, showId = TRUE)
 }
+
+#'multisynvizPlots
+#'
+#' @param orgmsCollection A list of
+#'
+#' @family SynvizPlot
+#' @export
+#' @examples
+#' \dontrun {
+#'
+#' }
+multisynvizPlots <- function (orgmsCollection) {
+  # orgmsCollection$
+
+}
