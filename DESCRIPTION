@@ -14,7 +14,9 @@ Imports:
     dplyr (>= 0.8.3),
     BiocManager (>= 1.30.10),
     GenomicRanges (>= 1.36.0),
-    Gviz (>= 1.16.0)
+    Gviz (>= 1.16.0),
+    stringr (>= 1.4),
+    rlist (>= 0.4.6)
 Suggests: 
     testthat,
     usethis,
