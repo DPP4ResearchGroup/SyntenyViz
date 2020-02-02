@@ -43,3 +43,8 @@ A data retrive function to prepare the data for \code{synvizPlot}.
 }
 \seealso{
 Other SynvizPlot: 
+\code{\link{multisynvizPlots}()},
+\code{\link{synvizDataTest}},
+\code{\link{synvizPlot}()}
+}
+\concept{SynvizPlot}

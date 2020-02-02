@@ -42,3 +42,8 @@ A plot function to plot synteny conversation across species.
 }
 \seealso{
 Other SynvizPlot: 
+\code{\link{multisynvizPlots}()},
+\code{\link{synvizDataTest}},
+\code{\link{synvizPlotData}()}
+}
+\concept{SynvizPlot}

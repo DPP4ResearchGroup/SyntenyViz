@@ -23,6 +23,7 @@ atrack <- synvizDataTest$atrack
 }
 \seealso{
 Other SynvizPlot: 
+\code{\link{multisynvizPlots}()},
 \code{\link{synvizPlotData}()},
 \code{\link{synvizPlot}()}
 }
