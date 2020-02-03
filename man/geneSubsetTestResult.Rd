@@ -12,7 +12,7 @@ org.Hs.eg.db and TxDb.Hsapiens.UCSC.hg38.knownGene
 data(geneSubsetTestResult)
 }
 \description{
-An expected output GRange object given orgm = "Hsapiens" and mycoords.list is "2:16e7:16.5e7"
+An expected output GRange object given \code{orgm} = "Hsapiens" and \code{mycoords.list} is "2:16e7:16.5e7"
 }
 \examples{
 data(geneSubsetTestResult)

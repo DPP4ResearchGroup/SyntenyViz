@@ -2,19 +2,25 @@
 % Please edit documentation in R/synvizPlot.R
 \name{multisynvizPlots}
 \alias{multisynvizPlots}
-\title{multisynvizPlots}
+\title{multisynvizPlots
+A multi synteny plot for comparison and new insight discovery}
 \usage{
 multisynvizPlots(orgmsCollection)
 }
 \arguments{
-\item{orgmsCollection}{A list of}
+\item{orgmsCollection}{A GRangesList object that contains a list of search targets in GRange form}
 }
 \description{
 multisynvizPlots
+A multi synteny plot for comparison and new insight discovery
 }
 \examples{
 \dontrun {
-
+  orgmsList <- orgmsCollection.init (orgmsList)
+  orgm <- "Hsapiens"
+  mycoords.list <- "2:16e7:16.5e7"
+  orgmsList <- orgmsAdd (orgm, orgmTxDB, mycoords.list, orgmsList)
+  multisynvizPlots(orgmsList)
 }
 }
 \seealso{

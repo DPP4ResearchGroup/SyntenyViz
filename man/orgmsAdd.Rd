@@ -5,7 +5,7 @@
 \title{orgmsAdd
 Add a new search target in GRange format into GRangeList}
 \usage{
-orgmsAdd(orgm, mycoords.list, orgmsCollection)
+orgmsAdd(orgm, orgTxDB, mycoords.list, orgmsCollection)
 }
 \arguments{
 \item{orgm}{An organism that of interest. Options include:\cr
@@ -35,7 +35,8 @@ Add a new search target in GRange format into GRangeList
 \examples{
 orgm <- "Hsapiens"
 mycoords.list <- "2:16e7:16.5e7"
-
+orgmsList <- orgmsCollection.init (orgmsList)
+orgmsAdd (orgm, mycoords.list, orgmsList)
 }
 \seealso{
 Other orgmsCollection: 

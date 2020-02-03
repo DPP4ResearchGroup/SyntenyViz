@@ -18,7 +18,7 @@ orgmsCollection.init
 Initiate the orgmsCollection to an empty GRangeList
 }
 \examples{
-orgmsCollection.init (orgmsCollection)
+orgmsList <- orgmsCollection.init (orgmsList)
 }
 \seealso{
 Other orgmsCollection: 
