@@ -22,10 +22,10 @@ synvizPlotData <- function (mycoords.gr, orgm) {
   chr <- geneData $ chr
   # gene name list cleaning
   IDs <- unlist(lapply(geneRetrive$gene_name, function(x) { if(identical(x, character(0))) "NA" else x } ))
-  atrack <- AnnotationTrack(geneRetrive, group = IDs)
+  atrack <- AnnotationTrack(geneRetrive, group = IDs, name = orgm)
   gtrack <- GenomeAxisTrack ()
   gen <- genome (geneRetrive)[[1]]
-  itrack <- IdeogramTrack(genome = gen, chromosome = chr)
+  itrack <- IdeogramTrack(genome = gen, chromosome = chr, name = paste(orgm, "chromosome", chr))
   synvizData <- list (itrack = itrack, gtrack = gtrack, atrack =atrack)
   return (synvizData)
 }
@@ -49,20 +49,47 @@ synvizPlotData <- function (mycoords.gr, orgm) {
 #' }
 synvizPlot <- function (mycoords.gr, orgm) {
   synvizData <- synvizPlotData (mycoords.gr, orgm)
-  plotTracks(synvizData, showId = TRUE)
+  plotTracks(synvizData, showId = TRUE, add=TRUE)
 }
 
 #'multisynvizPlots
+#'A multi synteny plot for comparison and new insight discovery
 #'
-#' @param orgmsCollection A list of
+#' @inheritParams orgmsAdd
 #'
 #' @family SynvizPlot
 #' @export
 #' @examples
 #' \dontrun {
-#'
+#'   orgmsList <- orgmsCollection.init (orgmsList)
+#'   orgm <- "Hsapiens"
+#'   mycoords.list <- "2:16e7:16.5e7"
+#'   orgmsList <- orgmsAdd (orgm, orgmTxDB, mycoords.list, orgmsList)
+#'   multisynvizPlots(orgmsList)
 #' }
 multisynvizPlots <- function (orgmsCollection) {
-  # orgmsCollection$
+  orgmSize <- length (orgmsCollection)
+  # Max allowed multiplots limits to 3 as version v0.0.0.9000
+  if (orgmSize > 3) {
+    warning ("Maximum allowed multiplots limit is 3 synteny plots at one time")
+    returnValue()
+    stop()
+  }
 
+  grid.newpage()
+  plotNumber <- 1
+  while (plotNumber <= orgmSize) {
+    orgmItem <- orgmsCollection[[plotNumber]]
+    pushViewport(viewport(height=1/orgmSize, y=plotNumber/orgmSize, just ="top"))
+    grid.rect()
+
+    # get orgmName
+    orgHandle <- as.character(genome(orgmItem))
+    orgIndex <- match (orgHandle, orgmTxDB$dbAbbv)
+    orgName <- orgmTxDB$dbSpecies[orgIndex]
+
+    synvizPlot (orgmItem, orgName)
+    popViewport(1)
+    plotNumber = plotNumber + 1
+  }
 }

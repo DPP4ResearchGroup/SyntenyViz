@@ -11,9 +11,19 @@
 #' @examples
 #' orgm <- "Hsapiens"
 #' mycoords.list <- "2:16e7:16.5e7"
-#'
-orgmsAdd <- function (orgm, mycoords.list, orgmsCollection) {
-  mycoord.gr <- coordFormat (mycoords.list = mycoords.list)
+#' orgmsList <- orgmsCollection.init (orgmsList)
+#' orgmsAdd (orgm, mycoords.list, orgmsList)
+orgmsAdd <- function (orgm, orgTxDB, mycoords.list, orgmsCollection) {
+  mycoords.gr <- coordFormat (mycoords.list = mycoords.list)
+
+  orgIndex <- match (orgm, orgTxDB$dbSpecies)
+  if (!is.na(orgIndex)) {
+    genome(mycoords.gr) <- orgTxDB$dbAbbv[orgIndex]
+  } else {
+    warning (paste (orgm, "is not available, please select a different organism or checking your spelling"))
+    returnValue()
+    stop()
+  }
 
   if (! str_detect(data.class(orgmsCollection), "GRangesList", negate = FALSE)) {
     geterrmessage()
@@ -21,7 +31,7 @@ orgmsAdd <- function (orgm, mycoords.list, orgmsCollection) {
   }
 
   listTag <- length (orgmsCollection) + 1
-  orgmsCollection <- append (orgmsCollection, mycoord.gr, after = listTag)
+  orgmsCollection <- append (orgmsCollection, mycoords.gr, after = listTag)
   return (orgmsCollection)
 }
 
@@ -35,8 +45,11 @@ orgmsAdd <- function (orgm, mycoords.list, orgmsCollection) {
 #' @export
 #' @family orgmsCollection
 #' @examples
-#' orgmsCollection.init (orgmsCollection)
+#' orgmsList <- orgmsCollection.init (orgmsList)
 orgmsCollection.init <- function (orgmsCollection) {
   orgmsCollection = GRangesList()
   return (orgmsCollection)
 }
+
+
+
