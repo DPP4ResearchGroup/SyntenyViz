@@ -10,10 +10,10 @@ exp_orgmsAdd_Output <- orgmsCollectionTestResult$add
 
 testthat::test_that ("Test GRange object append", {
   orgmList <- orgmsCollection.init(orgmList)
-  orgmListAdd <- orgmsAdd(orgm, mycoords.list, orgmList)
+  orgmListAdd <- orgmsAdd(orgm, orgmTxDB, mycoords.list, orgmList)
 
-  expect_equal( orgmList, exp_orgmsCollection.init_Output)
-  expect_equal( orgmListAdd, exp_orgmsAdd_Output)
+  expect_equivalent( orgmList, exp_orgmsCollection.init_Output)
+  expect_equivalent( orgmListAdd, exp_orgmsAdd_Output)
 })
 
 
