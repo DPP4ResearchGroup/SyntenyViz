@@ -2,6 +2,7 @@
 #'Add a new search target in GRange format into GRangeList
 #'
 #' @inheritParams getPkgs
+#' @inheritParams coordFormat
 #' @inheritParams geneSubset
 #' @param orgmsCollection A GRangesList object that contains a list of search targets in GRange form
 #'
