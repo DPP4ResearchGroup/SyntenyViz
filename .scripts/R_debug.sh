@@ -12,7 +12,7 @@
 
 commit_R_debug() {
   git checkout develop
-  git add man           
+  git add *.Rcheck           
   git commit --m "[skip travis] debug log @robqbot travis build: $TRAVIS_BUILD_NUMBER"
 }
 
