@@ -5,10 +5,10 @@
 #   robqbot_NAME
 ###
 
-#!/bin/bash 
+#!/bin/bash
 
 # Include git publish framework
-./R_publish_framework.sh
+./R_publish_framework.sh --source-only
 
 commit_R_docs() {
   git checkout develop

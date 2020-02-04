@@ -8,7 +8,7 @@
 #!/bin/bash
 
 # Include git publish framework
-./R_publish_framework.sh
+./R_publish_framework.sh --source-onlly
 
 commit_R_debug() {
   git checkout develop
