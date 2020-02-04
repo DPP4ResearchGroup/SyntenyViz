@@ -26,5 +26,5 @@ Visualising the synteny across species not only enables intuitive examination an
 Issues and bugs can be raised and tracked through [Synviz issue tracking board](https://github.com/DPP4ResearchGroup/SyntenyViz/issues).
 
 ## Unit Testing
-1. `Travis` CI testing has been implemented.
-1. `R` native `testthat` has been implemented and can be invoked by `R CMD check`.
+1. `Travis` CI testing is implemented.
+1. `R` native `testthat` is implemented and can be invoked by `R CMD check`.
