@@ -57,8 +57,10 @@ synvizPlot <- function (mycoords.gr, orgm) {
 #'
 #' @inheritParams orgmsAdd
 #'
-#' @family SynvizPlot
+#' @return A multi synteny plot.
+#'
 #' @export
+#' @family SynvizPlot
 #' @examples
 #' \dontrun {
 #'   orgmsList <- orgmsCollection.init (orgmsList)
