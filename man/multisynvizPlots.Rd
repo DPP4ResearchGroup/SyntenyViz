@@ -10,12 +10,15 @@ multisynvizPlots(orgmsCollection)
 \arguments{
 \item{orgmsCollection}{A GRangesList object that contains a list of search targets in GRange form}
 }
+\value{
+A multi synteny plot.
+}
 \description{
 multisynvizPlots
 A multi synteny plot for comparison and new insight discovery
 }
 \examples{
-\dontrun {
+\donttest{
   orgmsList <- orgmsCollection.init (orgmsList)
   orgm <- "Hsapiens"
   mycoords.list <- "2:16e7:16.5e7"
