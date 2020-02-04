@@ -16,8 +16,8 @@
 #' mycoords.list <- "2:16e7:16.5e7"
 #' \donttest{
 #'   orgmsList <- orgmsCollection.init (orgmsList)
+#'   orgmsAdd (orgm, mycoords.list, orgmsList)
 #' }
-#' orgmsAdd (orgm, mycoords.list, orgmsList)
 orgmsAdd <- function (orgm, orgTxDB, mycoords.list, orgmsCollection) {
   mycoords.gr <- coordFormat (mycoords.list = mycoords.list)
 
