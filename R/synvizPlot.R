@@ -10,7 +10,7 @@
 #' @export
 #' @family SynvizPlot
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   orgm <- "Hsapiens"
 #'   mycoords.list <- "2:16e7:16.5e7"
 #'   mycoords.gr <- coordFormat (mycoords.list)
@@ -41,7 +41,7 @@ synvizPlotData <- function (mycoords.gr, orgm) {
 #' @return A synteny plot of a given gene region within a given organism
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   orgm <- "Hsapiens"
 #'   mycoords.list <- "2:16e7:16.5e7"
 #'   mycoords.gr <- coordFormat (mycoords.list)
@@ -62,7 +62,7 @@ synvizPlot <- function (mycoords.gr, orgm) {
 #' @export
 #' @family SynvizPlot
 #' @examples
-#' \dontrun {
+#' \donttest{
 #'   orgmsList <- orgmsCollection.init (orgmsList)
 #'   orgm <- "Hsapiens"
 #'   mycoords.list <- "2:16e7:16.5e7"
