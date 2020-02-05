@@ -13,10 +13,17 @@
 #' @export
 #' @examples
 #' orgm <- "Hsapiens"
-#' mycoords.list <- "2:16e7:16.5e7"
+#' mycoords.list <- "2:15.95e7:16.45e7"
+#' orgm.2 <- "Mmusculus"
+#' mycoords.list.2 <- "2:6.0e7:6.5e7"
+#' orgm.3 <- "Rnorvegicus"
+#' mycoords.list.3 <- "3:4.6e7:5.1e7"
 #' \donttest{
 #'   orgmsList <- orgmsCollection.init (orgmsList)
-#'   orgmsAdd (orgm, mycoords.list, orgmsList)
+#'   orgmsList <- orgmsAdd (orgm, orgmTxDB, mycoords.list, orgmsList)
+#'   orgmsList <- orgmsAdd (orgm.2, orgmTxDB, mycoords.list.2, orgmsList)
+#'   orgmsList <- orgmsAdd (orgm.3, orgmTxDB, mycoords.list.3, orgmsList)
+#'   orgmsList
 #' }
 orgmsAdd <- function (orgm, orgTxDB, mycoords.list, orgmsCollection) {
   mycoords.gr <- coordFormat (mycoords.list = mycoords.list)
@@ -30,7 +37,7 @@ orgmsAdd <- function (orgm, orgTxDB, mycoords.list, orgmsCollection) {
     stop()
   }
 
-  if (! str_detect(data.class(orgmsCollection), "GRangesList", negate = FALSE)) {
+  if (! str_detect(data.class(orgmsCollection), "list()", negate = FALSE)) {
     geterrmessage()
     stop ("GRangesList object is not available, please initialize the object first using function orgmsCollection.init")
   }
@@ -52,7 +59,7 @@ orgmsAdd <- function (orgm, orgTxDB, mycoords.list, orgmsCollection) {
 #' @examples
 #' orgmsList <- orgmsCollection.init (orgmsList)
 orgmsCollection.init <- function (orgmsCollection) {
-  orgmsCollection = GRangesList()
+  orgmsCollection = list ()
   return (orgmsCollection)
 }
 
