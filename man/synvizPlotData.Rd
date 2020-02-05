@@ -34,7 +34,7 @@ synvizPlotData
 A data retrive function to prepare the data for \code{synvizPlot}.
 }
 \examples{
-\dontrun{
+\donttest{
   orgm <- "Hsapiens"
   mycoords.list <- "2:16e7:16.5e7"
   mycoords.gr <- coordFormat (mycoords.list)

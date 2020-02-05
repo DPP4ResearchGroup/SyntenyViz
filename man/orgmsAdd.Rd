@@ -23,6 +23,10 @@ Rnorvegicus(Rn) - Rattus norvegicus - Brown rat \cr
 Scerevisiae(Sc) - Saccharomyces cerevisiae - Brewer's yeast \cr
 Sscrofa(Ss) - Sus scrofa - Wild swine}
 
+\item{orgTxDB}{A data.frame that contains currently TxDB objects, e.g. \code{\link{orgmTxDB}}.}
+
+\item{mycoords.list}{A string list with the format of "2:16e7:16.5e7"}
+
 \item{orgmsCollection}{A GRangesList object that contains a list of search targets in GRange form}
 }
 \value{
@@ -35,8 +39,10 @@ Add a new search target in GRange format into GRangeList
 \examples{
 orgm <- "Hsapiens"
 mycoords.list <- "2:16e7:16.5e7"
-orgmsList <- orgmsCollection.init (orgmsList)
-orgmsAdd (orgm, mycoords.list, orgmsList)
+\donttest{
+  orgmsList <- orgmsCollection.init (orgmsList)
+  orgmsAdd (orgm, mycoords.list, orgmsList)
+}
 }
 \seealso{
 Other orgmsCollection: 

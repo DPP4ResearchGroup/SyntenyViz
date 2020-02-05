@@ -33,7 +33,7 @@ synvizPlot
 A plot function to plot synteny conversation across species.
 }
 \examples{
-\dontrun{
+\donttest{
   orgm <- "Hsapiens"
   mycoords.list <- "2:16e7:16.5e7"
   mycoords.gr <- coordFormat (mycoords.list)
