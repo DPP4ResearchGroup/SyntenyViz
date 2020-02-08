@@ -12,6 +12,16 @@ SyntenyViz is a R package to visualise synteny across various biological species
 Visualising the synteny across species not only enables intuitive examination and facilitates reconstruction effort of ancestral genomes, but also allow more direct interrogation of gene regulations and gene structures within a gene cluster.
 
 ## Installation
+### Install from RStudio
+* Install and load `devtools`
+```
+install.packages("devtools")
+library(devtools)
+```
+* Install `SyntenyViz` from `GitHub`
+```
+install_github("DPP4ResearchGroup/SyntenyViz")
+```
 
 ## Quick Start for the Inpatients
 Quick and minimum steps to get start a synteney conservation anaysis with SyntenyViz
