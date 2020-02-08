@@ -24,7 +24,17 @@ knitr::opts_chunk$set(
 
 ```{r setup, include=FALSE}
 library(SyntenyViz)
+
+## preload libs for better vignettes performance
 library(grid)
+library(dplyr)
+pkgs <- c("org.Hs.eg.db", "org.Mm.eg.db", "org.Rn.eg.db", "TxDb.Hsapiens.UCSC.hg38.knownGene", 
+  "TxDb.Mmusculus.UCSC.mm10.knownGene", "TxDb.Rnorvegicus.UCSC.rn6.refGene")
+for (pkg in pkgs) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+        BiocManager::install(pkg)}
+  library (pkg, character.only = TRUE)
+}
 ```
 
 The course below demonstrates a standard analysis pipeline with the `SyntenyViz` R package. 
