@@ -8,7 +8,8 @@ r_packages:
 before_script:
 - R -e 'devtools::document()'
 script:
-- cd $TRAVIS_BUILD_DIR
+- echo $HOME
+- cd $HOME
 - R CMD build $packageName
 - R CMD check --check-subdirs=yes 
 cache:
