@@ -11,7 +11,6 @@ script:
 - cd $TRAVIS_BUILD_DIR/../
 - R CMD build $packageName
 - R CMD check ${packageName}_*.tar.gz --check-subdirs=yes  
-- ls -aRl
 cache:
   directories:
   - "$HOME/R/Library"

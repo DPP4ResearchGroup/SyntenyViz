@@ -2,18 +2,18 @@ Package: SyntenyViz
 Title: Visualize the synteny of a gene structure across species
 Version: 0.0.0.9000
 Authors@R: person(given = "Robert", family = "QIAO", email = "robert.qiao@flinders.edu.au",
-                  comment = c(ORCID = "0000-0003-4569-6921"), 
+                  comment = c(ORCID = "0000-0003-4569-6921"),
                   role = c("aut", "cre"))
-Description: SyntenyViz provides a quick and easy visualization of synteny across various species with transcriptomics evidence. 
-  Synteny between related species often used to refer the preserved order of genes on chromosomes. 
-  Synteny is a strong indicator of evolutionary conservation and often be used to track the common ancestor through phylogeny. 
-  Visualizing the synteny across species enables intuitive examination and facilitates reconstruction effort of ancestral genomes. 
+Description: SyntenyViz provides a quick and easy visualization of synteny across various species with transcriptomics evidence.
+  Synteny between related species often used to refer the preserved order of genes on chromosomes.
+  Synteny is a strong indicator of evolutionary conservation and often be used to track the common ancestor through phylogeny.
+  Visualizing the synteny across species enables intuitive examination and facilitates reconstruction effort of ancestral genomes.
 Depends: R (>= 3.6)
-License: MIT
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.0.2
-Imports: 
+Imports:
     dplyr (>= 0.8.3),
     BiocManager (>= 1.30.10),
     GenomicRanges (>= 1.36.0),
@@ -21,7 +21,7 @@ Imports:
     stringr (>= 1.4),
     rlist (>= 0.4.6),
     grid (>= 3.6)
-Suggests: 
+Suggests:
     testthat,
     usethis,
     knitr,
