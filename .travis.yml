@@ -6,6 +6,9 @@ r_packages:
 - devtools
 before_script:
 - R -e 'devtools::document()'
+script:
+- R CMD build
+- R CMD check --check-subdirs=yes 
 cache:
   directories:
   - "$TRAVIS_BUILD_DIR/R/Library"
