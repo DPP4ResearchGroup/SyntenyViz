@@ -10,7 +10,7 @@ before_script:
 script:
 - cd $TRAVIS_BUILD_DIR/../
 - R CMD build $packageName
-- R CMD check $packageName --check-subdirs=yes  
+- R CMD check ${packageName}.*.tar.gz --check-subdirs=yes  
 cache:
   directories:
   - "$HOME/R/Library"
@@ -20,7 +20,8 @@ cache:
 after_success:
   - bash .scripts/R_doc.sh
 after_failure:
-  - bash .scripts/R_debug.sh 
+  - bash .scripts/R_debug.sh
+  - ls -aRl 
 env:
   global:
   - orgName=DPP4ResearchGroup packageName=SyntenyViz 

@@ -13,7 +13,7 @@ source .scripts/R_publish_framework.sh --source-onlly
 commit_R_debug() {
   git checkout develop
   git add *.Rcheck           
-  git commit --m "[skip travis] debug log @robqbot travis build: $TRAVIS_BUILD_NUMBER"
+  git commit -m "[skip travis] debug log @robqbot travis build: $TRAVIS_BUILD_NUMBER"
 }
 
 setup_git
