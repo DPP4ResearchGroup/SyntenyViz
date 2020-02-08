@@ -8,8 +8,8 @@ r_packages:
 before_script:
 - R -e 'devtools::document()'
 script:
-- echo $HOME
 - cd $HOME
+- ls -al 
 - R CMD build $packageName
 - R CMD check --check-subdirs=yes 
 cache:
