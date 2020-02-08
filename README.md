@@ -82,4 +82,5 @@ multiplot <- multisynvizPlots(orgmsList)
 Issues and bugs can be raised and tracked through [GitHub issue tracker for SyntenyViz](https://github.com/DPP4ResearchGroup/SyntenyViz/issues).
 
 ## Unit Testing
-`Travis` CI testing ([travis status](#SyntenyViz)) is implemented based on `R` native `testthat, which can also be invoked by `R CMD check` from terminal given that R is in PATH.
+`Travis` CI testing ([travis status](#SyntenyViz)) inplements `R CMD check`.
+The function integrity is checked by `R` native `testthat`, which can also be invoked by utility function `devtools::test()` from RStudio.
