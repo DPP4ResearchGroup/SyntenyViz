@@ -18,9 +18,10 @@ Visualising the synteny across species not only enables intuitive examination an
 install.packages("devtools")
 library(devtools)
 ```
-* Install `SyntenyViz` from `GitHub`
+* Install and load `SyntenyViz` from `GitHub`
 ```
 install_github("DPP4ResearchGroup/SyntenyViz")
+library(SyntenyViz)
 ```
 
 ## Quick Start for the Inpatients
