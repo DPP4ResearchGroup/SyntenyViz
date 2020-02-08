@@ -36,6 +36,7 @@ mycoords.gr
 ```
 synvizPlot(mycoords.gr, orgmName)
 ```
+[Synteny around DPP4 gene in Humans](vignettes/images/Hsplot.png)
 * Construct a multi synteny graph
 
 Pick a few of targets
@@ -58,7 +59,7 @@ Now, construct a comparative multi-synteny graph
 ```
 multiplot <- multisynvizPlots(orgmsList)
 ```
-
+[Synteny Conservation around DPP4 gene between various Organisms](vignettes/images/Msplot.png)
 ## Contribution
 1. Fork to your contributing account
 1. Create your feature branch (`git checkout -b my-new-feature`)
