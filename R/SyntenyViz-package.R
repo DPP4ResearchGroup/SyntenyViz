@@ -9,4 +9,5 @@
 #' @import Gviz
 #' @import stringr
 #' @import rlist
+#' @import grid
 NULL
