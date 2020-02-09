@@ -1,6 +1,21 @@
 if: branch = master 
 script:
-- echo "Hello Master" 
+- echo "Hello $TRAVIS_BRANCH"
+
+## deployment of compiled vignettes to gh-pages
+deploy:
+  provider: pages
+  skip-cleanup: true
+  github-token: $BOT_TOKEN  # Set in the settings page of your repository, as a secure variable
+  keep-history: true
+  local-dir: doc
+  name: robqbot
+  email: qiao0015@flinders.edu.au
+  verbose: true
+  on:
+    branch: master
+  target-branch:
+    - gh-pages 
 
 if: branch = develop
 language: r
