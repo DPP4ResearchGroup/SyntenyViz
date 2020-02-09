@@ -8,7 +8,7 @@
 ###
 
 # Include git publish framework
-source ${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh --source-onlly
+source "$(TRAVIS_BUILD_DIR)/.scripts/R_publish_framework.sh" --source-onlly
 
 commit_R_debug() {
   git checkout develop
