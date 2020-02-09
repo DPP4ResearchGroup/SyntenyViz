@@ -11,7 +11,7 @@
 #'
 #' @keywords datasets
 #'
-#' @source
+#' @source org.Hs.eg.db and TxDb.Hsapiens.UCSC.hg38.knownGene
 #'
 #' @family SynvizPlot
 #'

@@ -9,7 +9,8 @@
 #' @format A data.frame with tags: "Scientific.Names", "Common.Names", "Abbrav", "Abbrav.Short"
 #' @keywords datasets
 #'
-#' @source
+#' @source Currently available orgDB objects from
+#' \href{http://bioconductor.org/packages/release/BiocViews.html#___AnnotationData}{bioconductor}
 #'
 #' @family SyntenyViz
 #'

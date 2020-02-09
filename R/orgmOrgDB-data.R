@@ -6,7 +6,7 @@
 #'
 #' @usage data(orgmOrgDB)
 #'
-#' @format
+#' @format A data.frame in table format
 #'
 #' @keywords datasets
 #'
