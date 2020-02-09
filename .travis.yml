@@ -11,7 +11,7 @@ r_packages:
 - knitr
 before_script:
 - R -e 'devtools::document()'
-- R -e 'devtools::build()'
+- R -e 'devtools::build_vignettes()'
 script:
 - cd $TRAVIS_BUILD_DIR/../
 - R CMD build $packageName
