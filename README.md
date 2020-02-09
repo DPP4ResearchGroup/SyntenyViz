@@ -23,6 +23,16 @@ library(devtools)
 install_github("DPP4ResearchGroup/SyntenyViz")
 library(SyntenyViz)
 ```
+To allow build vignettes, `build_vignettes = TRUE` options can be used as
+```
+install_github("DPP4ResearchGroup/SyntenyViz", build_vignettes = TRUE)
+library(SyntenyViz)
+```
+Developing version can be accessed via `develop` as
+```
+install_github("DPP4ResearchGroup/SyntenyViz", ref = "develop")
+library(SyntenyViz)
+```
 
 ## Quick Start for the Inpatients
 Quick and minimum steps to get start a synteney conservation anaysis with SyntenyViz
