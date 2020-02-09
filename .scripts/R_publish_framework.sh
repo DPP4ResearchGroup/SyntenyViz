@@ -1,3 +1,5 @@
+#!/bin/sh
+
 ###
 # secure:
 #   robqbot_TOKEN
@@ -5,11 +7,9 @@
 #   robqbot_NAME
 ###
 
-#!/bin/sh
-
 setup_git() {
-  git config --global user.email $robqbot_EMAIL
-  git config --global user.name  $robqbot_NAME
+  git config --global user.email "$robqbot_EMAIL"
+  git config --global user.name  "$robqbot_NAME"
 }
 
 upload_R_docs() {
@@ -17,6 +17,6 @@ upload_R_docs() {
   git push --quiet --set-upstream origin-SynViz develop:develop  
 }
 
-if [ "${1}" == '-source-only' ]; then
+if [ "${1}" = '-source-only' ]; then
   main "${@}"
 fi

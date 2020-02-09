@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ###
 # secure:
 #   robqbot_TOKEN
@@ -5,14 +7,12 @@
 #   robqbot_NAME
 ###
 
-#!/bin/bash
-
 # Include git publish framework
-source .scripts/R_publish_framework.sh --source-onlly
+source ${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh --source-onlly
 
 commit_R_debug() {
   git checkout develop
-  git add *.Rcheck           
+  git add ./*.Rcheck           
   git commit -m "[skip travis] debug log @robqbot travis build: $TRAVIS_BUILD_NUMBER"
 }
 

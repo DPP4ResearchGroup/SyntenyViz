@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ###
 # secure:
 #   robqbot_TOKEN
@@ -5,10 +7,8 @@
 #   robqbot_NAME
 ###
 
-#!/bin/bash
-
 # Include git publish framework
-source .scripts/R_publish_framework.sh --source-only
+source ${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh --source-only
 
 commit_R_docs() {
   git checkout develop
