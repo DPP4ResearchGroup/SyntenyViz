@@ -1,6 +1,6 @@
 ---
 title: "SyntenyViz Analysis Workflow"
-output: 
+output:
   pdf_document:
     toc: true
   rmarkdown::html_vignette:
@@ -13,14 +13,14 @@ vignette: >
   %\VignetteEngine{R.rsp::asis}
   %\VignetteKeyword{PDF}
   %\VignetteKeyword{HTML}
-editor_options: 
+editor_options:
   chunk_output_type: inline
 ---
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>", 
+  comment = "#>",
   error = TRUE
 )
 ```
@@ -31,7 +31,7 @@ library(SyntenyViz)
 ## preload libs for better vignettes performance
 library(grid)
 library(dplyr)
-pkgs <- c("org.Hs.eg.db", "org.Mm.eg.db", "org.Rn.eg.db", "TxDb.Hsapiens.UCSC.hg38.knownGene", 
+pkgs <- c("org.Hs.eg.db", "org.Mm.eg.db", "org.Rn.eg.db", "TxDb.Hsapiens.UCSC.hg38.knownGene",
   "TxDb.Mmusculus.UCSC.mm10.knownGene", "TxDb.Rnorvegicus.UCSC.rn6.refGene")
 for (pkg in pkgs) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
@@ -40,12 +40,12 @@ for (pkg in pkgs) {
 }
 ```
 
-The course below demonstrates a standard analysis pipeline with the `SyntenyViz` R package. 
+The course below demonstrates a standard analysis pipeline with the `SyntenyViz` R package.
 
-# For the inpatients 
+# For the inpatients
 Quick and minimum steps to get start a synteney conservation anaysis with SyntenyViz
 
-* Define an investigation range 
+* Define an investigation range
 We need to firstly define an investigation range to cover the target range in gene coordinate. We will use a mouse dipeptidyl dipeptidase 4 gene (DPP4-mm) in this example, where DPP4-mm locates at chromosome number 2 between 62,330,073-62,412,231 bp.  
 ```{r}
 # orgm is a handle for organism
@@ -57,17 +57,17 @@ mycoords <- "2:6.0e7:6.5e7"
 ```{r}
 mycoords.gr <- SyntenyViz::coordFormat (mycoords.list = mycoords)
 ```
-It is always a good habit to double check the input, so 
+It is always a good habit to double check the input, so
 ```{r}
 mycoords.gr
 ```
 
-* Construct a single synteny graph 
+* Construct a single synteny graph
 ```{r fig.cap='Synteny of Mouse DPP4', fig.pos='h', include=TRUE, out.width='90%', fig.show='hold', message=FALSE, warning=FALSE, dev='png', cache=TRUE, fig.retina=4}
 synvizPlot(mycoords.gr, orgmName)
 ```
 
-* Construct a multi synteny graph 
+* Construct a multi synteny graph
 
 Pick a few of targets
 ```{r, warning=FALSE}
@@ -78,7 +78,7 @@ mycoords.list.2 <- "2:6.0e7:6.5e7"
 orgm.3 <- "Rnorvegicus"
 mycoords.list.3 <- "3:4.6e7:5.1e7"
 ```
-Then construct a multiple synteny query 
+Then construct a multiple synteny query
 ```{r}
 orgmsList <- orgmsCollection.init (orgmsList)
 orgmsList <- orgmsAdd (orgm.1, orgmTxDB, mycoords.list.1, orgmsList)
@@ -90,12 +90,12 @@ Now, construct a comparative multi-synteny graph
 multiplot <- multisynvizPlots(orgmsList)
 ```
 
-# The Nitty Gritty of Synteny Analysis 
-## Construct A Search Query 
-A search query includes the information of target organism(s) and the region(s) of interests. A typical work flow starts by locating the gene of interests. In this example, we will use a protease gene dipeptidyl dipeptidase-4 (DPP4) as a target. 
+# The Nitty Gritty of Synteny Analysis
+## Construct A Search Query
+A search query includes the information of target organism(s) and the region(s) of interests. A typical work flow starts by locating the gene of interests. In this example, we will use a protease gene dipeptidyl dipeptidase-4 (DPP4) as a target.
 
-### DPP4 background 
-DPP4 is also known by a few other names including adenosine deaminase complexing protein 2 (ADCP2) and CD26. Human DPP4 gene encodes a 766 amino acids protein. DPP4 proteins dimmerise and then possesses potent rare post-proline hydrolytic activity _in situ_. In clinics, DPP4 has been demonstrated to involve in many important physiobiological functions including homeostasis, adaptive immune responses and numerous cancer biology. Due to its degradation property towards GLP and GIP, pharmacologically, DPP4 inhibitors have been prescribed as an alternative treatment to type 2 diabetics. 
+### DPP4 background
+DPP4 is also known by a few other names including adenosine deaminase complexing protein 2 (ADCP2) and CD26. Human DPP4 gene encodes a 766 amino acids protein. DPP4 proteins dimmerise and then possesses potent rare post-proline hydrolytic activity _in situ_. In clinics, DPP4 has been demonstrated to involve in many important physiobiological functions including homeostasis, adaptive immune responses and numerous cancer biology. Due to its degradation property towards GLP and GIP, pharmacologically, DPP4 inhibitors have been prescribed as an alternative treatment to type 2 diabetics.
 
 ```{r, out.width='90%', fig.align='center', fig.cap = 'DPP4 protein in dimmer form', fig.pos = 'h' }
 knitr::include_graphics('images/DPP4.png')
@@ -103,19 +103,19 @@ knitr::include_graphics('images/DPP4.png')
 
 ### Locate DPP4 gene and define the investigation ranges
 #### Locate gene (e.g. DPP4 gene)
-To locate DPP4 gene, both [Ensemble](http://www.ensembl.org/index.html) and [GeneBank](https://www.ncbi.nlm.nih.gov/gene) are good resources for this purpose. 
+To locate DPP4 gene, both [Ensemble](http://www.ensembl.org/index.html) and [GeneBank](https://www.ncbi.nlm.nih.gov/gene) are good resources for this purpose.
 
-Let's say we want to find the location of __human DPP4 gene__ location. 
+Let's say we want to find the location of __human DPP4 gene__ location.
 
-* [Ensemble query](https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=ENSG00000197635;r=2:161992245-162074215) 
-* [GeneBank query](https://www.ncbi.nlm.nih.gov/gene/1803) 
+* [Ensemble query](https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=ENSG00000197635;r=2:161992245-162074215)
+* [GeneBank query](https://www.ncbi.nlm.nih.gov/gene/1803)
 
-indicate human DPP4 gene is located on __chromosome 2__ between __161992245-162074215 bp__. 
+indicate human DPP4 gene is located on __chromosome 2__ between __161992245-162074215 bp__.
 
 #### Define the investigation ranges
 Given that human DPP4 related genes are clustered closely and we only interested in the synteny of DPP4 gene in this case, therefore, __0.25e7 bp__ on either side of DPP4 gene seems a good fit (i.e. __15.95e7-16.45e7__ bp will be the investigation range).  
 
-Hence, we can now define the investigation range as 
+Hence, we can now define the investigation range as
 ```{r}
 # orgm is a handle for organism
 orgm <- "Hsapiens"
@@ -128,8 +128,8 @@ then we need to convert `mycoords.list` into a squence coordinate in GRange obje
 mycoords.gr <- coordFormat (mycoords.list = mycoords.list)
 ```
 
-## Prepare the environment for analysis 
-SyntenyViz v0.0.0.9000 utilises UCSC transcriptomics database in TxDB object format. Available analysis can be performed on following databases. 
+## Prepare the environment for analysis
+SyntenyViz v0.0.0.9000 utilises UCSC transcriptomics database in TxDB object format. Available analysis can be performed on following databases.
 
 ```{r, echo=FALSE}
 knitr::kable(orgmTxDB, caption = "Available transcriptomics dataset for analysis as in SyntenyViz v0.0.0.9000")
@@ -152,8 +152,8 @@ orgm_OrgDB <- getPkgs(orgm, orgmOrgDB)
 orgm_TxDB <- getPkgs(orgm, orgmTxDB)
 ```
 
-## Generate a dataset for a single Synteny Plot Construction 
-Function `synvizPlotData` can be used to automatically generate `Gviz` tracks for synteny plotting. 
+## Generate a dataset for a single Synteny Plot Construction
+Function `synvizPlotData` can be used to automatically generate `Gviz` tracks for synteny plotting.
 ```{r}
 plotData <- synvizPlotData(mycoords.gr =  mycoords.gr, orgm = orgm)
 ```
@@ -164,7 +164,7 @@ plotData
 ```
 
 ## Generate a single Synteny Plot
-We will now use function  `syntenyPlot` to construct a single synteny plot. 
+We will now use function  `syntenyPlot` to construct a single synteny plot.
 ```{r, out.width='90%', fig.height=4, fig.cap = 'Synteny of Mouse DPP4', fig.pos = 'h', include=TRUE, fig.retina=4}
 synvizPlot (mycoords.gr = mycoords.gr, orgm = orgm)
 ```
@@ -172,7 +172,7 @@ synvizPlot (mycoords.gr = mycoords.gr, orgm = orgm)
 ## Generate a Multiple Synteny Plot
 In evolution biology, the conservation in synteny across species reveals important evolution tracks. So, let's have a look how DPP4 synteny conserved between human, mouse and rat.
 
-```{r echo=FALSE, warning=FALSE}
+```{r, warning=FALSE}
 orgm.1 <- "Hsapiens"
 mycoords.list.1 <- "2:15.95e7:16.45e7"
 orgm.2 <- "Mmusculus"
@@ -186,7 +186,7 @@ orgmsList <- orgmsAdd (orgm.2, orgmTxDB, mycoords.list.2, orgmsList)
 orgmsList <- orgmsAdd (orgm.3, orgmTxDB, mycoords.list.3, orgmsList)
 ```
 
-We now can call `synvizPlot` three times, or we can use function `multiplot` to do this for us. 
+We now can call `synvizPlot` three times, or we can use function `multiplot` to do this for us.
 
 ```{r, out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', include=TRUE, dev.args=list(pointsize=2), fig.retina=4}
 multiplot <- multisynvizPlots(orgmsList)

@@ -1,7 +1,7 @@
 ## ---- include = FALSE---------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>", 
+  comment = "#>",
   error = TRUE
 )
 
@@ -11,7 +11,7 @@ library(SyntenyViz)
 ## preload libs for better vignettes performance
 library(grid)
 library(dplyr)
-pkgs <- c("org.Hs.eg.db", "org.Mm.eg.db", "org.Rn.eg.db", "TxDb.Hsapiens.UCSC.hg38.knownGene", 
+pkgs <- c("org.Hs.eg.db", "org.Mm.eg.db", "org.Rn.eg.db", "TxDb.Hsapiens.UCSC.hg38.knownGene",
   "TxDb.Mmusculus.UCSC.mm10.knownGene", "TxDb.Rnorvegicus.UCSC.rn6.refGene")
 for (pkg in pkgs) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
@@ -86,7 +86,7 @@ plotData
 ## ---- out.width='90%', fig.height=4, fig.cap = 'Synteny of Mouse DPP4', fig.pos = 'h', include=TRUE, fig.retina=4----
 synvizPlot (mycoords.gr = mycoords.gr, orgm = orgm)
 
-## ----echo=FALSE, warning=FALSE------------------------------------------------
+## ---- warning=FALSE-----------------------------------------------------------
 orgm.1 <- "Hsapiens"
 mycoords.list.1 <- "2:15.95e7:16.45e7"
 orgm.2 <- "Mmusculus"
