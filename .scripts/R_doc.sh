@@ -9,7 +9,7 @@
 
 # Include git publish framework
 # shellcheck source=/dev/null
-source "$(TRAVIS_BUILD_DIR)/.scripts/R_publish_framework.sh" --source-only
+source "${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh" --source-only
 
 commit_R_docs() {
   git checkout develop
