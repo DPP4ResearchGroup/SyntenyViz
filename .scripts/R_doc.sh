@@ -18,10 +18,7 @@ commit_R_docs() {
 }
 
 commit_R_vignettes() {
-  cat .gitignore # debug
-  git status 	# debug
   git add doc -f 
-  git add Meta -f 
   git commit -m "[skip travis] vignettes  @robqbot travis build: $TRAVIS_BUILD_NUMBER"  
 }
 
