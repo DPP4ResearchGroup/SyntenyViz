@@ -81,6 +81,15 @@ Now, construct a comparative multi-synteny graph
 multiplot <- multisynvizPlots(orgmsList)
 ```
 ![Synteny Conservation around DPP4 gene between various Organisms](vignettes/images/Msplot.png)
+
+## Examples
+`SyntenyViz` also includes training material, which can be accessed via vignettes from `RStudio`
+```
+install_github("DPP4ResearchGroup/SyntenyViz", build_vignettes = TRUE)
+browseVignettes("SyntenyViz")
+```
+OR a `PDF` can be accessed from `SyntenyViz` [homepage](https://dpp4researchgroup.github.io/SyntenyViz/).
+
 ## Contribution
 1. Fork to your contributing account
 1. Create your feature branch (`git checkout -b my-new-feature`)
