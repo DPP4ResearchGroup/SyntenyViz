@@ -1,4 +1,5 @@
 if: branch = master 
+language: generic
 script:
 - echo "Hello $TRAVIS_BRANCH"
 
