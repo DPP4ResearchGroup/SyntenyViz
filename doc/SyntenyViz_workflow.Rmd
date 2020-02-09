@@ -67,7 +67,7 @@ synvizPlot(mycoords.gr, orgmName)
 * Construct a multi synteny graph 
 
 Pick a few of targets
-```{r echo=FALSE, warning=FALSE}
+```{r, warning=FALSE}
 orgm.1 <- "Hsapiens"
 mycoords.list.1 <- "2:15.95e7:16.45e7"
 orgm.2 <- "Mmusculus"
@@ -83,7 +83,7 @@ orgmsList <- orgmsAdd (orgm.2, orgmTxDB, mycoords.list.2, orgmsList)
 orgmsList <- orgmsAdd (orgm.3, orgmTxDB, mycoords.list.3, orgmsList)
 ```
 Now, construct a comparative multi-synteny graph
-```{r, out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', cache=TRUE, dev.args=list(pointsize=5), fig.retina=4}
+```{r, out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', cache=TRUE, dev.args=list(pointsize=2), fig.retina=4}
 multiplot <- multisynvizPlots(orgmsList)
 ```
 
@@ -185,6 +185,6 @@ orgmsList <- orgmsAdd (orgm.3, orgmTxDB, mycoords.list.3, orgmsList)
 
 We now can call `synvizPlot` three times, or we can use function `multiplot` to do this for us. 
 
-```{r, out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', include=TRUE, dev.args=list(pointsize=5), fig.retina=4}
+```{r, out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', include=TRUE, dev.args=list(pointsize=2), fig.retina=4}
 multiplot <- multisynvizPlots(orgmsList)
 ```

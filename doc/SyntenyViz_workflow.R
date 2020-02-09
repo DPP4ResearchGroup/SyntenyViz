@@ -34,7 +34,7 @@ mycoords.gr
 ## ----fig.cap='Synteny of Mouse DPP4', fig.pos='h', include=TRUE, out.width='90%', fig.show='hold', message=FALSE, warning=FALSE, dev='png', cache=TRUE, fig.retina=4----
 synvizPlot(mycoords.gr, orgmName)
 
-## ----echo=FALSE, warning=FALSE------------------------------------------------
+## ---- warning=FALSE-----------------------------------------------------------
 orgm.1 <- "Hsapiens"
 mycoords.list.1 <- "2:15.95e7:16.45e7"
 orgm.2 <- "Mmusculus"
@@ -48,7 +48,7 @@ orgmsList <- orgmsAdd (orgm.1, orgmTxDB, mycoords.list.1, orgmsList)
 orgmsList <- orgmsAdd (orgm.2, orgmTxDB, mycoords.list.2, orgmsList)
 orgmsList <- orgmsAdd (orgm.3, orgmTxDB, mycoords.list.3, orgmsList)
 
-## ---- out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', cache=TRUE, dev.args=list(pointsize=5), fig.retina=4----
+## ---- out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', cache=TRUE, dev.args=list(pointsize=2), fig.retina=4----
 multiplot <- multisynvizPlots(orgmsList)
 
 ## ---- out.width='90%', fig.align='center', fig.cap = 'DPP4 protein in dimmer form', fig.pos = 'h'----
@@ -99,6 +99,6 @@ orgmsList <- orgmsAdd (orgm.1, orgmTxDB, mycoords.list.1, orgmsList)
 orgmsList <- orgmsAdd (orgm.2, orgmTxDB, mycoords.list.2, orgmsList)
 orgmsList <- orgmsAdd (orgm.3, orgmTxDB, mycoords.list.3, orgmsList)
 
-## ---- out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', include=TRUE, dev.args=list(pointsize=5), fig.retina=4----
+## ---- out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', include=TRUE, dev.args=list(pointsize=2), fig.retina=4----
 multiplot <- multisynvizPlots(orgmsList)
 
