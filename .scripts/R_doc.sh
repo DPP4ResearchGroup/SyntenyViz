@@ -14,11 +14,13 @@ commit_R_docs() {
   git checkout develop
   git add NAMESPACE     # commit new NAMESPACE
   git add man 		# commit manual 
-  git commit --m "[skip travis] documentation @robqbot travis build: $TRAVIS_BUILD_NUMBER"
+  git commit -m "[skip travis] documentation @robqbot travis build: $TRAVIS_BUILD_NUMBER"
 }
 
 commit_R_vignettes() {
-  ls -aRl 
+  ls -aRl
+  git add doc
+  git commit -m "[skip travis] vignettes  @robqbot travis build: $TRAVIS_BUILD_NUMBER"  
 }
 
 setup_git
