@@ -60,7 +60,7 @@ mycoords.gr
 ```
 
 * Construct a single synteny graph 
-```{r fig.cap='Synteny of Mouse DPP4', fig.pos='h', include=TRUE, out.width='90%', fig.show='hold', message=FALSE, warning=FALSE, dev='png', cache=TRUE}
+```{r fig.cap='Synteny of Mouse DPP4', fig.pos='h', include=TRUE, out.width='90%', fig.show='hold', message=FALSE, warning=FALSE, dev='png', cache=TRUE, fig.retina=4}
 synvizPlot(mycoords.gr, orgmName)
 ```
 
@@ -83,7 +83,7 @@ orgmsList <- orgmsAdd (orgm.2, orgmTxDB, mycoords.list.2, orgmsList)
 orgmsList <- orgmsAdd (orgm.3, orgmTxDB, mycoords.list.3, orgmsList)
 ```
 Now, construct a comparative multi-synteny graph
-```{r, out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', cache=TRUE, dev.args=list(pointsize=5)}
+```{r, out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', cache=TRUE, dev.args=list(pointsize=5), fig.retina=4}
 multiplot <- multisynvizPlots(orgmsList)
 ```
 
@@ -162,7 +162,7 @@ plotData
 
 ## Generate a single Synteny Plot
 We will now use function  `syntenyPlot` to construct a single synteny plot. 
-```{r, out.width='90%', fig.height=4, fig.cap = 'Synteny of Mouse DPP4', fig.pos = 'h', include=TRUE}
+```{r, out.width='90%', fig.height=4, fig.cap = 'Synteny of Mouse DPP4', fig.pos = 'h', include=TRUE, fig.retina=4}
 synvizPlot (mycoords.gr = mycoords.gr, orgm = orgm)
 ```
 
@@ -185,6 +185,6 @@ orgmsList <- orgmsAdd (orgm.3, orgmTxDB, mycoords.list.3, orgmsList)
 
 We now can call `synvizPlot` three times, or we can use function `multiplot` to do this for us. 
 
-```{r, out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', include=TRUE, dev.args=list(pointsize=5)}
+```{r, out.width='95%', fig.height=7, fig.cap = 'Multi Synteny Plot of DPP4', fig.pos = 'h', include=TRUE, dev.args=list(pointsize=5), fig.retina=4}
 multiplot <- multisynvizPlots(orgmsList)
 ```
