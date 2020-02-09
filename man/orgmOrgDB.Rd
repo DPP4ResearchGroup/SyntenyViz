@@ -4,7 +4,7 @@
 \name{orgmOrgDB}
 \alias{orgmOrgDB}
 \title{A list of available orgDB objects as a data.frame}
-\format{}
+\format{A data.frame in table format}
 \source{
 Currently available orgDB objects from
 \href{http://bioconductor.org/packages/release/BiocViews.html#___AnnotationData}{bioconductor}

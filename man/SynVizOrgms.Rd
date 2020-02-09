@@ -6,7 +6,8 @@
 \title{A data table that is used to store available organisms for analysis}
 \format{A data.frame with tags: "Scientific.Names", "Common.Names", "Abbrav", "Abbrav.Short"}
 \source{
-
+Currently available orgDB objects from
+\href{http://bioconductor.org/packages/release/BiocViews.html#___AnnotationData}{bioconductor}
 }
 \usage{
 data(SynVizOrgms)

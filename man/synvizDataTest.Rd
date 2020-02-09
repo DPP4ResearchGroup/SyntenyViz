@@ -6,7 +6,7 @@
 \title{A synvizData object that is used to test the integrity of function \code{synvizData}}
 \format{A list object with \code{itrack}, \code{gtrack} and \code{atrack}}
 \source{
-
+org.Hs.eg.db and TxDb.Hsapiens.UCSC.hg38.knownGene
 }
 \usage{
 data(synvizDataTest)

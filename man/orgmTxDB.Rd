@@ -4,7 +4,7 @@
 \name{orgmTxDB}
 \alias{orgmTxDB}
 \title{A list of available TxDB objects as a data.frame}
-\format{}
+\format{A data.frame in table format}
 \source{
 Currently available TxDb objects from
 \href{http://bioconductor.org/packages/release/BiocViews.html#___AnnotationData}{bioconductor}
