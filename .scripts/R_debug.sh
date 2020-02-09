@@ -8,6 +8,7 @@
 ###
 
 # Include git publish framework
+# shellcheck source=/dev/null
 source "$(TRAVIS_BUILD_DIR)/.scripts/R_publish_framework.sh" --source-onlly
 
 commit_R_debug() {
