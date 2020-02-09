@@ -1,15 +1,18 @@
 ---
 title: "SyntenyViz Analysis Workflow"
 output: 
+  pdf_document:
+    toc: true
   rmarkdown::html_vignette:
     number_sections: true
     fig_caption: true
-  pdf_document:
-    toc: true
 vignette: >
   %\VignetteIndexEntry{SyntenyViz_workflow}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{R.rsp::asis}
+  %\VignetteKeyword{PDF}
+  %\VignetteKeyword{HTML}
 editor_options: 
   chunk_output_type: inline
 ---
