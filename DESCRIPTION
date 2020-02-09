@@ -9,7 +9,7 @@ Description: SyntenyViz provides a quick and easy visualization of synteny acros
   Synteny is a strong indicator of evolutionary conservation and often be used to track the common ancestor through phylogeny.
   Visualizing the synteny across species enables intuitive examination and facilitates reconstruction effort of ancestral genomes.
 Depends: R (>= 3.6)
-License: MIT
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.0.2
