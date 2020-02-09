@@ -1,0 +1,11 @@
+# ignore .Rproj
+.Rproj.user
+
+# ignore Folders
+exclude/
+
+# ignore R vignettes cache
+vignettes/SyntenyViz_workflow_cache/
+
+# ignore logs
+*.log
