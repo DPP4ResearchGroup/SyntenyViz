@@ -88,7 +88,7 @@ multisynvizPlots <- function (orgmsCollection) {
     # get orgmName
     orgHandle <- as.character(genome(orgmItem))
     orgIndex <- match (orgHandle, orgmTxDB$dbAbbv)
-    orgName <- orgmTxDB$dbSpecies[orgIndex]
+    orgName <- as.character (orgmTxDB$dbSpecies[orgIndex])
 
     synvizPlot (orgmItem, orgName)
     popViewport(1)
