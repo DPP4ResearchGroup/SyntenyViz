@@ -32,7 +32,7 @@ library(SyntenyViz)
 ```
 
 ## Quick Start for the Inpatients
-Quick and minimum steps to get start a synteney conservation anaysis with SyntenyViz
+Quick and minimum steps to get start a synteney conservation analysis with SyntenyViz
 
 * Define an investigation range
 We need to firstly define an investigation range to cover the target range in gene coordinate. We will use a mouse dipeptidyl dipeptidase 4 gene (DPP4-mm) in this example, where DPP4-mm locates at chromosome number 2 between 62,330,073-62,412,231 bp.  
@@ -98,5 +98,5 @@ OR a `PDF` can be accessed from `SyntenyViz` [homepage](https://dpp4researchgrou
 Issues and bugs can be raised and tracked through [GitHub issue tracker for SyntenyViz](https://github.com/DPP4ResearchGroup/SyntenyViz/issues).
 
 ## Unit Testing
-`Travis` CI testing ([travis status](#SyntenyViz)) inplements `R CMD check`.
+`Travis` CI testing ([travis status](#SyntenyViz)) implements `R CMD check`.
 The function integrity is checked by `R` native `testthat`, which can also be invoked by utility function `devtools::test()` from RStudio.
