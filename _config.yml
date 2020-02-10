@@ -6,5 +6,5 @@ theme: jekyll-theme-architect
 
 # site variables
 github:
-  pdf_url: https://github.com/DPP4ResearchGroup/SyntenyViz/tree/gh-pages/jekyll_collection/SyntenyViz_workflow.pdf
-  tar_url: 
+  pdf_url: https://github.com/DPP4ResearchGroup/SyntenyViz/raw/gh-pages/jekyll_collection/SyntenyViz_workflow.pdf
+  tar_url:
