@@ -19,8 +19,7 @@ gh_setup () {
 }
 
 gh_doc_commit () {
-  git add "$jekyllFolder"
-  git commit 
+  git add "${jekyllFolder}"
   git commit -m "[skip travis] Jekyll @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"  
 }
 
