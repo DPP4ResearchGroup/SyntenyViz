@@ -5,10 +5,9 @@ r_packages:
 - devtools
 - knitr
 
-jobs:
-  include:
-    - stage: build 
-      if: branch = develop
+stages:
+  name: build 
+  if: branch = develop
       before_script:
     	- R -e 'devtools::document()'
     	- R -e 'devtools::build_vignettes()'
