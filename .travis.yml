@@ -10,10 +10,10 @@ script:
   - echo "Hello $TRAVIS_BRANCH"
 after_success:
   - cd $TRAVIS_BUILD_DIR
-  - bash .scripts/R_doc.sh
+  - if [ "${TRAVIS_BRANCH}" = "develop" ]; then bash .scripts/R_doc.sh; fi
 after_failure:
   - cd $TRAVIS_BUILD_DIR
-  - bash .scripts/R_debug.sh
+  - if [ "${TRAVIS_BRANCH}" = "develop" ]; then bash .scripts/R_debug.sh; fi
 cache:
   directories:
     - "$HOME/R/Library"
