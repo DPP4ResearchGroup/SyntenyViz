@@ -6,4 +6,5 @@ theme: jekyll-theme-architect
 
 # site variables
 github:
-  pdf_url: 
+  pdf_url:
+  tar_url:
