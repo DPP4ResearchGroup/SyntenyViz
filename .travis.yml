@@ -7,29 +7,29 @@ r_packages:
 jobs:
   include: 
      - if: branch = develop
-     before_script:
-     - R -e 'devtools::document()'
-     - R -e 'devtools::build_vignettes()'
-     script:
-     - cd $TRAVIS_BUILD_DIR/../
-     - R CMD build $packageName
-     - R CMD check ${packageName}_*.tar.gz --check-subdirs=yes  
-     cache:
+      before_script:
+       - R -e 'devtools::document()'
+       - R -e 'devtools::build_vignettes()'
+      script:
+       - cd $TRAVIS_BUILD_DIR/../
+       - R CMD build $packageName
+       - R CMD check ${packageName}_*.tar.gz --check-subdirs=yes  
+      cache:
        directories:
 	  - "$HOME/R/Library"
 	  - "$HOME/packrat/src"
 	  - "$HOME/packrat/lib"
-     packages: true
-     after_success:
+      packages: true
+      after_success:
 	  - cd $TRAVIS_BUILD_DIR
 	  - bash .scripts/R_doc.sh
-     after_failure:
+      after_failure:
 	  - cd $TRAVIS_BUILD_DIR
 	  - bash .scripts/R_debug.sh
-#  include:
-#     - if: branch = master 
-#     script:
-#     - echo "Hello $TRAVIS_BRANCH"
+   include:
+     - if: branch = master 
+      script:
+       - echo "Hello $TRAVIS_BRANCH"
 
 env:
   global:
