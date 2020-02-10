@@ -13,8 +13,8 @@ source "${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh" --source-only
 
 gh_setup () {
   git remote add origin-SynViz "https://${robqbot_TOKEN}@github.com/DPP4ResearchGroup/SyntenyViz.git" > /dev/null 2>&1
-  git checkout -b gh-pages --orphan
-  git push --quiet --set-upstream origin-SynViz gh-pages
+  git checkout --orphan gh-pages 
+  git fetch --quiet -u  origin-SynViz gh-pages
   git pull origin-SynViz gh-pages 
 }
 
