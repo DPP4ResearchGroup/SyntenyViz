@@ -6,10 +6,10 @@ r_packages:
 - knitr
 jobs:
   include: 
-#     - if: branch = develop
-#      before_script:
-#       - R -e 'devtools::document()'
-#       - R -e 'devtools::build_vignettes()'
+    - if: branch = develop
+      before_script:
+        - R -e 'devtools::document()'
+        - R -e 'devtools::build_vignettes()'
 #      script:
 #       - cd $TRAVIS_BUILD_DIR/../
 #       - R CMD build $packageName
