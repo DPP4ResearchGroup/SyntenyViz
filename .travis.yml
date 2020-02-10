@@ -5,10 +5,11 @@ r_packages:
 - devtools
 - knitr
 
-stages:
-  name: build 
-  if: branch = develop
-  script: .scripts/R_build.sh
+jobs: 
+  include: 
+    - stages: build 
+      if: branch = develop
+      script: .scripts/R_build.sh
 script:
   - echo "Hello $TRAVIS_BRANCH"
 after_success:
