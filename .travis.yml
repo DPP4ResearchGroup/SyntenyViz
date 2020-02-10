@@ -4,9 +4,7 @@ r:
 r_packages:
 - devtools
 - knitr
-jobs:
-  include: 
-    - if: branch = develop
+develop:
       before_script:
         - R -e 'devtools::document()'
         - R -e 'devtools::build_vignettes()'
@@ -26,8 +24,7 @@ jobs:
 #      after_failure:
 #	  - cd $TRAVIS_BUILD_DIR
 #	  - bash .scripts/R_debug.sh
-  include:
-    - if: branch = master 
+master: 
       script:
         - echo "Hello $TRAVIS_BRANCH"
 
