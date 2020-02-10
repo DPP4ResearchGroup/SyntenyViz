@@ -19,6 +19,7 @@ gh_setup () {
 }
 
 gh_doc_commit () {
+  git pull origin-SynViz master:master
   git checkout master -- "${jekyllFolder}"
   git add "${jekyllFolder}"
   git commit -m "[skip travis] Jekyll @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"  
