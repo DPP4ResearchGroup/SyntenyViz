@@ -4,29 +4,31 @@ r:
 r_packages:
 - devtools
 - knitr
+
 develop:
-      before_script:
-        - R -e 'devtools::document()'
-        - R -e 'devtools::build_vignettes()'
-#      script:
-#       - cd $TRAVIS_BUILD_DIR/../
-#       - R CMD build $packageName
-#       - R CMD check ${packageName}_*.tar.gz --check-subdirs=yes  
-#      cache:
-#       directories:
-#	  - "$HOME/R/Library"
-#	  - "$HOME/packrat/src"
-#	  - "$HOME/packrat/lib"
-#      packages: true
-#      after_success:
-#	  - cd $TRAVIS_BUILD_DIR
-#	  - bash .scripts/R_doc.sh
-#      after_failure:
-#	  - cd $TRAVIS_BUILD_DIR
-#	  - bash .scripts/R_debug.sh
+  before_script:
+    - R -e 'devtools::document()'
+    - R -e 'devtools::build_vignettes()'
+  script:
+    - cd $TRAVIS_BUILD_DIR/../
+    - R CMD build $packageName
+    - R CMD check ${packageName}_*.tar.gz --check-subdirs=yes  
+  cache:
+    directories:
+      - "$HOME/R/Library"
+      - "$HOME/packrat/src"
+      - "$HOME/packrat/lib"
+  packages: true
+  after_success:
+    - cd $TRAVIS_BUILD_DIR
+    - bash .scripts/R_doc.sh
+  after_failure:
+    - cd $TRAVIS_BUILD_DIR
+    - bash .scripts/R_debug.sh
+
 master: 
-      script:
-        - echo "Hello $TRAVIS_BRANCH"
+  script:
+    - echo "Hello $TRAVIS_BRANCH"
 
 env:
   global:
