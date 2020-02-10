@@ -7,9 +7,6 @@
 #   robqbot_NAME
 ###
 
-# variables
-jekyllFolder=jekyll_collection
-
 # Include git publish framework
 # shellcheck source=/dev/null
 source "${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh" --source-only
