@@ -6,7 +6,7 @@ r_packages:
 - knitr
 
 script:
-  - if [ "${TRAVIS_BRANCH}" = "develop" ]; then .scripts/R_build.sh; fi
+  - if [ "${TRAVIS_BRANCH}" = "develop" ]; then bash .scripts/R_build.sh; fi
   - echo "Hello $TRAVIS_BRANCH"
 after_success:
   - cd $TRAVIS_BUILD_DIR
