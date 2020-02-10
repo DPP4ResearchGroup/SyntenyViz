@@ -13,13 +13,11 @@ source "${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh" --source-only
 
 gh_setup () {
   git remote add origin-SynViz "https://${robqbot_TOKEN}@github.com/DPP4ResearchGroup/SyntenyViz.git" > /dev/null 2>&1
-  git checkout --orphan gh-pages 
-  git fetch --quiet -u  origin-SynViz gh-pages
-  git pull origin-SynViz gh-pages 
+  git checkout -b gh-pages origin-SynViz/gh-pages
 }
 
 gh_doc_commit () {
-  git add "${jekyllFolder}"
+  git checkout master -- "${jekyllFolder}"
   git commit -m "[skip travis] Jekyll @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"  
 }
 
