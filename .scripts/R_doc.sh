@@ -34,5 +34,6 @@ commit_R_vignettes() {
 
 setup_git
 commit_R_docs
+prep_vignettes
 commit_R_vignettes
 upload_R_docs
