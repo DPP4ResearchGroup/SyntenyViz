@@ -7,6 +7,9 @@
 #   robqbot_NAME
 ###
 
+# variables
+jekyllFolder=jekyll_collection
+
 # Include git publish framework
 # shellcheck source=/dev/null
 source "${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh" --source-only
@@ -19,9 +22,7 @@ commit_R_docs() {
 }
 
 prep_vignettes () {
-  if [ ! -d "$jekyllFolder" ]
-    mkdir -p "$jekyllFolder" 
-  fi 
+  if [[ ! -d "$jekyllFolder" ]]; then mkdir -p "$jekyllFolder"; fi 
   cp -a doc/* "$jekyllFolder"
 }
 

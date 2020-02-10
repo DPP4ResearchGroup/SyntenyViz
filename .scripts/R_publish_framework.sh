@@ -7,9 +7,6 @@
 #   robqbot_NAME
 ###
 
-# variables
-jekyllFolder=jekyll_collection
-
 setup_git() {
   git config --global user.email "${robqbot_EMAIL}"
   git config --global user.name  "${robqbot_NAME}"
