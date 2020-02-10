@@ -30,7 +30,7 @@ env:
 deploy:
   provider: pages
   skip_cleanup: true
-  github-token: $robqbot_TOKEN  # Set in the settings page of your repository, as a secure variable
+  token: $robqbot_TOKEN  # Set in the settings page of your repository, as a secure variable
   keep_history: true
   local_dir: doc
   name: robqbot
