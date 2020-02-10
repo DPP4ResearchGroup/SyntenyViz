@@ -15,7 +15,7 @@ commit_R_docs() {
   git checkout develop
   git add NAMESPACE     # commit new NAMESPACE
   git add man 		# commit manual 
-  git commit -m "[skip travis] documentation @robqbot travis build: $TRAVIS_BUILD_NUMBER"
+  git commit -m "[skip travis] documentation @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"
 }
 
 prep_vignettes () {
@@ -28,7 +28,7 @@ prep_vignettes () {
 commit_R_vignettes() {
   git add doc -f 
   git add "$jekyllFolder"
-  git commit -m "[skip travis] vignettes @robqbot travis build: $TRAVIS_BUILD_NUMBER"  
+  git commit -m "[skip travis] vignettes @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"  
 }
 
 setup_git

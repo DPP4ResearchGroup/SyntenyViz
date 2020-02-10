@@ -7,9 +7,9 @@ R_build_docs() {
 }
 
 R_build_pkgs() {
-  cd $TRAVIS_BUILD_DIR/../
-  R CMD build $packageName
-  R CMD check ${packageName}_*.tar.gz --check-subdirs=yes
+  cd "${TRAVIS_BUILD_DIR}/../"
+  R CMD build "$packageName"
+  R CMD check "${packageName}_*.tar.gz" --check-subdirs=yes
 }
 
 R_build_docs
