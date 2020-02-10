@@ -28,4 +28,5 @@ env:
 
 ## deployment of compiled vignettes to gh-pages
 deploy:
-  - if [ "${TRAVIS_BRANCH}" = "develop" ]; then bash .scripts/Jekyll_deploy.sh; fi
+  skip_cleanup: true
+  script: if [ "${TRAVIS_BRANCH}" = "develop" ]; then bash .scripts/Jekyll_deploy.sh; fi
