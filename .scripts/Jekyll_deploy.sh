@@ -16,6 +16,7 @@ gh_setup () {
 
   # setup push branch and clean orphan branch 
   git checkout -q --orphan jekyll
+  git pull origin gh-pages -f
 }
 
 gh_doc_commit () {
