@@ -7,9 +7,6 @@
 #   robqbot_NAME
 ###
 
-# variables
-jekyllFolder=jekyll_collection
-
 # Include git publish framework
 # shellcheck source=/dev/null
 source "${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh" --source-only
@@ -18,6 +15,7 @@ commit_R_docs() {
   git checkout develop
   git add NAMESPACE     # commit new NAMESPACE
   git add man 		# commit manual 
+  git add doc -f	# commit doc
   git commit -m "[skip travis] documentation @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"
 }
 
@@ -27,7 +25,6 @@ prep_vignettes () {
 }
 
 commit_R_vignettes() {
-  git add doc -f 
   git add "$jekyllFolder"
   git commit -m "[skip travis] vignettes @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"  
 }
