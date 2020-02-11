@@ -18,11 +18,10 @@ gh_setup () {
   git checkout -q --orphan jekyll
   git fetch --all
   git reset --hard origin-SynViz/gh-pages
-  git pull origin-SynViz gh-pages:jekyll -vvv
 }
 
 gh_doc_commit () {
-  git pull origin-SynViz master:master --quiet
+  git fetch origin-SynViz master:master --quiet
   git checkout -f master -- "${jekyllFolder}" 
   git add "${jekyllFolder}"
   git commit -m "[skip travis] Jekyll @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"  
