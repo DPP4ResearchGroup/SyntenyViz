@@ -16,13 +16,12 @@ gh_setup () {
 
   # setup push branch and clean orphan branch 
   git checkout -q --orphan jekyll
-  git rm -rf . 		
   git reset --hard origin-SynViz/gh-pages
 }
 
 gh_doc_commit () {
   git pull origin-SynViz master:master --quiet
-  git checkout master -- "${jekyllFolder}"
+  git checkout master -- "${jekyllFolder}" -f
   git add "${jekyllFolder}"
   git commit -m "[skip travis] Jekyll @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"  
 }
