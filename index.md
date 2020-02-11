@@ -98,5 +98,5 @@ OR a `PDF` can be accessed from `SyntenyViz` [homepage](https://dpp4researchgrou
 Issues and bugs can be raised and tracked through [GitHub issue tracker for SyntenyViz](https://github.com/DPP4ResearchGroup/SyntenyViz/issues).
 
 ## Unit Testing
-`Travis` CI testing ([travis status](#SyntenyViz)) implements `R CMD check`.
+`Travis` CI testing [travis status](https://github.com/DPP4ResearchGroup/SyntenyViz) implements `R CMD check`.
 The function integrity is checked by `R` native `testthat`, which can also be invoked by utility function `devtools::test()` from RStudio.
