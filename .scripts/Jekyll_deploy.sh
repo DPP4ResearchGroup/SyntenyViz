@@ -13,8 +13,7 @@ source "${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh" --source-only
 
 gh_setup () {
   git remote add origin-SynViz "https://${robqbot_TOKEN}@github.com/DPP4ResearchGroup/SyntenyViz.git" > /dev/null 2>&1
-  git pull origin-SynViz
-  git checkout -b jekyll 
+  git checkout --orphan jekyll 
   git reset --hard origin-SynViz/gh-pages
 }
 
