@@ -32,5 +32,6 @@ deploy:
   skip_cleanup: true
   on:
     branch: master
+    ## branch: develop
   script:
     - bash .scripts/Jekyll_deploy.sh
