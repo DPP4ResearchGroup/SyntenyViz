@@ -41,9 +41,9 @@ Analysing workflow:
 6. To compare synteny conservation by constructing multi-synteny map on comparing organisms using function `multiplot`.
 
   1. To construct multi-synteny map, a multi-synteny query will need to be constructed using function `orgmsCollection.init` and `orgmsAdd`.
-  1. To construct synteny conservation map for multiple organisms via function `multiplot` (as in Figure \ref{Msplot}).
+  1. To construct synteny conservation map for multiple organisms via function `multisynvizPlots` (as in Figure \ref{Msplot}).
 
-It is also possible to construct all synteny graph (single and multi) using a single function `multiplot` as long the multi-synteny query is defined.
+It is also possible to construct all synteny graph (single and multi) using a single function `multisynvizPlots` as long the multi-synteny query is defined.
 
 ![Single Synteny Plot\label{Hsplot}](pics/Hsplot.png)
 

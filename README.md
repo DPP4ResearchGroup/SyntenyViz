@@ -80,6 +80,8 @@ Now, construct a comparative multi-synteny graph
 ```
 multiplot <- multisynvizPlots(orgmsList)
 ```
+__Note__: Due to heavy downloading and computing involved in this step, `multisynvizPlots` may take several minutes to complete. 
+
 ![Synteny Conservation around DPP4 gene between various Organisms](vignettes/images/Msplot.png)
 
 ## Examples
