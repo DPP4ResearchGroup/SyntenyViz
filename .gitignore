@@ -1,5 +1,7 @@
-# ignore .Rproj
+# ignore .Rproj and R stacks
+.RData
 .Rproj.user
+.Rhistory
 
 # ignore Folders
 exclude/
@@ -9,3 +11,4 @@ vignettes/SyntenyViz_workflow_cache/
 
 # ignore logs
 *.log
+
