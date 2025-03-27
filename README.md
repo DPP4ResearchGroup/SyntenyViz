@@ -1,44 +1,74 @@
-# SyntenyViz
+# `SyntenyViz` - a R package for Synteny Visulisation
 
-|Branch|Status|
-|:---:|---|
-|`master`|[![Build Status](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz.svg?branch=master)](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz)|
-|`develop`|[![Build Status](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz.svg?branch=develop)](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz)|
+- [Introduction](#introduction)
+  - [Release Summary](#release-summary)
 
-## What is SyntenyViz
-SyntenyViz is a R package to visualise synteny across various biological species.
+- [Operation Manuals](#operation-manuals)
+  - [Installation & Quick Start](#installation--quick-start)
+  - [Orthologs Matching](#searching-orthologs-in-a-target-spices)
+  - [More Examples](#working-examples-and-vignettes)
 
-## Motivation
+- [WIP](#wip)
+  - [CI/Unit Testing](#ciunit-testing)
+  - [Issue Tracking](#issue-tracking)
+  - [To Contribute](#to-contribute)
+
+## Introduction
+
+### What is SyntenyViz
+
+SyntenyViz is a R package to visualise conservation of gene order (a.k.a. synteny) across various biological species.
+
+### Motivation
+
 Visualising the synteny across species not only enables intuitive examination and facilitates reconstruction effort of ancestral genomes, but also allow more direct interrogation of gene regulations and gene structures within a gene cluster.
 
-## Installation
-### Install from RStudio
+### Release Summary
+
+| Branch    | Status                                                                                                                                       |
+|:---------:|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `master`  | [![Build Status](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz.svg?branch=master)](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz)  |
+| `develop` | [![Build Status](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz.svg?branch=develop)](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz) |
+
+## Operation Manuals
+
+### Installation & Quick Start
+
+#### Install within RStudio
 * Install and load `devtools`
+
 ```
 install.packages("devtools")
 library(devtools)
 ```
 * Install and load `SyntenyViz` from `GitHub`
+
 ```
 install_github("DPP4ResearchGroup/SyntenyViz")
 library(SyntenyViz)
 ```
+
 To allow build vignettes, `build_vignettes = TRUE` options can be used as
+
 ```
 install_github("DPP4ResearchGroup/SyntenyViz", build_vignettes = TRUE)
 library(SyntenyViz)
 ```
+
 Developing version can be accessed via `develop` as
+
 ```
 install_github("DPP4ResearchGroup/SyntenyViz", ref = "develop")
 library(SyntenyViz)
 ```
 
-## Quick Start for the Inpatients
-Quick and minimum steps to get start a synteney conservation anaysis with SyntenyViz
+#### TL;DR - Quick Start for the Inpatients
+
+Quick and minimum steps to get start a synteney conservation anaysis with `SyntenyViz`
 
 * Define an investigation range
-We need to firstly define an investigation range to cover the target range in gene coordinate. We will use a mouse dipeptidyl dipeptidase 4 gene (DPP4-mm) in this example, where DPP4-mm locates at chromosome number 2 between 62,330,073-62,412,231 bp.  
+  We need to firstly define an investigation range to cover the target range in gene coordinate. We will use a mouse dipeptidyl dipeptidase 4 gene (DPP4-mm) in this example, where DPP4-mm locates at chromosome number 2 between 62,330,073-62,412,231 bp.
+
 ```
 # orgm is a handle for organism
 orgmName <- "Mmusculus"
@@ -46,21 +76,27 @@ orgmName <- "Mmusculus"
 mycoords <- "2:6.0e7:6.5e7"
 ```
 * Convert `mycoords.list` into a GRange object
+
 ```
 mycoords.gr <- SyntenyViz::coordFormat (mycoords.list = mycoords)
 ```
+
 It is always a good habit to double check the input, so
+
 ```
 mycoords.gr
 ```
 * Construct a single synteny graph
+
 ```
 synvizPlot(mycoords.gr, orgmName)
 ```
+
 ![Synteny around DPP4 gene in Humans](vignettes/images/Hsplot.png)
 * Construct a multi synteny graph
 
 Pick a few of targets
+
 ```
 orgm.1 <- "Hsapiens"
 mycoords.list.1 <- "2:15.95e7:16.45e7"
@@ -69,39 +105,54 @@ mycoords.list.2 <- "2:6.0e7:6.5e7"
 orgm.3 <- "Rnorvegicus"
 mycoords.list.3 <- "3:4.6e7:5.1e7"
 ```
+
 Then construct a multiple synteny query
+
 ```
 orgmsList <- orgmsCollection.init (orgmsList)
 orgmsList <- orgmsAdd (orgm.1, orgmTxDB, mycoords.list.1, orgmsList)
 orgmsList <- orgmsAdd (orgm.2, orgmTxDB, mycoords.list.2, orgmsList)
 orgmsList <- orgmsAdd (orgm.3, orgmTxDB, mycoords.list.3, orgmsList)
 ```
+
 Now, construct a comparative multi-synteny graph
+
 ```
 multiplot <- multisynvizPlots(orgmsList)
 ```
-__Note__: Due to heavy downloading and computing involved in this step, `multisynvizPlots` may take several minutes to complete. 
+
+**Note**: Due to heavy downloading and computing involved in this step, `multisynvizPlots` may take several minutes to complete.
 
 ![Synteny Conservation around DPP4 gene between various Organisms](vignettes/images/Msplot.png)
 
-## Examples
+### Searching Orthologs in a Target Spices
+
+### Working Examples and Vignettes
+
 `SyntenyViz` also includes additional examples and training materials, which can be accessed via vignettes from `RStudio`
+
 ```
 install_github("DPP4ResearchGroup/SyntenyViz", build_vignettes = TRUE)
 browseVignettes("SyntenyViz")
 ```
+
 OR a `PDF` can be accessed from `SyntenyViz` [homepage](https://dpp4researchgroup.github.io/SyntenyViz/).
 
-## Contribution
-1. Fork to your contributing account
-1. Create your feature branch (`git checkout -b my-new-feature`)
-1. Commit your changes (`git commit -am 'Added some feature'`)
-1. Push to the feature branch (`git push origin my-new-feature`)
-1. Create a new PR
+## WIP
 
-## Issue Tracking
-Issues and bugs can be raised and tracked through [GitHub issue tracker for SyntenyViz](https://github.com/DPP4ResearchGroup/SyntenyViz/issues).
+### CI/Unit Testing
 
-## Unit Testing
 `Travis` CI testing ([travis status](#SyntenyViz)) inplements `R CMD check`.
 The function integrity is checked by `R` native `testthat`, which can also be invoked by utility function `devtools::test()` from RStudio.
+
+### Issue Tracking
+
+Issues and bugs can be raised and current feature requests can be tracked through [GitHub issue tracker for SyntenyViz](https://github.com/DPP4ResearchGroup/SyntenyViz/issues).
+
+### To Contribute
+
+1. Fork to your contributing account
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Added some feature'`)
+4. Push to the feature branch (`git push origin my-new-feature`)
+5. Create a new PR

@@ -1,0 +1,2 @@
+`Travis` CI testing ([travis status](#SyntenyViz)) inplements `R CMD check`.
+The function integrity is checked by `R` native `testthat`, which can also be invoked by utility function `devtools::test()` from RStudio.
