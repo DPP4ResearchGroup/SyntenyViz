@@ -1,7 +1,8 @@
 # ignore .Rproj and R stacks
-.RData
+*.RData
+*.Rproj
+*.Rhistory
 .Rproj.user
-.Rhistory
 
 # ignore Folders
 exclude/
