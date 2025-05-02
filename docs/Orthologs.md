@@ -1,4 +1,6 @@
 # Searching Orthologs in a Target Spices
+`SyntenyViz` has a dependency on R package `orthogene` of version `1.12.0` or above for orthologs matching mechanism. As of version `1.12.0` stands, the following spices are supported and can be searched against.
+
 
 | Scientific Name              | Taxonomy ID | Source      | ID             | Scientific Name Formatted       |
 |------------------------------|-------------|-------------|----------------|----------------------------------|
