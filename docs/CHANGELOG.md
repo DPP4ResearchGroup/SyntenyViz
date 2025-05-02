@@ -258,7 +258,7 @@ All notable changes to this project will be documented in this file.
 - Update draft-pdf.yml
 - HOTFIX - exp w/ #37 - r.yml
 - np.v0.9.0rc
-- WIP - #37 - CI upgrade to 2025
+- WIP - #37 - CI upgrade to 2025, #36 rc update to 2025
 
 ### Testing
 

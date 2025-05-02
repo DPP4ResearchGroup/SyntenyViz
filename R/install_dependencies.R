@@ -9,3 +9,7 @@ if (!requireNamespace("Gviz", quietly = TRUE)) {
 if (!requireNamespace("GenomicRanges", quietly = TRUE)) {
     BiocManager::install("GenomicRanges")
 }
+
+if (!requireNamespace("orthogene", quietly = TRUE)) {
+    BiocManager::install("orthogene")
+}
