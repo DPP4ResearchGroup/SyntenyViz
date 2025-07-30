@@ -1,0 +1,160 @@
+# Evolutionary distances based on molecular clock estimates
+# Values represent normalized evolutionary distances (0-1 scale)
+# Higher values indicate greater evolutionary divergence
+
+mammals:
+  primates:
+    human-chimpanzee: 0.01
+    human-gorilla: 0.02
+    human-orangutan: 0.04
+    human-macaque: 0.08
+    human-marmoset: 0.12
+    human-baboon: 0.09
+    human-bonobo: 0.01
+    chimpanzee-gorilla: 0.015
+    chimpanzee-orangutan: 0.035
+    chimpanzee-macaque: 0.075
+    gorilla-orangutan: 0.025
+    gorilla-macaque: 0.07
+    orangutan-macaque: 0.06
+    macaque-marmoset: 0.08
+    macaque-baboon: 0.03
+    marmoset-baboon: 0.09
+  
+  rodents:
+    human-mouse: 0.3
+    human-rat: 0.35
+    mouse-rat: 0.1
+    mouse-hamster: 0.15
+    mouse-guinea_pig: 0.25
+    mouse-rabbit: 0.35
+    rat-hamster: 0.12
+    rat-guinea_pig: 0.22
+    rat-rabbit: 0.32
+    hamster-guinea_pig: 0.18
+    hamster-rabbit: 0.28
+    guinea_pig-rabbit: 0.15
+  
+  carnivores:
+    mouse-dog: 0.45
+    mouse-cat: 0.42
+    dog-cat: 0.08
+    dog-fox: 0.12
+    dog-wolf: 0.005
+    dog-coyote: 0.01
+    cat-lion: 0.06
+    cat-tiger: 0.07
+    cat-leopard: 0.05
+  
+  ungulates:
+    mouse-cow: 0.48
+    mouse-pig: 0.46
+    mouse-horse: 0.44
+    mouse-sheep: 0.47
+    mouse-goat: 0.46
+    cow-pig: 0.05
+    cow-horse: 0.08
+    cow-sheep: 0.03
+    cow-goat: 0.04
+    pig-horse: 0.12
+    pig-sheep: 0.08
+    pig-goat: 0.09
+    horse-sheep: 0.1
+    horse-goat: 0.11
+    sheep-goat: 0.02
+
+birds:
+  chicken-duck: 0.08
+  chicken-turkey: 0.06
+  chicken-pigeon: 0.15
+  chicken-zebra_finch: 0.12
+  chicken-sparrow: 0.13
+  duck-turkey: 0.1
+  duck-pigeon: 0.18
+  turkey-pigeon: 0.16
+  pigeon-zebra_finch: 0.08
+  pigeon-sparrow: 0.09
+  zebra_finch-sparrow: 0.02
+
+fish:
+  zebrafish-medaka: 0.15
+  zebrafish-stickleback: 0.25
+  zebrafish-fugu: 0.3
+  zebrafish-salmon: 0.35
+  medaka-stickleback: 0.2
+  medaka-fugu: 0.25
+  medaka-salmon: 0.3
+  stickleback-fugu: 0.15
+  stickleback-salmon: 0.2
+  fugu-salmon: 0.1
+
+amphibians:
+  frog-salamander: 0.2
+  frog-newt: 0.18
+  salamander-newt: 0.05
+
+reptiles:
+  lizard-snake: 0.15
+  lizard-turtle: 0.25
+  lizard-crocodile: 0.3
+  snake-turtle: 0.2
+  snake-crocodile: 0.25
+  turtle-crocodile: 0.15
+
+insects:
+  drosophila-mosquito: 0.25
+  drosophila-honeybee: 0.3
+  drosophila-silkworm: 0.35
+  mosquito-honeybee: 0.2
+  mosquito-silkworm: 0.25
+  honeybee-silkworm: 0.15
+
+nematodes:
+  c_elegans-c_briggsae: 0.1
+  c_elegans-c_remanei: 0.15
+  c_briggsae-c_remanei: 0.12
+
+yeasts:
+  s_cerevisiae-s_pombe: 0.4
+  s_cerevisiae-c_albicans: 0.35
+  s_pombe-c_albicans: 0.45
+
+plants:
+  arabidopsis-rice: 0.3
+  arabidopsis-maize: 0.35
+  arabidopsis-wheat: 0.4
+  rice-maize: 0.15
+  rice-wheat: 0.2
+  maize-wheat: 0.18
+
+cross_phylum:
+  # Mammal-Bird comparisons
+  human-chicken: 0.6
+  mouse-chicken: 0.65
+  
+  # Mammal-Fish comparisons
+  human-zebrafish: 0.75
+  mouse-zebrafish: 0.78
+  
+  # Mammal-Insect comparisons
+  human-drosophila: 0.85
+  mouse-drosophila: 0.88
+  
+  # Mammal-Nematode comparisons
+  human-c_elegans: 0.9
+  mouse-c_elegans: 0.92
+  
+  # Mammal-Yeast comparisons
+  human-s_cerevisiae: 0.95
+  mouse-s_cerevisiae: 0.97
+  
+  # Mammal-Plant comparisons
+  human-arabidopsis: 0.98
+  mouse-arabidopsis: 0.99
+
+metadata:
+  description: "Evolutionary distances based on molecular clock estimates"
+  scale: "Normalized 0-1 scale where 0 = identical, 1 = maximum divergence"
+  units: "Arbitrary units based on molecular clock estimates"
+  last_updated: "2024-01-01"
+  source: "Molecular clock estimates and phylogenetic studies" 
