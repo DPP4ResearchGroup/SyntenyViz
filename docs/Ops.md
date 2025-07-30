@@ -21,7 +21,7 @@ library(SyntenyViz)
 ```
 
 # TL;DR - Quick Start for the Inpatients
-Quick and minimum steps to get start a synteney conservation anaysis with `SyntenyViz`
+Quick and minimum steps to get start a synteney conservation analysis with `SyntenyViz`
 
 * Define an investigation range
 We need to firstly define an investigation range to cover the target range in gene coordinate. We will use a mouse dipeptidyl dipeptidase 4 gene (DPP4-mm) in this example, where DPP4-mm locates at chromosome number 2 between 62,330,073-62,412,231 bp.  

@@ -1,12 +1,26 @@
 language: r
 r:
-- bioc-release
+  - bioc-release
 r_packages:
-- devtools
-- knitr
+  - devtools
+  - knitr
+  - rmarkdown
+
+branches:
+  only:
+    - develop
+    - master
+
+pull_request:
+  branches:
+    - master
+    - develop 
+
+notifications:
+  email: false
 
 script:
-  - if [ "${TRAVIS_BRANCH}" = "develop" ]; then bash .scripts/R_build.sh; fi
+  - bash .scripts/R_build.sh
   - echo "Hello $TRAVIS_BRANCH"
 after_success:
   - cd $TRAVIS_BUILD_DIR
