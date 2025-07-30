@@ -13,3 +13,5 @@ vignettes/SyntenyViz_workflow_cache/
 # ignore logs
 *.log
 
+# ignore aux
+*.swp
