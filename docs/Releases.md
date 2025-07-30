@@ -1,4 +1,4 @@
 |Branch|Status|
 |:---:|---|
-|`master`|[![Build Status](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz.svg?branch=master)](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz)|
-|`develop`|[![Build Status](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz.svg?branch=develop)](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz)|
+|`master`|[![R-CI](https://github.com/DPP4ResearchGroup/SyntenyViz/actions/workflows/r.yml/badge.svg?branch=master)](https://github.com/DPP4ResearchGroup/SyntenyViz/actions/workflows/r.yml)|
+|`develop`|[[![R-CI](https://github.com/DPP4ResearchGroup/SyntenyViz/actions/workflows/r.yml/badge.svg?branch=develop)](https://github.com/DPP4ResearchGroup/SyntenyViz/actions/workflows/r.yml)|
