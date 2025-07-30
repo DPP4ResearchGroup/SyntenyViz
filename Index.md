@@ -1,5 +1,5 @@
 ---
-absorb: true
+absorb: false
 ---
 
 # `SyntenyViz` - a R package for Synteny Visulisation
