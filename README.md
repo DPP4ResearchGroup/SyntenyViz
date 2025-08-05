@@ -1,34 +1,25 @@
 # `SyntenyViz` - a R package for Synteny Visulisation
 
-- [Introduction](#introduction)
-  - [Release Summary](#release-summary)
+## SyntenyViz
 
-- [Operation Manuals](#operation-manuals)
-  - [Installation & Quick Start](#installation--quick-start)
-  - [Orthologs Matching](#searching-orthologs-in-a-target-spices)
-  - [More Examples](#working-examples-and-vignettes)
+![Header Image](readme_docs/SynViz-2.png)
 
-- [WIP](#wip)
-  - [CI/Unit Testing](#ciunit-testing)
-  - [Issue Tracking](#issue-tracking)
-  - [To Contribute](#to-contribute)
+### Summary
 
-## Introduction
-
-### What is SyntenyViz
+#### What is SyntenyViz
 
 SyntenyViz is a R package to visualise conservation of gene order (a.k.a. synteny) across various biological species.
 
-### Motivation
+#### Motivation
 
 Visualising the synteny across species not only enables intuitive examination and facilitates reconstruction effort of ancestral genomes, but also allow more direct interrogation of gene regulations and gene structures within a gene cluster.
 
 ### Release Summary
 
-| Branch    | Status                                                                                                                                       |
-|:---------:|----------------------------------------------------------------------------------------------------------------------------------------------|
-| `master`  | [![Build Status](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz.svg?branch=master)](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz)  |
-| `develop` | [![Build Status](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz.svg?branch=develop)](https://travis-ci.org/DPP4ResearchGroup/SyntenyViz) |
+| Branch    | Status                                                                                                                                                                               |
+|:---------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `master`  | [![R-CI](https://github.com/DPP4ResearchGroup/SyntenyViz/actions/workflows/r.yml/badge.svg?branch=master)](https://github.com/DPP4ResearchGroup/SyntenyViz/actions/workflows/r.yml)  |
+| `develop` | [![R-CI](https://github.com/DPP4ResearchGroup/SyntenyViz/actions/workflows/r.yml/badge.svg?branch=develop)](https://github.com/DPP4ResearchGroup/SyntenyViz/actions/workflows/r.yml) |
 
 ## Operation Manuals
 
@@ -64,7 +55,7 @@ library(SyntenyViz)
 
 #### TL;DR - Quick Start for the Inpatients
 
-Quick and minimum steps to get start a synteney conservation anaysis with `SyntenyViz`
+Quick and minimum steps to get start a synteney conservation analysis with `SyntenyViz`
 
 * Define an investigation range
   We need to firstly define an investigation range to cover the target range in gene coordinate. We will use a mouse dipeptidyl dipeptidase 4 gene (DPP4-mm) in this example, where DPP4-mm locates at chromosome number 2 between 62,330,073-62,412,231 bp.
@@ -126,6 +117,32 @@ multiplot <- multisynvizPlots(orgmsList)
 ![Synteny Conservation around DPP4 gene between various Organisms](vignettes/images/Msplot.png)
 
 ### Searching Orthologs in a Target Spices
+
+`SyntenyViz` has a dependency on R package `orthogene` of version `1.12.0` or above for orthologs matching mechanism. As of version `1.12.0` stands, the following species are supported and can be searched against.
+
+| Scientific Name               | Taxonomy ID | Source     | ID            | Scientific Name Formatted |
+|-------------------------------|-------------|------------|---------------|---------------------------|
+| Mus musculus                  | 10090       | homologene | mmusculus     | mus musculus              |
+| Rattus norvegicus             | 10116       | homologene | rnorvegicus   | rattus norvegicus         |
+| Kluyveromyces lactis          | 28985       | homologene | klactis       | kluyveromyces lactis      |
+| Magnaporthe oryzae            | 318829      | homologene | moryzae       | magnaporthe oryzae        |
+| Eremothecium gossypii         | 33169       | homologene | egossypii     | eremothecium gossypii     |
+| Arabidopsis thaliana          | 3702        | homologene | athaliana     | arabidopsis thaliana      |
+| Oryza sativa                  | 4530        | homologene | osativa       | oryza sativa              |
+| Schizosaccharomyces pombe     | 4896        | homologene | spombe        | schizosaccharomyces pombe |
+| Saccharomyces cerevisiae      | 4932        | homologene | scerevisiae   | saccharomyces cerevisiae  |
+| Neurospora crassa             | 5141        | homologene | ncrassa       | neurospora crassa         |
+| Caenorhabditis elegans        | 6239        | homologene | celegans      | caenorhabditis elegans    |
+| Anopheles gambiae             | 7165        | homologene | agambiae      | anopheles gambiae         |
+| Drosophila melanogaster       | 7227        | homologene | dmelanogaster | drosophila melanogaster   |
+| Danio rerio                   | 7955        | homologene | drerio        | danio rerio               |
+| Xenopus (Silurana) tropicalis | 8364        | homologene | xtropicalis   | xenopus tropicalis        |
+| Gallus gallus                 | 9031        | homologene | ggallus       | gallus gallus             |
+| Macaca mulatta                | 9544        | homologene | mmulatta      | macaca mulatta            |
+| Pan troglodytes               | 9598        | homologene | ptroglodytes  | pan troglodytes           |
+| Homo sapiens                  | 9606        | homologene | hsapiens      | homo sapiens              |
+| Canis lupus familiaris        | 9615        | homologene | clfamiliaris  | canis lupus familiaris    |
+| Bos taurus                    | 9913        | homologene | btaurus       | bos taurus                |
 
 ### Working Examples and Vignettes
 
