@@ -8,7 +8,7 @@ Description: SyntenyViz provides a quick and easy visualization of synteny acros
   Synteny between related species often used to refer the preserved order of genes on chromosomes.
   Synteny is a strong indicator of evolutionary conservation and often be used to track the common ancestor through phylogeny.
   Visualizing the synteny across species enables intuitive examination and facilitates reconstruction effort of ancestral genomes.
-Depends: R (>= 4.4.3)
+Depends: R (>= 4.4.0)
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -20,8 +20,8 @@ Imports:
     Gviz,
     orthogene,
     stringr (>= 1.4),
-    rlist (>= 0.4.6),
-    grid (>= 3.6)
+    grid (>= 3.6),
+    yaml (>= 2.2.1)
 Suggests:
     testthat,
     usethis,

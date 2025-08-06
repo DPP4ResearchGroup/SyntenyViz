@@ -13,6 +13,10 @@ absorb: true
   - [Orthologs Matching](readme_docs/Orthologs.md)
   - [More Examples](readme_docs/Examples.md)
 
+- Troubleshooting & Debugging
+  - [Debugging Guide](readme_docs/DEBUGGING_GUIDE.md)
+  - [Common Issues](readme_docs/CommonIssues.md)
+
 - WIP
   - [CI/Unit Testing](readme_docs/UnitTests.md)
   - [Issue Tracking](readme_docs/Issues.md)
