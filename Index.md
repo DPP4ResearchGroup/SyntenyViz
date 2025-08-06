@@ -6,7 +6,7 @@ absorb: true
 
 - [SyntenyViz](readme_docs/header.md)
   - [Summary](readme_docs/Intro.md)
-  - [Release Summary](readme_docs/Releases.md)
+  - [Release Status](readme_docs/Releases.md)
 
 - Operation Manuals
   - [Installation & Quick Start](readme_docs/Ops.md)
