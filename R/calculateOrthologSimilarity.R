@@ -43,6 +43,7 @@
 #'
 #' @importFrom dplyr mutate select filter arrange desc
 #' @importFrom stringr str_detect
+#' @importFrom yaml read_yaml
 #' @export
 calculateOrthologSimilarity <- function(ortholog_data, species1, species2, 
                                        similarity_type = "composite", use_cache = TRUE, 
