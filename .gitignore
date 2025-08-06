@@ -4,6 +4,10 @@
 *.Rhistory
 .Rproj.user
 
+## Dev stack
+*.Rprofile
+*.Renviron
+
 # ignore Folders
 exclude/
 
@@ -15,3 +19,4 @@ vignettes/SyntenyViz_workflow_cache/
 
 # ignore aux
 *.swp
+.DS_Store
