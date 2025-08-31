@@ -10,7 +10,7 @@ testthat::test_that("getOrthHomolog function basic functionality", {
   gene_id <- "ENSG00000139618"
   gene_id_type <- "ensembl_gene_id"
   
-  # Call the function
+  # Test with valid parameters
   result <- getOrthHomolog(species, gene_id, gene_id_type)
   
   # Check if the result is a data frame or NULL
@@ -135,4 +135,82 @@ testthat::test_that("getOrthHomolog function package dependency check", {
   # This test assumes orthogene is available
   # In a real scenario, you might want to mock this
   expect_true(requireNamespace("orthogene", quietly = TRUE))
+})
+
+testthat::test_that("calculateSyntenySimilarity function basic functionality", {
+  
+  # Skip if required packages are not available
+  skip_if_not_installed("orthogene")
+  
+  # Test parameters for DPP4 regions
+  species1 <- "Hsapiens"
+  species2 <- "Mmusculus"
+  coords1 <- "2:15.95e7:16.45e7"
+  coords2 <- "2:6.0e7:6.5e7"
+  
+  # Test the function
+  result <- calculateSyntenySimilarity(species1, species2, coords1, coords2, verbose = FALSE)
+  
+  # Check if the result is a list
+  expect_is(result, "list")
+  
+  # Check required components
+  expect_true("overlap_score" %in% names(result))
+  expect_true("order_score" %in% names(result))
+  expect_true("overall_similarity" %in% names(result))
+  expect_true("ortholog_pairs" %in% names(result))
+  expect_true("missing_genes" %in% names(result))
+  
+  # Check data types
+  expect_is(result$overlap_score, "numeric")
+  expect_is(result$order_score, "numeric")
+  expect_is(result$overall_similarity, "numeric")
+  expect_is(result$ortholog_pairs, "data.frame")
+  
+  # Check value ranges
+  expect_true(result$overlap_score >= 0 && result$overlap_score <= 1)
+  expect_true(result$order_score >= 0 && result$order_score <= 1)
+  expect_true(result$overall_similarity >= 0 && result$overall_similarity <= 1)
+})
+
+testthat::test_that("calculateSyntenySimilarity function error handling", {
+  
+  # Test missing parameters
+  expect_error(calculateSyntenySimilarity(species2 = "mouse", coords1 = "2:16e7:16.5e7", coords2 = "2:6e7:6.5e7"),
+               "All parameters must be provided")
+  
+  expect_error(calculateSyntenySimilarity(species1 = "human", coords1 = "2:16e7:16.5e7", coords2 = "2:6e7:6.5e7"),
+               "All parameters must be provided")
+  
+  # Test with invalid coordinates
+  expect_error(calculateSyntenySimilarity("human", "mouse", "invalid_coords", "2:6e7:6.5e7"),
+               "Could not retrieve genes for one or both regions")
+})
+
+testthat::test_that("calculateSyntenySimilarity function with different gene_id_types", {
+  
+  skip_if_not_installed("orthogene")
+  
+  # Test with symbol input
+  result_symbol <- calculateSyntenySimilarity(
+    "Hsapiens", "Mmusculus", 
+    "2:15.95e7:16.45e7", "2:6.0e7:6.5e7",
+    gene_id_type = "symbol", verbose = FALSE
+  )
+  
+  expect_is(result_symbol, "list")
+  expect_true("overlap_score" %in% names(result_symbol))
+})
+
+testthat::test_that("calculateSyntenySimilarity function verbose output", {
+  
+  skip_if_not_installed("orthogene")
+  
+  # Test verbose output
+  expect_message(
+    calculateSyntenySimilarity("Hsapiens", "Mmusculus", 
+                              "2:15.95e7:16.45e7", "2:6.0e7:6.5e7", 
+                              verbose = TRUE),
+    "Calculating synteny similarity between Hsapiens and Mmusculus"
+  )
 })
