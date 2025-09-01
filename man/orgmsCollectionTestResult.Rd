@@ -4,7 +4,9 @@
 \name{orgmsCollectionTestResult}
 \alias{orgmsCollectionTestResult}
 \title{A list contains expected output for test functions.}
-\format{GRangesList}
+\format{
+GRangesList
+}
 \source{
 org.Hs.eg.db and TxDb.Hsapiens.UCSC.hg38.knownGene
 }

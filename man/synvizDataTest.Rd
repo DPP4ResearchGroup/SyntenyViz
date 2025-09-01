@@ -4,7 +4,9 @@
 \name{synvizDataTest}
 \alias{synvizDataTest}
 \title{A synvizData object that is used to test the integrity of function \code{synvizData}}
-\format{A list object with \code{itrack}, \code{gtrack} and \code{atrack}}
+\format{
+A list object with \code{itrack}, \code{gtrack} and \code{atrack}
+}
 \source{
 org.Hs.eg.db and TxDb.Hsapiens.UCSC.hg38.knownGene
 }
@@ -24,8 +26,8 @@ atrack <- synvizDataTest$atrack
 \seealso{
 Other SynvizPlot: 
 \code{\link{multisynvizPlots}()},
-\code{\link{synvizPlotData}()},
-\code{\link{synvizPlot}()}
+\code{\link{synvizPlot}()},
+\code{\link{synvizPlotData}()}
 }
 \concept{SynvizPlot}
 \keyword{datasets}

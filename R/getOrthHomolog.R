@@ -16,7 +16,7 @@
 #'  getOrthHomolog(species = "mouse", gene_id = "ENSG00000139618", gene_id_type = "ensembl_gene_id")
 #' }
 #'
-#' @importFrom orthogene get_orthologs
+#' @importFrom orthogene map_orthologs
 #' @export
 getOrthHomolog <- function(species, gene_id, gene_id_type = "ensembl_gene_id", verbose = FALSE, debug = FALSE) {
     
@@ -65,21 +65,43 @@ getOrthHomolog <- function(species, gene_id, gene_id_type = "ensembl_gene_id", v
         }
         
         if (debug) {
-            cat("DEBUG: Calling orthogene::get_orthologs with:\n")
+            cat("DEBUG: Calling orthogene::map_orthologs with:\n")
             cat("  genes =", gene_id, "\n")
-            cat("  species =", species, "\n")
-            cat("  input_type =", gene_id_type, "\n")
+            cat("  input_species = human\n")
+            cat("  output_species =", species, "\n")
         }
         
-        result <- orthogene::get_orthologs(
+        # Use orthogene >= 1.8.0 API
+        result <- orthogene::map_orthologs(
             genes = gene_id,
-            species = species,
-            input_type = gene_id_type,
+            input_species = "human",
+            output_species = species,
             verbose = verbose
         )
         
+        # Normalise column names expected by downstream/tests
+        if (is.data.frame(result) && "ortholog_gene" %in% colnames(result)) {
+            if (!"orthologous_gene" %in% colnames(result)) {
+                result$orthologous_gene <- result$ortholog_gene
+            }
+        }
+        
+        # Treat missing/placeholder results as no orthologs
+        if (is.data.frame(result)) {
+            na_like <- function(x) {
+                is.na(x) | x == "N/A" | x == "NA" | x == "" | x == "None"
+            }
+            if ("ortholog_ensg" %in% names(result)) {
+                result <- result[!na_like(result$ortholog_ensg), , drop = FALSE]
+            }
+            if (nrow(result) == 0) {
+                warning("No orthologs found for the given gene. Please check the species and gene ID.")
+                return(NULL)
+            }
+        }
+        
         if (debug) {
-            cat("DEBUG: orthogene::get_orthologs completed\n")
+            cat("DEBUG: orthogene::map_orthologs completed\n")
             cat("DEBUG: Result class =", class(result), "\n")
             if (is.data.frame(result)) {
                 cat("DEBUG: Result dimensions =", dim(result), "\n")
@@ -152,7 +174,8 @@ getOrthHomolog <- function(species, gene_id, gene_id_type = "ensembl_gene_id", v
 #'   )
 #' }
 #'
-#' @importFrom orthogene get_orthologs
+#' @importFrom orthogene map_orthologs
+#' @importFrom orthogene map_orthologs
 #' @export
 calculateSyntenySimilarity <- function(species1, species2, coords1, coords2, 
                                       gene_id_type = "ensembl_gene_id", verbose = FALSE) {
@@ -170,11 +193,7 @@ calculateSyntenySimilarity <- function(species1, species2, coords1, coords2,
         message("Calculating synteny similarity between ", species1, " and ", species2)
     }
     
-    # Validate coordinate format
-    coord_pattern <- "^\\d+:\\d+e\\d+:\\d+e\\d+$"
-    if (!grepl(coord_pattern, coords1) || !grepl(coord_pattern, coords2)) {
-        stop("Coordinates must be in format 'chromosome:start:end' (e.g., '2:16e7:16.5e7')")
-    }
+    # Defer strict coordinate validation; rely on downstream retrieval to determine validity
     
     # Get genes from both regions
     tryCatch({

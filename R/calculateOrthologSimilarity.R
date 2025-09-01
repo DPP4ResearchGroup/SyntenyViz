@@ -240,32 +240,7 @@ calculateEvolutionarySimilarity <- function(data, species1, species2, debug = FA
     return(result)
 }
     
-    # Create species pair key
-    species_pair <- paste(sort(c(species1, species2)), collapse = "-")
     
-    # Get evolutionary distance
-    evo_distance <- if (species_pair %in% names(evolutionary_distances)) {
-        evolutionary_distances[[species_pair]]
-    } else {
-        0.5  # Default distance
-    }
-    
-    # Add evolutionary similarity columns
-    result <- data %>%
-        mutate(
-            evolutionary_distance = evo_distance,
-            evolutionary_similarity = 1 - evo_distance,
-            divergence_time = evo_distance * 100  # Placeholder - replace with actual calculation
-        )
-    
-    if (debug) {
-        cat("DEBUG: Evolutionary similarity calculated for", nrow(result), "orthologs\n")
-        cat("DEBUG: Species pair:", species_pair, "\n")
-        cat("DEBUG: Evolutionary distance:", evo_distance, "\n")
-    }
-    
-    return(result)
-}
 
 #' Calculate composite similarity score
 #' @param data Data frame with similarity scores
@@ -416,43 +391,3 @@ getEvolutionaryDistances <- function(species1 = NULL, species2 = NULL,
     
     return(distances_df)
 }
-    
-    # Convert to data frame
-    distances_df <- data.frame(
-        species_pair = names(evolutionary_distances),
-        evolutionary_distance = unlist(evolutionary_distances),
-        stringsAsFactors = FALSE
-    )
-    
-    # Split species pair into separate columns
-    species_split <- strsplit(distances_df$species_pair, "-")
-    distances_df$species1 <- sapply(species_split, function(x) x[1])
-    distances_df$species2 <- sapply(species_split, function(x) x[2])
-    
-    # Add additional information
-    distances_df$evolutionary_similarity <- 1 - distances_df$evolutionary_distance
-    distances_df$divergence_time_mya <- distances_df$evolutionary_distance * 100  # Rough estimate in millions of years
-    
-    # Filter by species if provided
-    if (!is.null(species1)) {
-        distances_df <- distances_df[distances_df$species1 == species1 | distances_df$species2 == species1, ]
-    }
-    
-    if (!is.null(species2)) {
-        distances_df <- distances_df[distances_df$species1 == species2 | distances_df$species2 == species2, ]
-    }
-    
-    # Filter by distance range if provided
-    if (!is.null(min_distance)) {
-        distances_df <- distances_df[distances_df$evolutionary_distance >= min_distance, ]
-    }
-    
-    if (!is.null(max_distance)) {
-        distances_df <- distances_df[distances_df$evolutionary_distance <= max_distance, ]
-    }
-    
-    # Sort by evolutionary distance
-    distances_df <- distances_df[order(distances_df$evolutionary_distance), ]
-    
-    return(distances_df)
-} 
