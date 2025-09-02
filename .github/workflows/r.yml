@@ -202,8 +202,14 @@ jobs:
         echo "Running build script..."
         bash .scripts/R_build.sh
 
-    - name: Print branch name
-      run: echo "Hello ${{ github.ref_name }}"
+    - name: Print branch information
+      run: |
+        echo "Event: ${{ github.event_name }}"
+        echo "ref: ${{ github.ref }}"
+        echo "ref_name: ${{ github.ref_name }}"
+        echo "head_ref (PR only): ${{ github.head_ref }}"
+        echo "base_ref (PR only): ${{ github.base_ref }}"
+        echo "Current commit SHA: ${{ github.sha }}"
 
     - name: Run documentation script on develop branch
       if: github.ref == 'refs/heads/develop'
@@ -260,10 +266,39 @@ jobs:
   deploy:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Print deploy git context
+      run: |
+        echo "Event: ${{ github.event_name }}"
+        echo "ref: ${{ github.ref }}"
+        echo "ref_name: ${{ github.ref_name }}"
+        echo "head_ref (PR only): ${{ github.head_ref }}"
+        echo "base_ref (PR only): ${{ github.base_ref }}"
+        echo "Current commit SHA: ${{ github.sha }}"
+        echo "Current directory: $(pwd)"
+        echo "Git version: $(git --version)"
+        echo "Remote URL: $(git config --get remote.origin.url)"
+        echo "Branch (symbolic): $(git branch --show-current || true)"
+        echo "Branches:"
+        git branch -a || true
+        echo "Remotes:"
+        git remote -v || true
+        echo "Last commits:"
+        git --no-pager log --oneline -n 5 || true
+
+    - name: Configure Git user
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
     - name: Deploy compiled vignettes to gh-pages
       run: |
