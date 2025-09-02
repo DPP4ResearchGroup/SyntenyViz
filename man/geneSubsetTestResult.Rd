@@ -4,7 +4,9 @@
 \name{geneSubsetTestResult}
 \alias{geneSubsetTestResult}
 \title{A GRange Object}
-\format{GRange}
+\format{
+GRange
+}
 \source{
 org.Hs.eg.db and TxDb.Hsapiens.UCSC.hg38.knownGene
 }

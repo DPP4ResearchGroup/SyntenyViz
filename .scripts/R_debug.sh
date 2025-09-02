@@ -9,12 +9,12 @@
 
 # Include git publish framework
 # shellcheck source=/dev/null
-source "${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh" --source-onlly
+source "${GITHUB_WORKSPACE}/.scripts/R_publish_framework.sh" --source-only
 
 commit_R_debug() {
   git checkout develop
   git add ./*.Rcheck           
-  git commit -m "[skip travis] debug log @robqbot travis build: $TRAVIS_BUILD_NUMBER"
+  git commit -m "[skip ci] debug log @robqbot GitHub Actions build: $GITHUB_RUN_NUMBER"
 }
 
 setup_git

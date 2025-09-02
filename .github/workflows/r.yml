@@ -10,9 +10,16 @@ on:
       - master
       - develop
 
+permissions:
+  pull-requests: write
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        r-version: ['4.4', '4.5']
 
     steps:
     - name: Checkout repository
@@ -21,15 +28,178 @@ jobs:
     - name: Set up R
       uses: r-lib/actions/setup-r@v2
       with:
-        r-version: 'release'
+        r-version: ${{ matrix.r-version }}
 
-    - name: Install R packages
+    - name: Cache all R packages and system dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ env.R_LIBS_USER }}
+        key: ${{ runner.os }}-r-${{ matrix.r-version }}-all-deps-${{ hashFiles('**/DESCRIPTION') }}-${{ hashFiles('**/NAMESPACE') }}
+        restore-keys: |
+          ${{ runner.os }}-r-${{ matrix.r-version }}-all-deps-${{ hashFiles('**/DESCRIPTION') }}-
+          ${{ runner.os }}-r-${{ matrix.r-version }}-all-deps-
+
+    - name: Install system dependencies
       run: |
-        Rscript -e 'install.packages(c("devtools", "knitr"))'
+        echo "Installing system dependencies..."
+        sudo apt-get update
+        sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libnlopt-dev
+        echo "✅ System dependencies installed successfully!"
+
+    - name: Install and verify R packages
+      run: |
+        # Function to check package availability with better error handling
+        check_package() {
+          local pkg=$1
+          local result
+          result=$(Rscript -e "requireNamespace('$pkg', quietly = TRUE)" 2>&1)
+          if [ $? -eq 0 ]; then
+            echo "✅ Package '$pkg' is available"
+            return 0
+          else
+            echo "❌ Package '$pkg' is NOT available: $result"
+            return 1
+          fi
+        }
+        
+        # Function to install CRAN package with error handling
+        install_cran_package() {
+          local pkg=$1
+          echo "Installing CRAN package: $pkg"
+          local result
+          result=$(Rscript -e "install.packages('$pkg', repos = 'https://cloud.r-project.org')" 2>&1)
+          if [ $? -eq 0 ]; then
+            echo "✅ Successfully installed CRAN package: $pkg"
+            return 0
+          else
+            echo "❌ Failed to install CRAN package: $pkg"
+            echo "Error: $result"
+            return 1
+          fi
+        }
+        
+        # Install CRAN packages if not available
+        echo "=== Installing CRAN packages ==="
+        cran_packages=("devtools" "knitr" "rmarkdown" "testthat" "usethis")
+        cran_install_needed=false
+        
+        for pkg in "${cran_packages[@]}"; do
+          if ! check_package "$pkg"; then
+            cran_install_needed=true
+            break
+          fi
+        done
+        
+        if [ "$cran_install_needed" = true ]; then
+          echo "Installing CRAN packages..."
+          for pkg in "${cran_packages[@]}"; do
+            if ! check_package "$pkg"; then
+              if ! install_cran_package "$pkg"; then
+                echo "❌ Critical: Failed to install CRAN package: $pkg"
+                exit 1
+              fi
+            fi
+          done
+        else
+          echo "✅ All CRAN packages available from cache"
+        fi
+        
+        # Install Bioconductor packages if not available
+        echo "=== Installing Bioconductor packages ==="
+        if ! check_package "GenomicRanges"; then
+          echo "Installing Bioconductor packages..."
+          
+          # Install BiocManager first if needed
+          if ! check_package "BiocManager"; then
+            echo "Installing BiocManager..."
+            if ! install_cran_package "BiocManager"; then
+              echo "❌ Critical: Failed to install BiocManager"
+              exit 1
+            fi
+          fi
+          
+          # Install Bioconductor packages
+          echo "Installing Bioconductor packages via BiocManager..."
+          local result
+          result=$(Rscript -e 'BiocManager::install(c("GenomicRanges", "Gviz", "orthogene"), ask = FALSE, update = FALSE)' 2>&1)
+          if [ $? -eq 0 ]; then
+            echo "✅ Successfully installed Bioconductor packages"
+          else
+            echo "❌ Failed to install Bioconductor packages"
+            echo "Error: $result"
+            exit 1
+          fi
+        else
+          echo "✅ Bioconductor packages available from cache"
+        fi
+        
+        # Install package dependencies if not available
+        echo "=== Installing package dependencies ==="
+        if ! check_package "dplyr"; then
+          echo "Installing package dependencies via devtools..."
+          local result
+          result=$(Rscript -e 'library(devtools); install_deps(dependencies = TRUE, upgrade = "never")' 2>&1)
+          if [ $? -eq 0 ]; then
+            echo "✅ Successfully installed package dependencies"
+          else
+            echo "❌ Failed to install package dependencies"
+            echo "Error: $result"
+            exit 1
+          fi
+        else
+          echo "✅ Package dependencies available from cache"
+        fi
+        
+        # Verify all critical packages are available
+        echo "=== Verifying package availability ==="
+        required_pkgs=("devtools" "GenomicRanges" "Gviz" "dplyr" "stringr" "grid" "yaml" "rlist")
+        missing_pkgs=()
+        
+        for pkg in "${required_pkgs[@]}"; do
+          if ! check_package "$pkg"; then
+            missing_pkgs+=("$pkg")
+          fi
+        done
+        
+        if [ ${#missing_pkgs[@]} -gt 0 ]; then
+          echo "❌ Critical: Missing packages: ${missing_pkgs[*]}"
+          echo "Attempting to install missing packages..."
+          
+          for pkg in "${missing_pkgs[@]}"; do
+            if ! check_package "$pkg"; then
+              echo "❌ Critical: Package '$pkg' still not available after installation attempts"
+              exit 1
+            fi
+          done
+        fi
+        
+        echo "✅ All required packages are available"
+        
+        # Show environment information for debugging
+        echo "=== Environment information ==="
+        echo "R_LIBS_USER: $R_LIBS_USER"
+        echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+        echo "Current directory: $(pwd)"
+        echo "R version: $(Rscript -e 'cat(R.version.string)')"
+        
+        echo "✅ All R packages installed and verified successfully!"
 
     - name: Run build script on develop branch
       if: github.ref == 'refs/heads/develop'
       run: |
+        echo "Starting build process..."
+        echo "Current directory: $(pwd)"
+        echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+        echo "Contents of current directory:"
+        ls -la
+        echo "Contents of .scripts directory:"
+        ls -la .scripts/
+        echo "Package DESCRIPTION file:"
+        cat DESCRIPTION
+        echo "Package NAMESPACE file:"
+        cat NAMESPACE
+        echo "Running build script..."
         bash .scripts/R_build.sh
 
     - name: Print branch name
@@ -45,13 +215,47 @@ jobs:
       run: |
         bash .scripts/R_debug.sh
 
-    - name: Cache R packages
-      uses: actions/cache@v3
+    - name: Add PR Comment - Success
+      if: github.event_name == 'pull_request' && success()
+      uses: peter-evans/create-or-update-comment@v4
       with:
-        path: ${{ runner.tool_cache }}/R
-        key: ${{ runner.os }}-R-${{ hashFiles('**/DESCRIPTION') }}
-        restore-keys: |
-          ${{ runner.os }}-R-
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          ✅ **Build Successful** 
+          
+          **Branch:** `${{ github.head_ref }}`
+          **Commit:** `${{ github.sha }}`
+          **Triggered by:** `${{ github.actor }}`
+          
+          All R package dependencies installed successfully and build completed.
+          
+          **Cache Status:**
+          - All packages and system dependencies: ✅ Cached
+          
+          **Next Steps:** Ready for review and testing.
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Add PR Comment - Failure
+      if: github.event_name == 'pull_request' && failure()
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          ❌ **Build Failed**
+          
+          **Branch:** `${{ github.head_ref }}`
+          **Commit:** `${{ github.sha }}`
+          **Triggered by:** `${{ github.actor }}`
+          
+          The build encountered an error. Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          
+          **Common Issues to Check:**
+          - R package dependencies
+          - System library requirements
+          - Cache corruption
+          
+          **Debug Info:** Debug script has been executed to help diagnose the issue.
+        token: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
     if: github.ref == 'refs/heads/develop'

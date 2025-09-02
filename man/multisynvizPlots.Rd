@@ -29,7 +29,7 @@ A multi synteny plot for comparison and new insight discovery
 \seealso{
 Other SynvizPlot: 
 \code{\link{synvizDataTest}},
-\code{\link{synvizPlotData}()},
-\code{\link{synvizPlot}()}
+\code{\link{synvizPlot}()},
+\code{\link{synvizPlotData}()}
 }
 \concept{SynvizPlot}

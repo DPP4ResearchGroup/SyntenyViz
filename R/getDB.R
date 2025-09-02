@@ -2,6 +2,8 @@
 #'
 #' Search if there is a corresponding annotation database orgDB is available for the given organism.
 #'
+#' @importFrom BiocManager install
+#'
 #' @section getDB complementing functions:
 #' A collection of complementing functions that required by the main functions:
 #' \code{getPkgs}
