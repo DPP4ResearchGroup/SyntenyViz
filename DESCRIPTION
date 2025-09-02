@@ -18,14 +18,15 @@ Imports:
     BiocManager,
     GenomicRanges,
     Gviz,
+    orthogene,
     stringr (>= 1.4),
     grid (>= 3.6),
-    yaml (>= 2.2.1)
+    yaml (>= 2.2.1),
+    rlist
 Suggests:
     testthat,
     usethis,
     knitr,
     R.rsp,
-    rmarkdown,
-    orthogene
+    rmarkdown
 VignetteBuilder: knitr, R.rsp
