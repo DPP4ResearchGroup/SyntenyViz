@@ -19,16 +19,59 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        r-version: ['4.4', '4.5']
+        r-version: ['4.4', 'latest']
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Resource usage metrics (after checkout)
+      if: always()
+      run: |
+        echo "=== Resource usage (post-checkout) ==="; date
+        echo "Uptime:"; uptime
+        echo "CPU info:"; nproc; lscpu | egrep 'Model name|CPU\(s\)|Thread|Core|Socket|MHz' || true
+        echo "Memory:"; free -h || (grep -E 'Mem|Swap' /proc/meminfo || true)
+        echo "Disk:"; df -h
+        echo "Top by MEM:"; ps -eo pid,comm,%cpu,%mem --sort=-%mem | head -n 10
+        echo "Top by CPU:"; ps -eo pid,comm,%cpu,%mem --sort=-%cpu | head -n 10
+
     - name: Set up R
       uses: r-lib/actions/setup-r@v2
       with:
         r-version: ${{ matrix.r-version }}
+
+    - name: Resource usage metrics (after setup-r)
+      if: always()
+      run: |
+        echo "=== Resource usage (post-setup-r) ==="; date
+        uptime; free -h || true; df -h
+
+    - name: Set up R dependencies (pak)
+      uses: r-lib/actions/setup-r-dependencies@v2
+      with:
+        use-public-rspm: true
+        extra-packages: |
+          any::devtools
+          any::BiocManager
+          any::knitr
+          any::rmarkdown
+          any::testthat
+          any::usethis
+          any::yaml
+          any::stringr
+          any::dplyr
+          any::rlist
+          bioc::GenomicRanges
+          bioc::Gviz
+          bioc::orthogene
+        update: false
+
+    - name: Resource usage metrics (after setup-r-dependencies)
+      if: always()
+      run: |
+        echo "=== Resource usage (post-setup-r-dependencies) ==="; date
+        uptime; free -h || true; df -h
 
     - name: Cache all R packages and system dependencies
       uses: actions/cache@v3
@@ -42,13 +85,35 @@ jobs:
 
     - name: Install system dependencies
       run: |
-        echo "Installing system dependencies..."
+        metrics() {
+          echo "=== Resource usage: $(date) ===";
+          echo "Uptime:"; uptime || true;
+          echo "CPU:"; nproc; lscpu | egrep 'Model name|CPU\(s\)|Thread|Core|Socket|MHz' || true;
+          echo "Memory:"; free -h || (grep -E 'Mem|Swap' /proc/meminfo || true);
+          echo "Disk:"; df -h;
+          echo "Top by MEM:"; ps -eo pid,comm,%cpu,%mem --sort=-%mem | head -n 10;
+          echo "Top by CPU:"; ps -eo pid,comm,%cpu,%mem --sort=-%cpu | head -n 10;
+        }
+        echo "Installing system dependencies..."; metrics
         sudo apt-get update
         sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libnlopt-dev
-        echo "✅ System dependencies installed successfully!"
+        echo "✅ System dependencies installed successfully!"; metrics
+
+    - name: Resource usage metrics (after system deps)
+      if: always()
+      run: |
+        echo "=== Resource usage (post-system-deps) ==="; date
+        uptime; free -h || true; df -h
 
     - name: Install and verify R packages
       run: |
+        metrics() {
+          echo "=== Resource usage: $(date) ===";
+          echo "Uptime:"; uptime || true;
+          echo "Memory:"; free -h || (grep -E 'Mem|Swap' /proc/meminfo || true);
+          echo "Disk:"; df -h;
+        }
+        metrics
         # Function to check package availability with better error handling
         check_package() {
           local pkg=$1
@@ -183,38 +248,96 @@ jobs:
         echo "Current directory: $(pwd)"
         echo "R version: $(Rscript -e 'cat(R.version.string)')"
         
-        echo "✅ All R packages installed and verified successfully!"
+        echo "✅ All R packages installed and verified successfully!"; metrics
+
+    - name: Resource usage metrics (after R package install)
+      if: always()
+      run: |
+        echo "=== Resource usage (post-R-packages) ==="; date
+        uptime; free -h || true; df -h
 
     - name: Run build script on develop branch
       if: github.ref == 'refs/heads/develop'
       run: |
+        set -euxo pipefail
+        metrics() {
+          echo "=== Resource usage: $(date) ===";
+          echo "Uptime:"; uptime || true;
+          echo "Memory:"; free -h || (grep -E 'Mem|Swap' /proc/meminfo || true);
+          echo "Disk:"; df -h;
+        }
+        metrics
         echo "Starting build process..."
         echo "Current directory: $(pwd)"
         echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
         echo "Contents of current directory:"
         ls -la
         echo "Contents of .scripts directory:"
-        ls -la .scripts/
+        ls -la .scripts/ || true
         echo "Package DESCRIPTION file:"
-        cat DESCRIPTION
+        test -f DESCRIPTION && cat DESCRIPTION || echo "DESCRIPTION not found"
         echo "Package NAMESPACE file:"
-        cat NAMESPACE
+        test -f NAMESPACE && cat NAMESPACE || echo "NAMESPACE not found"
         echo "Running build script..."
-        bash .scripts/R_build.sh
+        if [ -x .scripts/R_build.sh ]; then
+          bash -x .scripts/R_build.sh
+        elif [ -f .scripts/R_build.sh ]; then
+          bash -x .scripts/R_build.sh
+        else
+          echo ".scripts/R_build.sh not found" >&2
+          exit 127
+        fi
+        metrics
+
+    - name: Resource usage metrics (after build script)
+      if: github.ref == 'refs/heads/develop' && always()
+      run: |
+        echo "=== Resource usage (post-build) ==="; date
+        uptime; free -h || true; df -h
 
     - name: Print branch information
       run: |
+        metrics() {
+          echo "=== Resource usage: $(date) ===";
+          echo "Uptime:"; uptime || true;
+          echo "Memory:"; free -h || (grep -E 'Mem|Swap' /proc/meminfo || true);
+          echo "Disk:"; df -h;
+        }
+        metrics
         echo "Event: ${{ github.event_name }}"
         echo "ref: ${{ github.ref }}"
         echo "ref_name: ${{ github.ref_name }}"
         echo "head_ref (PR only): ${{ github.head_ref }}"
         echo "base_ref (PR only): ${{ github.base_ref }}"
         echo "Current commit SHA: ${{ github.sha }}"
+        metrics
 
     - name: Run documentation script on develop branch
       if: github.ref == 'refs/heads/develop'
       run: |
-        bash .scripts/R_doc.sh
+        set -euxo pipefail
+        metrics() {
+          echo "=== Resource usage: $(date) ===";
+          echo "Uptime:"; uptime || true;
+          echo "Memory:"; free -h || (grep -E 'Mem|Swap' /proc/meminfo || true);
+          echo "Disk:"; df -h;
+        }
+        metrics
+        if [ -x .scripts/R_doc.sh ]; then
+          bash -x .scripts/R_doc.sh
+        elif [ -f .scripts/R_doc.sh ]; then
+          bash -x .scripts/R_doc.sh
+        else
+          echo ".scripts/R_doc.sh not found" >&2
+          exit 127
+        fi
+        metrics
+
+    - name: Resource usage metrics (after docs)
+      if: github.ref == 'refs/heads/develop' && always()
+      run: |
+        echo "=== Resource usage (post-docs) ==="; date
+        uptime; free -h || true; df -h
 
     - name: Run debug script on failure
       if: failure() && github.ref == 'refs/heads/develop'
@@ -276,8 +399,21 @@ jobs:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Resource usage metrics (deploy: after checkout)
+      if: always()
+      run: |
+        echo "=== Resource usage (deploy post-checkout) ==="; date
+        uptime; free -h || true; df -h
+
     - name: Print deploy git context
       run: |
+        metrics() {
+          echo "=== Resource usage: $(date) ===";
+          echo "Uptime:"; uptime || true;
+          echo "Memory:"; free -h || (grep -E 'Mem|Swap' /proc/meminfo || true);
+          echo "Disk:"; df -h;
+        }
+        metrics
         echo "Event: ${{ github.event_name }}"
         echo "ref: ${{ github.ref }}"
         echo "ref_name: ${{ github.ref_name }}"
@@ -294,12 +430,59 @@ jobs:
         git remote -v || true
         echo "Last commits:"
         git --no-pager log --oneline -n 5 || true
+        echo "Scripts directory contents:"
+        ls -la .scripts || true
+        echo "Top of Jekyll_deploy.sh:"
+        head -n 80 .scripts/Jekyll_deploy.sh || true
+        metrics
 
     - name: Configure Git user
       run: |
+        metrics() {
+          echo "=== Resource usage: $(date) ===";
+          echo "Uptime:"; uptime || true;
+          echo "Memory:"; free -h || (grep -E 'Mem|Swap' /proc/meminfo || true);
+          echo "Disk:"; df -h;
+        }
+        metrics
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        metrics
+
+    - name: Resource usage metrics (deploy: after git config)
+      if: always()
+      run: |
+        echo "=== Resource usage (deploy post-git-config) ==="; date
+        uptime; free -h || true; df -h
 
     - name: Deploy compiled vignettes to gh-pages
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GIT_TRACE: '1'
+        GIT_CURL_VERBOSE: '1'
       run: |
-        bash .scripts/Jekyll_deploy.sh
+        set -euxo pipefail
+        metrics() {
+          echo "=== Resource usage: $(date) ===";
+          echo "Uptime:"; uptime || true;
+          echo "Memory:"; free -h || (grep -E 'Mem|Swap' /proc/meminfo || true);
+          echo "Disk:"; df -h;
+        }
+        metrics
+        echo "Git status before deploy:";
+        git status || true
+        echo "Current origin configuration:";
+        git remote -v || true
+        echo "Running deploy script with trace..."
+        bash -x .scripts/Jekyll_deploy.sh
+        echo "Git status after deploy:";
+        git status || true
+        metrics
+
+    - name: Resource usage metrics (deploy: after deploy)
+      if: always()
+      run: |
+        echo "=== Resource usage (deploy post-deploy) ==="; date
+        uptime; free -h || true; df -h
