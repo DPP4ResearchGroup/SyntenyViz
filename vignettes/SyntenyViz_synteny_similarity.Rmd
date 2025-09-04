@@ -1,0 +1,134 @@
+---
+title: "SyntenyViz: Synteny similarity and evolutionary distances"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{SyntenyViz: Synteny similarity and evolutionary distances}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```r
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+## Overview
+
+This vignette demonstrates key capabilities introduced in recent versions:
+
+- `calculateSyntenySimilarity()`: compare syntenic regions across species
+- `calculateOrthologSimilarity()`: compute similarity metrics on discovered orthologs
+- Patristic/evolutionary utilities: `getEvolutionaryDistances()`, `loadPatristicDistances()`,
+  `calculatePatristicDistance()`, and conversions between patristic distance and divergence time
+
+Where examples might download annotations or require external data, chunks are marked with `eval = FALSE`.
+
+## Setup
+
+```r
+# Install suggested dependencies if missing (run manually as needed)
+# install.packages(c("dplyr", "stringr", "yaml", "grid"))
+# if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+# BiocManager::install(c("orthogene", "GenomicRanges", "Gviz"))
+
+library(SyntenyViz)
+```
+
+## Synteny similarity between regions
+
+`calculateSyntenySimilarity()` estimates similarity between two regions using ortholog presence
+and a placeholder order score.
+
+```r
+# eval = FALSE to avoid long downloads when building vignettes
+## Human vs Mouse DPP4 neighborhood
+## Coordinates are in "chrom:start:end" (bp), scientific notation allowed
+
+# eval = FALSE
+# res <- calculateSyntenySimilarity(
+#   species1 = "Hsapiens",
+#   species2 = "Mmusculus",
+#   coords1  = "2:15.95e7:16.45e7",
+#   coords2  = "2:6.0e7:6.5e7",
+#   gene_id_type = "ensembl_gene_id",
+#   verbose = TRUE
+# )
+# str(res)
+# res$overall_similarity
+```
+
+For quick plotting of one region:
+
+```r
+# eval = FALSE
+# gr <- coordFormat("2:16e7:16.5e7")
+# synvizPlot(gr, "Hsapiens")
+```
+
+## Ortholog similarity metrics
+
+`calculateOrthologSimilarity()` enriches an ortholog table (from `getOrthHomolog`) with
+sequence, functional, and evolutionary similarity, plus a composite score.
+
+```r
+# eval = FALSE
+# orthologs <- getOrthHomolog("mouse", "ENSG00000139618")
+# sim <- calculateOrthologSimilarity(
+#   orthologs, species1 = "human", species2 = "mouse",
+#   similarity_type = "composite", debug = TRUE
+# )
+# head(sim)
+```
+
+## Evolutionary and patristic distances
+
+You can list available evolutionary distances and compute simple summaries.
+
+```r
+evodf <- getEvolutionaryDistances()
+head(evodf)
+summary(evodf$evolutionary_distance)
+```
+
+Patristic distances and conversions:
+
+```r
+pat_list <- loadPatristicDistances()
+names(pat_list)[1:min(5, length(pat_list))]
+
+# Convert between patristic distance and divergence time
+d <- 0.3456
+tmya <- patristicToDivergenceTime(d)
+d_back <- divergenceTimeToPatristic(tmya)
+c(d = d, tmya = tmya, d_back = d_back)
+```
+
+If you have a small phylogeny (requires `ape`):
+
+```r
+# eval = FALSE
+# if (requireNamespace("ape", quietly = TRUE)) {
+#   tree <- ape::read.tree(text = "(human:0.2,mouse:0.3);")
+#   calculatePatristicDistance(tree, "human", "mouse")
+# }
+```
+
+## Multi-plot synteny comparison
+
+`multisynvizPlots()` compares up to three organisms at once.
+
+```r
+# eval = FALSE
+# orgms <- orgmsCollection.init(orgmList)
+# orgms <- orgmsAdd("Hsapiens",  orgmTxDB, "2:15.95e7:16.45e7", orgms)
+# orgms <- orgmsAdd("Mmusculus", orgmTxDB, "2:6.0e7:6.5e7",   orgms)
+# orgms <- orgmsAdd("Rnorvegicus", orgmTxDB, "3:4.6e7:5.1e7", orgms)
+# multisynvizPlots(orgms)
+```
+
+## Notes
+
+- Some examples rely on external annotation packages and internet access.
+- `order_score` in `calculateSyntenySimilarity()` is a placeholder; future versions may provide
+  a richer order-conservation metric.
+
+
