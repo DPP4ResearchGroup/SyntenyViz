@@ -632,7 +632,6 @@ jobs:
 
     # Dependencies are installed via setup-dependencies job
 
-
     - name: Run build script on develop branch (Safe Mode - No Commits)
       if: github.ref == 'refs/heads/develop'
       run: |
