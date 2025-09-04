@@ -2,8 +2,13 @@
 % Please edit documentation in R/SyntenyViz-package.R
 \docType{package}
 \name{SyntenyViz}
+\alias{SyntenyViz-package}
 \alias{SyntenyViz}
 \title{Package SyntenyViz}
 \description{
 Package This R package
+}
+\author{
+\strong{Maintainer}: Robert QIAO \email{robert.qiao@flinders.edu.au} (\href{https://orcid.org/0000-0003-4569-6921}{ORCID})
+
 }

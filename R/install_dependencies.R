@@ -1,3 +1,8 @@
+#' Install required dependencies for SyntenyViz
+#'
+#' @importFrom BiocManager install
+#' @export
+#'
 if (!requireNamespace("BiocManager", quietly = TRUE)) {
     install.packages("BiocManager")
 }
