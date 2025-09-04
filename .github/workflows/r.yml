@@ -632,7 +632,6 @@ jobs:
 
     # Dependencies are installed via setup-dependencies job
 
-
     - name: Run build script on develop branch (Safe Mode - No Commits)
       if: github.ref == 'refs/heads/develop'
       run: |
@@ -1431,4 +1430,3 @@ jobs:
         echo "  Deploy Duration: ${deploy_duration} seconds"
         echo "  Start Time: $(date -d @$deploy_start_time '+%Y-%m-%d %H:%M:%S')"
         echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
-
