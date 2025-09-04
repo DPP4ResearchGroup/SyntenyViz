@@ -1,0 +1,271 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## Unreleased
+
+### Bug Fixes
+
+- fix #42 - JOSS compile w/ 2025
+
+### Documentation
+
+- doc +
+- doc debug
+
+### Other (unconventional)
+
+- Initial commit
+- .gitignore
+- initial R package
+- .travis init
+- build status +
+- .travis r version update
+- README build status update
+- .travis debug
+- .travis debug
+- .travis debug
+- .travis debug
+- R CMD check @example debug
+- R CMD check debug
+- cache R build lib
+- build on dev branch
+- build on dev branch debug
+- .travis doc update
+- .travis doc update debug
+- .travis doc update debug
+- .travis doc update debug
+- trigger build
+- .travis doc update debug
+- .travis encryption debug
+- [skip travis] robqbot travis build: 14
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- .travis encryption debug
+- branch update forgo DESCRIPTION
+- data-raw
+- data
+- SynViz-package
+- data/ + data-raw/
+- .Rbuildignore update - ex data-raw
+- JOSS submission
+- debug
+- functions
+- geneSubset init
+- paper restructure
+- + R functions
+- paper restructure
+- init update
+- data-raw
+- man
+- Tutorials init
+- Synviz init debug
+- orgmsCollection +
+- man update
+- data + test_data
+- pub update
+- package headline update
+- [skip travis] robqbot travis build: 27
+- conflict resolve
+- man update
+- DES doc update
+- synvizPlot +
+- man update
+- paper init
+- orgmsCollection R check debug
+- orgmsCollection R check debug
+- framework - doc publishing enhence
+- .travis enable debug after_failure
+- orgmsCollection R check debug
+- .script debug
+- orgmsCollection R check debug
+- .scripts framework update
+- R check debug
+- R check debug
+- R check debug
+- .script debug
+- .script debug
+- README instruction init
+- README instruction update
+- orgmsCollection debug
+- [skip travis] documentation @robqbot travis build: 39
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- README instruction init
+- vignettes init
+- vignettes update + HTML compile
+- vignettes data
+- pkgs update
+- vignettes data
+- vig data inclusion
+- vig init complete
+- [skip travis] documentation @robqbot travis build: 40
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- README instructions +
+- README instructions update
+- .travis R build + check
+- vig pub +
+- infile plot show
+- .travis debug
+- .travis debug
+- .travis debug
+- .travis debug
+- .travis debug
+- installation +
+- .travis debug
+- .travis debug
+- vignettes debug
+- vignettes build debug
+- vignettes build debug
+- vignettes build debug
+- vignettes build debug
+- rm cache
+- ignore cache
+- LICENSE fix + debug
+- README update
+- .travis debug
+- README update
+- [skip travis] documentation @robqbot travis build: 53
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- vignetts build debug
+- vignettes fig update
+- vignetts update
+- vignetts update
+- vig update debug
+- [skip travis] documentation @robqbot travis build: 56
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- README update
+- vignettes doc debug
+- [skip travis] vignettes  @robqbot travis build: 57
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- vignettes HTML deploy to gh-pages
+- script cleanup
+- .travis async debug
+- [skip travis] documentation @robqbot travis build: 58
+- [skip travis] vignettes  @robqbot travis build: 58
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- multiplot bug fix
+- vignettes PDF +
+- git lfs +
+- gitignore update
+- [skip travis] vignettes  @robqbot travis build: 60
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- vignettes bug fix
+- License fix
+- .hound init
+- vig html new
+- [skip travis] documentation @robqbot travis build: 61
+- [skip travis] vignettes  @robqbot travis build: 61
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- .gitattributes update
+- [skip travis] documentation @robqbot travis build: 63
+- [skip travis] vignettes  @robqbot travis build: 63
+- cleanup dir
+- [skip travis] vignettes  @robqbot travis build: 64
+- .hound debug
+- .hound debug
+- .hound debug
+- .hound debug
+- .script bash inclusion
+- bash syntax fix
+- CI debug
+- [skip travis] vignettes  @robqbot travis build: 70
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- .travis debug multibuild
+- [skip travis] vignettes  @robqbot travis build: 71
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- .travis debug multibuild
+- .travis multi debug
+- .travis multi debug
+- .travis multi debug
+- .travis multi debug
+- .travis multi debug
+- .travis multi debug
+- .travis multi debug
+- .travis multi publish
+- .travis multibuild debug
+- .travis multibuild debug
+- .travis multibuild debug
+- .travis multibuild debug testing
+- .travis multibuild debug testing
+- .travis multibuild debug testing
+- .travis cache debug
+- .travis cache debug
+- .travis cache debug
+- gh-pages content +
+- bash syntax debug
+- bash syntax debug
+- bash syntax conform
+- Jekyll folder for gh-pages
+- [skip travis] vignettes @robqbot travis build: 100
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- gh-pages publish
+- [skip travis] vignettes @robqbot travis build: 103
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- gh-pages publish debug
+- .travis deploy debug
+- [skip travis] vignettes @robqbot travis build: 105
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- script update
+- .travis deploy debug
+- [skip travis] vignettes @robqbot travis build: 107
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- deploy debug
+- [skip travis] vignettes @robqbot travis build: 109
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- .travis enhance
+- .travis enhance git debug
+- [skip travis] vignettes @robqbot travis build: 111
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- .travis enhance git debug
+- [skip travis] vignettes @robqbot travis build: 113
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- [skip travis] vignettes @robqbot travis build: 115
+- .travis enhance git debug
+- [skip travis] vignettes @robqbot travis build: 117
+- .travis enhance git debug
+- .travis enhance git debug
+- .travis enhance git debug
+- .travis prod
+- git commit restructure
+- [skip travis] vignettes @robqbot travis build: 125
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- git orphan
+- git debug
+- [skip travis] documentation @robqbot travis build: 127
+- [skip travis] vignettes @robqbot travis build: 127
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- .git debug
+- .git debug
+- .git debug
+- .git debug
+- .git debug
+- .git restructure commit test
+- CI commission to master
+- more examples HOME url
+- [skip travis] documentation @robqbot travis build: 140
+- [skip travis] vignettes @robqbot travis build: 140
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- [skip travis] documentation @robqbot travis build: 141
+- [skip travis] vignettes @robqbot travis build: 141
+- R vignettes output assets collection
+- paper init
+- graph ppi improve
+- [skip travis] documentation @robqbot travis build: 142
+- [skip travis] vignettes @robqbot travis build: 142
+- Merge branch 'develop' of github.com:DPP4ResearchGroup/SyntenyViz into develop
+- [skip travis] documentation @robqbot travis build: 143
+- [skip travis] vignettes @robqbot travis build: 143
+- Create draft-pdf.yml
+- Update draft-pdf.yml
+- HOTFIX - exp w/ #37 - r.yml
+- np.v0.9.0rc
+- WIP - #37 - CI upgrade to 2025, #36 rc update to 2025
+
+### Testing
+
+- tests
+- testthat data
+- test_orgmsCollection +
+- testthat_data update
+- testthat test update
+
+<!-- generated by git-cliff -->

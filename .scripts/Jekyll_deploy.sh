@@ -13,20 +13,22 @@ source "${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh" --source-only
 
 gh_setup () {
   git remote add origin-SynViz "https://${robqbot_TOKEN}@github.com/DPP4ResearchGroup/SyntenyViz.git" > /dev/null 2>&1
-  git pull origin-SynViz
-  git checkout -b jekyll 
+
+  # setup push branch and clean orphan branch 
+  git checkout -q --orphan jekyll
+  git fetch --all
   git reset --hard origin-SynViz/gh-pages
 }
 
 gh_doc_commit () {
-  git pull origin-SynViz master:master --quiet
-  git checkout master -- "${jekyllFolder}"
+  git fetch origin-SynViz master:master --quiet
+  git checkout -f master -- "${jekyllFolder}" 
   git add "${jekyllFolder}"
   git commit -m "[skip travis] Jekyll @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"  
 }
 
 gh_doc_publish () {
-  git push origin-SynViz jekyll:gh-pages
+  git push --set-upstream origin-SynViz jekyll:gh-pages
 }
 
 setup_git

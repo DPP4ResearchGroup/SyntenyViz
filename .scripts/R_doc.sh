@@ -16,6 +16,7 @@ commit_R_docs() {
   git add NAMESPACE     # commit new NAMESPACE
   git add man 		# commit manual 
   git add doc -f	# commit doc
+  git add vignettes	# commit vignettes output assets
   git commit -m "[skip travis] documentation @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"
 }
 

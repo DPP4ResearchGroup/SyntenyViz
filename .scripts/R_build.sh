@@ -5,12 +5,15 @@ packageName=SyntenyViz
 
 # Include R CMD build and R CMD check
 R_build_docs() {
-  R -e 'devtools::document()'
-  R -e 'devtools::build_vignettes()'
+  echo "Building documentation..."
+  Rscript -e 'devtools::document()'
+  Rscript -e 'devtools::build_vignettes()'
 }
 
 R_build_pkgs() {
-  cd "${TRAVIS_BUILD_DIR}/../" || exit
+  echo "Building and checking package..."
+  # Use GitHub Actions workspace instead of TRAVIS_BUILD_DIR
+  cd "${GITHUB_WORKSPACE}/.." || exit 1
   R CMD build "${packageName}"
   R CMD check "${packageName}_*.tar.gz" --check-subdirs=yes
 }
