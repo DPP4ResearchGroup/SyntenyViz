@@ -15,201 +15,721 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  setup-dependencies:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        r-version: ['4.4', 'latest']
-
+        r-version: ['latest']
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.value }}
+    env:
+      # Use workspace-relative paths for R libraries to ensure they're user-writable
+      R_LIBS_USER: ${{ github.workspace }}/Rlibs
+      R_LIBS_SITE: ${{ github.workspace }}/Rlibs-site
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Set up R
-      uses: r-lib/actions/setup-r@v2
-      with:
-        r-version: ${{ matrix.r-version }}
+    - name: Generate cache key
+      id: cache-key
+      run: |
+        echo "value=r-${{ matrix.r-version }}-packages-$(find . -name "DESCRIPTION" -exec cat {} \; | md5sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
-    - name: Set up R dependencies (pak)
-      uses: r-lib/actions/setup-r-dependencies@v2
-      with:
-        use-public-rspm: true
-        extra-packages: |
-          any::devtools
-          any::BiocManager
-          any::knitr
-          any::rmarkdown
-          any::testthat
-          any::usethis
-          any::yaml
-          any::stringr
-          any::dplyr
-          any::rlist
-          bioc::GenomicRanges
-          bioc::Gviz
-          bioc::orthogene
-        update: false
-
-    - name: Cache all R packages and system dependencies
-      uses: actions/cache@v3
+    - name: Cache R packages
+      uses: actions/cache@v4
       with:
         path: |
           ${{ env.R_LIBS_USER }}
-        key: ${{ runner.os }}-r-${{ matrix.r-version }}-all-deps-${{ hashFiles('**/DESCRIPTION') }}-${{ hashFiles('**/NAMESPACE') }}
+          ${{ env.R_LIBS_SITE }}
+        key: r-${{ matrix.r-version }}-packages-${{ hashFiles('**/DESCRIPTION') }}
         restore-keys: |
-          ${{ runner.os }}-r-${{ matrix.r-version }}-all-deps-${{ hashFiles('**/DESCRIPTION') }}-
-          ${{ runner.os }}-r-${{ matrix.r-version }}-all-deps-
+          r-${{ matrix.r-version }}-packages-
 
-    - name: Install system dependencies
+    - name: Set up R with performance monitoring
       run: |
+        # Resource monitoring function for individual steps with performance tracking
+        metrics() {
+          local step_name="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          # Initialize performance tracking file if it doesn't exist
+          local perf_file="/tmp/performance_metrics.txt"
+          if [ ! -f "$perf_file" ]; then
+            echo "step_name,timestamp,cpu_usage,memory_usage,swap_usage,disk_usage,process_count,r_processes,top_mem,top_cpu" > "$perf_file"
+          fi
+          
+          # Capture current metrics
+          local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')
+          local mem_usage=$(free | grep Mem | awk '{printf "%.1f", $3/$2 * 100.0}' 2>/dev/null || echo 'N/A')
+          local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f", $3/$2 * 100.0; else print "0"}' 2>/dev/null || echo 'N/A')
+          local disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//' || echo 'N/A')
+          local process_count=$(ps aux | wc -l)
+          local r_processes=$(ps aux | grep -v grep | grep -c '^R' || echo '0')
+          local top_mem=$(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3}' | sed 's/%//' || echo 'N/A')
+          local top_cpu=$(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3}' | sed 's/%//' || echo 'N/A')
+          
+          # Store metrics for averaging
+          echo "$step_name,$timestamp,$cpu_usage,$mem_usage,$swap_usage,$disk_usage,$process_count,$r_processes,$top_mem,$top_cpu" >> "$perf_file"
+          
+          # Calculate averages for this step
+          local step_metrics=$(grep "^$step_name," "$perf_file" | tail -5)
+          local avg_cpu=$(echo "$step_metrics" | awk -F',' '{sum+=$3; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_mem=$(echo "$step_metrics" | awk -F',' '{sum+=$4; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_swap=$(echo "$step_metrics" | awk -F',' '{sum+=$5; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_disk=$(echo "$step_metrics" | awk -F',' '{sum+=$6; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_processes=$(echo "$step_metrics" | awk -F',' '{sum+=$7; count++} END {if(count>0) printf "%.0f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_r_processes=$(echo "$step_metrics" | awk -F',' '{sum+=$8; count++} END {if(count>0) printf "%.0f", sum/count; else print "N/A"}' 2>/dev/null)
+          
+          echo "=========================================="
+          echo "📊 PERFORMANCE METRICS - $step_name"
+          echo "⏰ Timestamp: $timestamp"
+          echo "=========================================="
+          
+          # System Information
+          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
+          echo "⏱️  UPTIME: $(uptime)"
+          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
+          
+          # CPU Performance (Current + Average)
+          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
+          echo "⚡ CPU USAGE: Current: ${cpu_usage}% | Average: ${avg_cpu}%"
+          
+          # Memory Performance (Current + Average)
+          if [ "$mem_usage" != "N/A" ]; then
+            echo "💾 MEMORY: Current: ${mem_usage}% | Average: ${avg_mem}%"
+          else
+            echo "💾 MEMORY: Current: N/A | Average: ${avg_mem}%"
+          fi
+          
+          if [ "$swap_usage" != "N/A" ]; then
+            echo "💾 SWAP: Current: ${swap_usage}% | Average: ${avg_swap}%"
+          else
+            echo "💾 SWAP: Current: N/A | Average: ${avg_swap}%"
+          fi
+          
+          # Disk Performance (Current + Average)
+          if [ "$disk_usage" != "N/A" ]; then
+            echo "💿 DISK: Current: ${disk_usage}% | Average: ${avg_disk}%"
+          else
+            echo "💿 DISK: Current: N/A | Average: ${avg_disk}%"
+          fi
+          
+          # Process Performance (Current + Average)
+          echo "⚡ PROCESSES: Current: ${process_count} total | Average: ${avg_processes} total"
+          echo "⚡ R PROCESSES: Current: ${r_processes} running | Average: ${avg_r_processes} running"
+          echo "🔝 TOP MEM: $top_mem%"
+          echo "🔝 TOP CPU: $top_cpu%"
+          
+          # Performance Trends
+          echo "📈 PERFORMANCE TRENDS (Last 5 measurements):"
+          echo "  CPU: $(echo "$step_metrics" | awk -F',' '{print $3}' | tr '\n' ' ' | sed 's/ $//')"
+          echo "  Memory: $(echo "$step_metrics" | awk -F',' '{print $4}' | tr '\n' ' ' | sed 's/ $//')"
+          echo "  Processes: $(echo "$step_metrics" | awk -F',' '{print $7}' | tr '\n' ' ' | sed 's/ $//')"
+          
+          echo "=========================================="
+        }
+        
+        # Start timing for this step
+        r_setup_start_time=$(date +%s)
+        
+        echo "📊 Pre-R setup resource status:"
+        metrics "PRE-R-SETUP"
+        
+        echo "🚀 Setting up R version ${{ matrix.r-version }}..."
+        
+        # Install R using the same method as r-lib/actions/setup-r@v2
+        sudo apt-get update
+        sudo apt-get install -y software-properties-common
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+        sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
+        sudo apt-get update
+        
+        if [ "${{ matrix.r-version }}" = "latest" ]; then
+          sudo apt-get install -y r-base r-base-dev
+        else
+          sudo apt-get install -y r-base=${{ matrix.r-version }}* r-base-dev=${{ matrix.r-version }}*
+        fi
+        
+        # Verify R installation
+        echo "🔍 Verifying R installation..."
+        if command -v R >/dev/null 2>&1; then
+          echo "✅ R is installed and available"
+          R --version | head -1
+        else
+          echo "❌ ERROR: R is not installed or not in PATH"
+          exit 1
+        fi
+        
+        # Check R version
+        echo "📋 R version details:"
+        R --version
+        
+        # Calculate step duration
+        r_setup_end_time=$(date +%s)
+        r_setup_duration=$((r_setup_end_time - r_setup_start_time))
+        
+        echo "📊 Post-R setup resource status:"
+        metrics "POST-R-SETUP"
+        
+        # Step performance summary
+        echo "⏱️  STEP PERFORMANCE SUMMARY:"
+        echo "  R Setup Duration: ${r_setup_duration} seconds"
+        echo "  Start Time: $(date -d @$r_setup_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
+
+    - name: Set up R dependencies with performance monitoring
+      run: |
+        # Resource monitoring function for individual steps with performance tracking
+        metrics() {
+          local step_name="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          # Initialize performance tracking file if it doesn't exist
+          local perf_file="/tmp/performance_metrics.txt"
+          if [ ! -f "$perf_file" ]; then
+            echo "step_name,timestamp,cpu_usage,memory_usage,swap_usage,disk_usage,process_count,r_processes,top_mem,top_cpu" > "$perf_file"
+          fi
+          
+          # Capture current metrics
+          local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')
+          local mem_usage=$(free | grep Mem | awk '{printf "%.1f", $3/$2 * 100.0}' 2>/dev/null || echo 'N/A')
+          local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f", $3/$2 * 100.0; else print "0"}' 2>/dev/null || echo 'N/A')
+          local disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//' || echo 'N/A')
+          local process_count=$(ps aux | wc -l)
+          local r_processes=$(ps aux | grep -v grep | grep -c '^R' || echo '0')
+          local top_mem=$(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3}' | sed 's/%//' || echo 'N/A')
+          local top_cpu=$(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3}' | sed 's/%//' || echo 'N/A')
+          
+          # Store metrics for averaging
+          echo "$step_name,$timestamp,$cpu_usage,$mem_usage,$swap_usage,$disk_usage,$process_count,$r_processes,$top_mem,$top_cpu" >> "$perf_file"
+          
+          # Calculate averages for this step
+          local step_metrics=$(grep "^$step_name," "$perf_file" | tail -5)
+          local avg_cpu=$(echo "$step_metrics" | awk -F',' '{sum+=$3; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_mem=$(echo "$step_metrics" | awk -F',' '{sum+=$4; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_swap=$(echo "$step_metrics" | awk -F',' '{sum+=$5; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_disk=$(echo "$step_metrics" | awk -F',' '{sum+=$6; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_processes=$(echo "$step_metrics" | awk -F',' '{sum+=$7; count++} END {if(count>0) printf "%.0f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_r_processes=$(echo "$step_metrics" | awk -F',' '{sum+=$8; count++} END {if(count>0) printf "%.0f", sum/count; else print "N/A"}' 2>/dev/null)
+          
+          echo "=========================================="
+          echo "📊 PERFORMANCE METRICS - $step_name"
+          echo "⏰ Timestamp: $timestamp"
+          echo "=========================================="
+          
+          # System Information
+          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
+          echo "⏱️  UPTIME: $(uptime)"
+          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
+          
+          # CPU Performance (Current + Average)
+          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
+          echo "⚡ CPU USAGE: Current: ${cpu_usage}% | Average: ${avg_cpu}%"
+          
+          # Memory Performance (Current + Average)
+          if [ "$mem_usage" != "N/A" ]; then
+            echo "💾 MEMORY: Current: ${mem_usage}% | Average: ${avg_mem}%"
+          else
+            echo "💾 MEMORY: Current: N/A | Average: ${avg_mem}%"
+          fi
+          
+          if [ "$swap_usage" != "N/A" ]; then
+            echo "💾 SWAP: Current: ${swap_usage}% | Average: ${avg_swap}%"
+          else
+            echo "💾 SWAP: Current: N/A | Average: ${avg_swap}%"
+          fi
+          
+          # Disk Performance (Current + Average)
+          if [ "$disk_usage" != "N/A" ]; then
+            echo "💿 DISK: Current: ${disk_usage}% | Average: ${avg_disk}%"
+          else
+            echo "💿 DISK: Current: N/A | Average: ${avg_disk}%"
+          fi
+          
+          # Process Performance (Current + Average)
+          echo "⚡ PROCESSES: Current: ${process_count} total | Average: ${avg_processes} total"
+          echo "⚡ R PROCESSES: Current: ${r_processes} running | Average: ${avg_r_processes} running"
+          echo "🔝 TOP MEM: $top_mem%"
+          echo "🔝 TOP CPU: $top_cpu%"
+          
+          # Performance Trends
+          echo "📈 PERFORMANCE TRENDS (Last 5 measurements):"
+          echo "  CPU: $(echo "$step_metrics" | awk -F',' '{print $3}' | tr '\n' ' ' | sed 's/ $//')"
+          echo "  Memory: $(echo "$step_metrics" | awk -F',' '{print $4}' | tr '\n' ' ' | sed 's/ $//')"
+          echo "  Processes: $(echo "$step_metrics" | awk -F',' '{print $7}' | tr '\n' ' ' | sed 's/ $//')"
+          
+          echo "=========================================="
+        }
+        
+        # Start timing for this step
+        r_deps_start_time=$(date +%s)
+        
+        echo "📊 Pre-R dependencies setup resource status:"
+        metrics "PRE-R-DEPENDENCIES-SETUP"
+        
+        echo "🚀 Setting up R dependencies with pak..."
+        
+        # Set up user-writable R library paths
+        mkdir -p "$R_LIBS_USER"
+        mkdir -p "$R_LIBS_SITE"
+        
+        echo "📁 R library paths:"
+        echo "  R_LIBS_USER: $R_LIBS_USER"
+        echo "  R_LIBS_SITE: $R_LIBS_SITE"
+        
+        # Check cache status
+        echo "🔍 Checking cache status..."
+        if [ -d "$R_LIBS_USER" ] && [ "$(ls -A $R_LIBS_USER 2>/dev/null)" ]; then
+          echo "✅ Cache directory exists with content: $R_LIBS_USER"
+          echo "📊 Cache directory size: $(du -sh "$R_LIBS_USER" 2>/dev/null || echo 'Unknown')"
+          echo "📁 Cached packages: $(ls "$R_LIBS_USER" | wc -l) packages found"
+        else
+          echo "⚠️  Cache directory is empty or doesn't exist"
+        fi
+        
+        # Function to check if package is available
+        check_package() {
+          local pkg="$1"
+          R -e "
+          .libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE'))
+          if (requireNamespace('$pkg', quietly = TRUE)) {
+            cat('$pkg: AVAILABLE\n')
+            quit(status = 0)
+          } else {
+            cat('$pkg: NOT_AVAILABLE\n')
+            quit(status = 1)
+          }
+          " 2>/dev/null
+          return $?
+        }
+        
+        # Function to install package if not available
+        install_if_needed() {
+          local pkg="$1"
+          if check_package "$pkg"; then
+            echo "✅ $pkg is already available, skipping installation"
+          else
+            echo "📦 Installing $pkg..."
+            R -e "
+            .libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE'))
+            install.packages('$pkg', repos = 'https://cran.rstudio.com/', lib = '$R_LIBS_USER')
+            "
+          fi
+        }
+        
+        # Check and install pak if needed
+        echo "🔍 Checking if pak is available..."
+        if check_package "pak"; then
+          echo "✅ pak is already available"
+        else
+          echo "📦 Installing pak..."
+          R -e "
+          .libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE'))
+          install.packages('pak', repos = 'https://r-lib.github.io/p/pak/stable/', lib = '$R_LIBS_USER')
+          "
+        fi
+        
+        # List of packages to check and install if needed
+        # Note: These are script-level variables (not local to any function)
+        packages=(
+          'devtools'
+          'BiocManager' 
+          'knitr'
+          'rmarkdown'
+          'testthat'
+          'usethis'
+          'yaml'
+          'stringr'
+          'dplyr'
+          'rlist'
+        )
+        
+        echo "🔍 Checking package availability..."
+        packages_to_install=()
+        
+        for pkg in "${packages[@]}"; do
+          if check_package "$pkg"; then
+            echo "✅ $pkg is already available"
+          else
+            echo "❌ $pkg is NOT available, will install"
+            packages_to_install+=("$pkg")
+          fi
+        done
+        
+        # Install missing packages using pak if any are needed
+        if [ ${#packages_to_install[@]} -gt 0 ]; then
+          echo "📦 Installing missing packages: ${packages_to_install[*]}"
+          R -e "
+          .libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE'))
+          pak::pkg_install(c($(printf "'%s'," "${packages_to_install[@]}" | sed 's/,$//')), ask = FALSE, lib = '$R_LIBS_USER')
+          "
+        else
+          echo "🎉 All packages are already available! No installation needed."
+        fi
+        
+        # Check and install Bioconductor packages if needed
+        echo "🔍 Checking Bioconductor packages..."
+        bioc_packages=('GenomicRanges' 'Gviz' 'orthogene')
+        bioc_to_install=()
+        
+        for pkg in "${bioc_packages[@]}"; do
+          if check_package "$pkg"; then
+            echo "✅ $pkg is already available"
+          else
+            echo "❌ $pkg is NOT available, will install"
+            bioc_to_install+=("$pkg")
+          fi
+        done
+        
+        # Install missing Bioconductor packages if any are needed
+        if [ ${#bioc_to_install[@]} -gt 0 ]; then
+          echo "📦 Installing missing Bioconductor packages: ${bioc_to_install[*]}"
+          R -e "
+          .libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE'))
+          if (!requireNamespace('BiocManager', quietly = TRUE)) {
+            install.packages('BiocManager', lib = '$R_LIBS_USER')
+          }
+          BiocManager::install(c($(printf "'%s'," "${bioc_to_install[@]}" | sed 's/,$//')), ask = FALSE, lib = '$R_LIBS_USER')
+          "
+        else
+          echo "🎉 All Bioconductor packages are already available! No installation needed."
+        fi
+        
+        # Verify R packages installation
+        echo "🔍 Verifying R packages installation..."
+        
+        # Check if pak is available
+        if R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (!requireNamespace('pak', quietly = TRUE)) { cat('pak not found\n'); quit(status = 1) } else { cat('pak is available\n') }" 2>/dev/null; then
+          echo "✅ pak package is available"
+        else
+          echo "❌ ERROR: pak package is not available"
+          exit 1
+        fi
+        
+        # List installed packages
+        echo "📋 Installed R packages:"
+        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); installed.packages()[,c('Package', 'Version')]" 2>/dev/null | head -20 || echo "Could not list packages"
+        
+        # Check all required packages
+        echo "🔍 Final verification of all required packages:"
+        all_packages=("${packages[@]}" "${bioc_packages[@]}")
+        missing_packages=()
+        
+        for pkg in "${all_packages[@]}"; do
+          if R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (!requireNamespace('$pkg', quietly = TRUE)) { cat('$pkg: NOT FOUND\n'); quit(status = 1) } else { cat('$pkg: OK\n') }" 2>/dev/null; then
+            echo "✅ $pkg: Available"
+          else
+            echo "❌ $pkg: Not available"
+            missing_packages+=("$pkg")
+          fi
+        done
+        
+        # Summary of installation
+        echo "📊 INSTALLATION SUMMARY:"
+        if [ ${#packages_to_install[@]} -gt 0 ]; then
+          echo "  📦 Newly installed packages: ${packages_to_install[*]}"
+        fi
+        if [ ${#bioc_to_install[@]} -gt 0 ]; then
+          echo "  📦 Newly installed Bioconductor packages: ${bioc_to_install[*]}"
+        fi
+        if [ ${#packages_to_install[@]} -eq 0 ] && [ ${#bioc_to_install[@]} -eq 0 ]; then
+          echo "  🎉 No new packages were installed - all were already available"
+        fi
+        
+        # Exit if any packages are still missing
+        if [ ${#missing_packages[@]} -gt 0 ]; then
+          echo "❌ ERROR: The following packages are still missing: ${missing_packages[*]}"
+          exit 1
+        fi
+        
+        # Calculate step duration
+        r_deps_end_time=$(date +%s)
+        r_deps_duration=$((r_deps_end_time - r_deps_start_time))
+        
+        echo "📊 Post-R dependencies setup resource status:"
+        metrics "POST-R-DEPENDENCIES-SETUP"
+        
+        # Step performance summary
+        echo "⏱️  STEP PERFORMANCE SUMMARY:"
+        echo "  R Dependencies Setup Duration: ${r_deps_duration} seconds"
+        echo "  Start Time: $(date -d @$r_deps_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
+
+    - name: Install system dependencies and TeX Live
+      run: |
+        # Resource monitoring function for individual steps with performance tracking
+        metrics() {
+          local step_name="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          # Initialize performance tracking file if it doesn't exist
+          local perf_file="/tmp/performance_metrics.txt"
+          if [ ! -f "$perf_file" ]; then
+            echo "step_name,timestamp,cpu_usage,memory_usage,swap_usage,disk_usage,process_count,r_processes,top_mem,top_cpu" > "$perf_file"
+          fi
+          
+          # Capture current metrics
+          local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')
+          local mem_usage=$(free | grep Mem | awk '{printf "%.1f", $3/$2 * 100.0}' 2>/dev/null || echo 'N/A')
+          local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f", $3/$2 * 100.0; else print "0"}' 2>/dev/null || echo 'N/A')
+          local disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//' || echo 'N/A')
+          local process_count=$(ps aux | wc -l)
+          local r_processes=$(ps aux | grep -v grep | grep -c '^R' || echo '0')
+          local top_mem=$(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3}' | sed 's/%//' || echo 'N/A')
+          local top_cpu=$(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3}' | sed 's/%//' || echo 'N/A')
+          
+          # Store metrics for averaging
+          echo "$step_name,$timestamp,$cpu_usage,$mem_usage,$swap_usage,$disk_usage,$process_count,$r_processes,$top_mem,$top_cpu" >> "$perf_file"
+          
+          # Calculate averages for this step
+          local step_metrics=$(grep "^$step_name," "$perf_file" | tail -5)
+          local avg_cpu=$(echo "$step_metrics" | awk -F',' '{sum+=$3; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_mem=$(echo "$step_metrics" | awk -F',' '{sum+=$4; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_swap=$(echo "$step_metrics" | awk -F',' '{sum+=$5; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_disk=$(echo "$step_metrics" | awk -F',' '{sum+=$6; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_processes=$(echo "$step_metrics" | awk -F',' '{sum+=$7; count++} END {if(count>0) printf "%.0f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_r_processes=$(echo "$step_metrics" | awk -F',' '{sum+=$8; count++} END {if(count>0) printf "%.0f", sum/count; else print "N/A"}' 2>/dev/null)
+          
+          echo "=========================================="
+          echo "📊 PERFORMANCE METRICS - $step_name"
+          echo "⏰ Timestamp: $timestamp"
+          echo "=========================================="
+          
+          # System Information
+          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
+          echo "⏱️  UPTIME: $(uptime)"
+          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
+          
+          # CPU Performance (Current + Average)
+          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
+          echo "⚡ CPU USAGE: Current: ${cpu_usage}% | Average: ${avg_cpu}%"
+          
+          # Memory Performance (Current + Average)
+          if [ "$mem_usage" != "N/A" ]; then
+            echo "💾 MEMORY: Current: ${mem_usage}% | Average: ${avg_mem}%"
+          else
+            echo "💾 MEMORY: Current: N/A | Average: ${avg_mem}%"
+          fi
+          
+          if [ "$swap_usage" != "N/A" ]; then
+            echo "💾 SWAP: Current: ${swap_usage}% | Average: ${avg_swap}%"
+          else
+            echo "💾 SWAP: Current: N/A | Average: ${avg_swap}%"
+          fi
+          
+          # Disk Performance (Current + Average)
+          if [ "$disk_usage" != "N/A" ]; then
+            echo "💿 DISK: Current: ${disk_usage}% | Average: ${avg_disk}%"
+          fi
+          
+          # Process Performance (Current + Average)
+          echo "⚡ PROCESSES: Current: ${process_count} total | Average: ${avg_processes} total"
+          echo "⚡ R PROCESSES: Current: ${r_processes} running | Average: ${avg_r_processes} running"
+          echo "🔝 TOP MEM: $top_mem%"
+          echo "🔝 TOP CPU: $top_cpu%"
+          
+          # Performance Trends
+          echo "📈 PERFORMANCE TRENDS (Last 5 measurements):"
+          echo "  CPU: $(echo "$step_metrics" | awk -F',' '{print $3}' | tr '\n' ' ' | sed 's/ $//')"
+          echo "  Memory: $(echo "$step_metrics" | awk -F',' '{print $4}' | tr '\n' ' ' | sed 's/ $//')"
+          echo "  Processes: $(echo "$step_metrics" | awk -F',' '{print $7}' | tr '\n' ' ' | sed 's/ $//')"
+          
+          echo "=========================================="
+        }
+        
+        # Start timing for this step
+        step_start_time=$(date +%s)
+        
+        echo "📊 Pre-system dependencies and TeX Live resource status:"
+        metrics "PRE-SYSTEM-DEPENDENCIES-TEX"
+        
         echo "Installing system dependencies..."
         sudo apt-get update
         sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libnlopt-dev
-        echo "✅ System dependencies installed successfully!"
+        
+        echo "Installing TeX Live (LaTeX) for documentation generation..."
+        sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra texlive-latex-recommended
+        
+        # Calculate step duration
+        step_end_time=$(date +%s)
+        step_duration=$((step_end_time - step_start_time))
+        
+        echo "✅ System dependencies and TeX Live installed successfully!"
+        echo "📊 Post-system dependencies and TeX Live resource status:"
+        metrics "POST-SYSTEM-DEPENDENCIES-TEX"
+        
+        # Step performance summary
+        echo "⏱️  STEP PERFORMANCE SUMMARY:"
+        echo "  Step Duration: ${step_duration} seconds"
+        echo "  Start Time: $(date -d @$step_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
-    - name: Install and verify R packages
+  build:
+    needs: setup-dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        r-version: ['latest']
+    env:
+      R_LIBS_USER: ${{ github.workspace }}/Rlibs
+      R_LIBS_SITE: ${{ github.workspace }}/Rlibs-site
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Restore R packages cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.R_LIBS_USER }}
+          ${{ env.R_LIBS_SITE }}
+        key: ${{ needs.setup-dependencies.outputs.cache-key }}
+        restore-keys: |
+          r-${{ matrix.r-version }}-packages-
+
+    - name: Set up R (minimal)
       run: |
-        # Function to check package availability with better error handling
-        check_package() {
-          local pkg=$1
-          local result
-          result=$(Rscript -e "requireNamespace('$pkg', quietly = TRUE)" 2>&1)
-          if [ $? -eq 0 ]; then
-            echo "✅ Package '$pkg' is available"
-            return 0
-          else
-            echo "❌ Package '$pkg' is NOT available: $result"
-            return 1
-          fi
-        }
+        # Install R using the same method as r-lib/actions/setup-r@v2
+        sudo apt-get update
+        sudo apt-get install -y software-properties-common
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+        sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
+        sudo apt-get update
         
-        # Function to install CRAN package with error handling
-        install_cran_package() {
-          local pkg=$1
-          echo "Installing CRAN package: $pkg"
-          local result
-          result=$(Rscript -e "install.packages('$pkg', repos = 'https://cloud.r-project.org')" 2>&1)
-          if [ $? -eq 0 ]; then
-            echo "✅ Successfully installed CRAN package: $pkg"
-            return 0
-          else
-            echo "❌ Failed to install CRAN package: $pkg"
-            echo "Error: $result"
-            return 1
-          fi
-        }
-        
-        # Install CRAN packages if not available
-        echo "=== Installing CRAN packages ==="
-        cran_packages=("devtools" "knitr" "rmarkdown" "testthat" "usethis")
-        cran_install_needed=false
-        
-        for pkg in "${cran_packages[@]}"; do
-          if ! check_package "$pkg"; then
-            cran_install_needed=true
-            break
-          fi
-        done
-        
-        if [ "$cran_install_needed" = true ]; then
-          echo "Installing CRAN packages..."
-          for pkg in "${cran_packages[@]}"; do
-            if ! check_package "$pkg"; then
-              if ! install_cran_package "$pkg"; then
-                echo "❌ Critical: Failed to install CRAN package: $pkg"
-                exit 1
-              fi
-            fi
-          done
+        if [ "${{ matrix.r-version }}" = "latest" ]; then
+          sudo apt-get install -y r-base r-base-dev
         else
-          echo "✅ All CRAN packages available from cache"
+          sudo apt-get install -y r-base=${{ matrix.r-version }}* r-base-dev=${{ matrix.r-version }}*
         fi
         
-        # Install Bioconductor packages if not available
-        echo "=== Installing Bioconductor packages ==="
-        if ! check_package "GenomicRanges"; then
-          echo "Installing Bioconductor packages..."
-          
-          # Install BiocManager first if needed
-          if ! check_package "BiocManager"; then
-            echo "Installing BiocManager..."
-            if ! install_cran_package "BiocManager"; then
-              echo "❌ Critical: Failed to install BiocManager"
-              exit 1
-            fi
-          fi
-          
-          # Install Bioconductor packages
-          echo "Installing Bioconductor packages via BiocManager..."
-          local result
-          result=$(Rscript -e 'BiocManager::install(c("GenomicRanges", "Gviz", "orthogene"), ask = FALSE, update = FALSE)' 2>&1)
-          if [ $? -eq 0 ]; then
-            echo "✅ Successfully installed Bioconductor packages"
-          else
-            echo "❌ Failed to install Bioconductor packages"
-            echo "Error: $result"
-            exit 1
-          fi
+        # Set up user-writable R library paths
+        mkdir -p "$R_LIBS_USER"
+        mkdir -p "$R_LIBS_SITE"
+        
+        echo "📁 R library paths configured:"
+        echo "  R_LIBS_USER: $R_LIBS_USER"
+        echo "  R_LIBS_SITE: $R_LIBS_SITE"
+        
+        # Verify R installation
+        echo "🔍 Verifying R installation..."
+        if command -v R >/dev/null 2>&1; then
+          echo "✅ R is installed and available"
+          R --version | head -1
         else
-          echo "✅ Bioconductor packages available from cache"
+          echo "❌ ERROR: R is not installed or not in PATH"
+          exit 1
         fi
         
-        # Install package dependencies if not available
-        echo "=== Installing package dependencies ==="
-        if ! check_package "dplyr"; then
-          echo "Installing package dependencies via devtools..."
-          local result
-          result=$(Rscript -e 'library(devtools); install_deps(dependencies = TRUE, upgrade = "never")' 2>&1)
-          if [ $? -eq 0 ]; then
-            echo "✅ Successfully installed package dependencies"
-          else
-            echo "❌ Failed to install package dependencies"
-            echo "Error: $result"
-            exit 1
-          fi
+        # Verify R can access cached packages
+        echo "🔍 Verifying cached packages accessibility..."
+        if [ -d "$R_LIBS_USER" ] && [ "$(ls -A $R_LIBS_USER 2>/dev/null)" ]; then
+          echo "✅ Cached packages found: $(ls "$R_LIBS_USER" | wc -l) packages"
+          echo "📋 Available packages:"
+          ls "$R_LIBS_USER" | head -10
         else
-          echo "✅ Package dependencies available from cache"
+          echo "⚠️  No cached packages found in $R_LIBS_USER"
         fi
-        
-        # Verify all critical packages are available
-        echo "=== Verifying package availability ==="
-        required_pkgs=("devtools" "GenomicRanges" "Gviz" "dplyr" "stringr" "grid" "yaml" "rlist")
-        missing_pkgs=()
-        
-        for pkg in "${required_pkgs[@]}"; do
-          if ! check_package "$pkg"; then
-            missing_pkgs+=("$pkg")
-          fi
-        done
-        
-        if [ ${#missing_pkgs[@]} -gt 0 ]; then
-          echo "❌ Critical: Missing packages: ${missing_pkgs[*]}"
-          echo "Attempting to install missing packages..."
-          
-          for pkg in "${missing_pkgs[@]}"; do
-            if ! check_package "$pkg"; then
-              echo "❌ Critical: Package '$pkg' still not available after installation attempts"
-              exit 1
-            fi
-          done
-        fi
-        
-        echo "✅ All required packages are available"
-        
-        # Show environment information for debugging
-        echo "=== Environment information ==="
-        echo "R_LIBS_USER: $R_LIBS_USER"
-        echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-        echo "Current directory: $(pwd)"
-        echo "R version: $(Rscript -e 'cat(R.version.string)')"
-        
-        echo "✅ All R packages installed and verified successfully!"
 
-    - name: Run build script on develop branch
+    # Dependencies are installed via setup-dependencies job
+
+
+    - name: Run build script on develop branch (Safe Mode - No Commits)
       if: github.ref == 'refs/heads/develop'
       run: |
         set -euxo pipefail
+        
+        # Resource monitoring function for individual steps with performance tracking
+        metrics() {
+          local step_name="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          
+          # Initialize performance tracking file if it doesn't exist
+          local perf_file="/tmp/performance_metrics.txt"
+          if [ ! -f "$perf_file" ]; then
+            echo "step_name,timestamp,cpu_usage,memory_usage,swap_usage,disk_usage,process_count,r_processes,top_mem,top_cpu" > "$perf_file"
+          fi
+          
+          # Capture current metrics
+          local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')
+          local mem_usage=$(free | grep Mem | awk '{printf "%.1f", $3/$2 * 100.0}' 2>/dev/null || echo 'N/A')
+          local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f", $3/$2 * 100.0; else print "0"}' 2>/dev/null || echo 'N/A')
+          local disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//' || echo 'N/A')
+          local process_count=$(ps aux | wc -l)
+          local r_processes=$(ps aux | grep -v grep | grep -c '^R' || echo '0')
+          local top_mem=$(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3}' | sed 's/%//' || echo 'N/A')
+          local top_cpu=$(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3}' | sed 's/%//' || echo 'N/A')
+          
+          # Store metrics for averaging
+          echo "$step_name,$timestamp,$cpu_usage,$mem_usage,$swap_usage,$disk_usage,$process_count,$r_processes,$top_mem,$top_cpu" >> "$perf_file"
+          
+          # Calculate averages for this step
+          local step_metrics=$(grep "^$step_name," "$perf_file" | tail -5)
+          local avg_cpu=$(echo "$step_metrics" | awk -F',' '{sum+=$3; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_mem=$(echo "$step_metrics" | awk -F',' '{sum+=$4; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_swap=$(echo "$step_metrics" | awk -F',' '{sum+=$5; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_disk=$(echo "$step_metrics" | awk -F',' '{sum+=$6; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_processes=$(echo "$step_metrics" | awk -F',' '{sum+=$7; count++} END {if(count>0) printf "%.0f", sum/count; else print "N/A"}' 2>/dev/null)
+          local avg_r_processes=$(echo "$step_metrics" | awk -F',' '{sum+=$8; count++} END {if(count>0) printf "%.0f", sum/count; else print "N/A"}' 2>/dev/null)
+          
+          echo "=========================================="
+          echo "📊 PERFORMANCE METRICS - $step_name"
+          echo "⏰ Timestamp: $timestamp"
+          echo "=========================================="
+          
+          # System Information
+          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
+          echo "⏱️  UPTIME: $(uptime)"
+          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
+          
+          # CPU Performance (Current + Average)
+          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
+          echo "⚡ CPU USAGE: Current: ${cpu_usage}% | Average: ${avg_cpu}%"
+          
+          # Memory Performance (Current + Average)
+          if [ "$mem_usage" != "N/A" ]; then
+            echo "💾 MEMORY: Current: ${mem_usage}% | Average: ${avg_mem}%"
+          else
+            echo "💾 MEMORY: Current: N/A | Average: ${avg_mem}%"
+          fi
+          
+          if [ "$swap_usage" != "N/A" ]; then
+            echo "💾 SWAP: Current: ${swap_usage}% | Average: ${avg_swap}%"
+          else
+            echo "💾 SWAP: Current: N/A | Average: ${avg_swap}%"
+          fi
+          
+          # Disk Performance (Current + Average)
+          if [ "$disk_usage" != "N/A" ]; then
+            echo "💿 DISK: Current: ${disk_usage}% | Average: ${avg_disk}%"
+          else
+            echo "💿 DISK: Current: N/A | Average: ${avg_disk}%"
+          fi
+          
+          # Process Performance (Current + Average)
+          echo "⚡ PROCESSES: Current: ${process_count} total | Average: ${avg_processes} total"
+          echo "⚡ R PROCESSES: Current: ${r_processes} running | Average: ${avg_r_processes} running"
+          echo "🔝 TOP MEM: $top_mem%"
+          echo "🔝 TOP CPU: $top_cpu%"
+          
+          # Performance Trends
+          echo "📈 PERFORMANCE TRENDS (Last 5 measurements):"
+          echo "  CPU: $(echo "$step_metrics" | awk -F',' '{print $3}' | tr '\n' ' ' | sed 's/ $//')"
+          echo "  Memory: $(echo "$step_metrics" | awk -F',' '{print $4}' | tr '\n' ' ' | sed 's/ $//')"
+          echo "  Processes: $(echo "$step_metrics" | awk -F',' '{print $7}' | tr '\n' ' ' | sed 's/ $//')"
+          
+          echo "=========================================="
+        }
+        
+        # Start timing for this step
+        build_start_time=$(date +%s)
+        
+        echo "📊 Pre-build resource status:"
+        metrics "PRE-BUILD"
+        
         echo "Starting build process..."
+        echo "🔒 BUILD JOB: This job will compile and test the R package"
+        echo "🚫 NO COMMITS: Commits and pushes are disabled during build"
+        echo "📦 DEPLOY LATER: Changes will be committed by the deploy job"
         echo "Current directory: $(pwd)"
         echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
         echo "Contents of current directory:"
@@ -220,69 +740,368 @@ jobs:
         test -f DESCRIPTION && cat DESCRIPTION || echo "DESCRIPTION not found"
         echo "Package NAMESPACE file:"
         test -f NAMESPACE && cat NAMESPACE || echo "NAMESPACE not found"
-        echo "Running build script..."
-        if [ -x .scripts/R_build.sh ]; then
-          bash -x .scripts/R_build.sh
-        elif [ -f .scripts/R_build.sh ]; then
-          bash -x .scripts/R_build.sh
-        else
-          echo ".scripts/R_build.sh not found" >&2
-          exit 127
-        fi
+        
+        # Configure git to prevent commits during build
+        echo "🔒 Configuring git to prevent commits during build..."
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        
+        # Create a temporary build script that prevents commits/pushes
+        echo "📝 Creating safe build script..."
+        cat > .scripts/R_build_safe.sh << 'EOF'
+        #!/bin/bash
+        set -euxo pipefail
+        
+        echo "🔒 SAFE BUILD MODE: Preventing commits and pushes"
+        
+        # Override git commands to prevent commits
+        git() {
+          case "$1" in
+            commit|push|add)
+              echo "🚫 BLOCKED: git $* - Commits and pushes are disabled during build"
+              echo "   This will be handled by the deploy job instead"
+              return 0
+              ;;
+            *)
+              command git "$@"
+              ;;
+          esac
+        }
+        
+        # Export the function so it's available to subshells
+        export -f git
+        
+        # Run the original build script
+        echo "🚀 Running original build script in safe mode..."
+        bash -x .scripts/R_build.sh
+        EOF
+        
+        chmod +x .scripts/R_build_safe.sh
+        
+        echo "Running safe build script..."
+        bash -x .scripts/R_build_safe.sh
+        
+        # Calculate step duration
+        build_end_time=$(date +%s)
+        build_duration=$((build_end_time - build_start_time))
+        
+        echo "📊 Post-build resource status:"
+        metrics "POST-BUILD"
+        
+        # Build summary
+        echo "🎯 BUILD SUMMARY:"
+        echo "  ✅ Package compilation completed"
+        echo "  ✅ Tests executed successfully"
+        echo "  🚫 No commits made (as expected)"
+        echo "  📦 Ready for deploy job to handle commits"
+        
+        # Step performance summary
+        echo "⏱️  STEP PERFORMANCE SUMMARY:"
+        echo "  Build Duration: ${build_duration} seconds"
+        echo "  Start Time: $(date -d @$build_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
+
 
     - name: Print branch information
       run: |
+        # Resource monitoring function for individual steps
+        metrics() {
+          local step_name="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE METRICS - $step_name"
+          echo "⏰ Timestamp: $timestamp"
+          echo "=========================================="
+          
+          # System Information
+          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
+          echo "⏱️  UPTIME: $(uptime)"
+          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
+          
+          # CPU Performance
+          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
+          echo "⚡ CPU USAGE: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')%"
+          
+          # Memory Performance
+          if command -v free >/dev/null 2>&1; then
+            local mem_usage=$(free | grep Mem | awk '{printf "%.1f%%", $3/$2 * 100.0}')
+            local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f%%", $3/$2 * 100.0; else print "0%"}')
+            echo "💾 MEMORY: ${mem_usage} | SWAP: ${swap_usage}"
+          fi
+          
+          # Disk Performance
+          echo "💿 DISK: $(df / | tail -1 | awk '{print $5}' || echo 'N/A')"
+          
+          # Process Performance
+          echo "⚡ PROCESSES: $(ps aux | wc -l) total | $(ps aux | grep -v grep | grep -c '^R') running"
+          echo "🔝 TOP MEM: $(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          echo "🔝 TOP CPU: $(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          
+          echo "=========================================="
+        }
+        
+        # Start timing for this step
+        branch_info_start_time=$(date +%s)
+        
+        echo "📊 Pre-branch info resource status:"
+        metrics "PRE-BRANCH-INFO"
+        
         echo "Event: ${{ github.event_name }}"
         echo "ref: ${{ github.ref }}"
         echo "ref_name: ${{ github.ref_name }}"
         echo "head_ref (PR only): ${{ github.head_ref }}"
         echo "base_ref (PR only): ${{ github.base_ref }}"
         echo "Current commit SHA: ${{ github.sha }}"
+        
+        # Calculate step duration
+        branch_info_end_time=$(date +%s)
+        branch_info_duration=$((branch_info_end_time - branch_info_start_time))
+        
+        echo "📊 Post-branch info resource status:"
+        metrics "POST-BRANCH-INFO"
+        
+        # Step performance summary
+        echo "⏱️  STEP PERFORMANCE SUMMARY:"
+        echo "  Branch Info Duration: ${branch_info_duration} seconds"
+        echo "  Start Time: $(date -d @$branch_info_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
     - name: Run documentation script on develop branch
       if: github.ref == 'refs/heads/develop'
+      env:
+        TRAVIS_BUILD_DIR: ${{ github.workspace }}
+        TRAVIS_BUILD_NUMBER: ${{ github.run_number }}
+        jekyllFolder: docs
+        robqbot_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        robqbot_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+        robqbot_NAME: "github-actions[bot]"
       run: |
         set -euxo pipefail
-        if [ -x .scripts/R_doc.sh ]; then
-          bash -x .scripts/R_doc.sh
-        elif [ -f .scripts/R_doc.sh ]; then
-          bash -x .scripts/R_doc.sh
-        else
-          echo ".scripts/R_doc.sh not found" >&2
-          exit 127
+        
+        # Resource monitoring function for individual steps
+        metrics() {
+          local step_name="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE METRICS - $step_name"
+          echo "⏰ Timestamp: $timestamp"
+          echo "=========================================="
+          
+          # System Information
+          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
+          echo "⏱️  UPTIME: $(uptime)"
+          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
+          
+          # CPU Performance
+          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
+          echo "⚡ CPU USAGE: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')%"
+          
+          # Memory Performance
+          if command -v free >/dev/null 2>&1; then
+            local mem_usage=$(free | grep Mem | awk '{printf "%.1f%%", $3/$2 * 100.0}')
+            local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f%%", $3/$2 * 100.0; else print "0%"}')
+            echo "💾 MEMORY: ${mem_usage} | SWAP: ${swap_usage}"
+          fi
+          
+          # Disk Performance
+          echo "💿 DISK: $(df / | tail -1 | awk '{print $5}' || echo 'N/A')"
+          
+          # Process Performance
+          echo "⚡ PROCESSES: $(ps aux | wc -l) total | $(ps aux | grep -v grep | grep -c '^R') running"
+          echo "🔝 TOP MEM: $(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          echo "🔝 TOP CPU: $(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          
+          echo "=========================================="
+        }
+        
+        # Start timing for this step
+        doc_start_time=$(date +%s)
+        
+        echo "📊 Pre-documentation resource status:"
+        metrics "PRE-DOCUMENTATION"
+        
+        # Validate required environment variables
+        echo "🔍 Validating destination variables..."
+        
+        # Check TRAVIS_BUILD_DIR (GitHub Actions equivalent)
+        if [ -z "$TRAVIS_BUILD_DIR" ]; then
+          echo "❌ ERROR: TRAVIS_BUILD_DIR is not set"
+          exit 1
         fi
+        echo "✅ TRAVIS_BUILD_DIR: $TRAVIS_BUILD_DIR"
+        
+        # Check TRAVIS_BUILD_NUMBER (GitHub Actions equivalent)
+        if [ -z "$TRAVIS_BUILD_NUMBER" ]; then
+          echo "❌ ERROR: TRAVIS_BUILD_NUMBER is not set"
+          exit 1
+        fi
+        echo "✅ TRAVIS_BUILD_NUMBER: $TRAVIS_BUILD_NUMBER"
+        
+        # Check jekyllFolder destination
+        if [ -z "$jekyllFolder" ]; then
+          echo "❌ ERROR: jekyllFolder destination is not set"
+          exit 1
+        fi
+        echo "✅ jekyllFolder destination: $jekyllFolder"
+        
+        # Check robqbot credentials
+        if [ -z "$robqbot_TOKEN" ]; then
+          echo "❌ ERROR: robqbot_TOKEN is not set"
+          exit 1
+        fi
+        echo "✅ robqbot_TOKEN: [SET]"
+        
+        if [ -z "$robqbot_EMAIL" ]; then
+          echo "❌ ERROR: robqbot_EMAIL is not set"
+          exit 1
+        fi
+        echo "✅ robqbot_EMAIL: $robqbot_EMAIL"
+        
+        if [ -z "$robqbot_NAME" ]; then
+          echo "❌ ERROR: robqbot_NAME is not set"
+          exit 1
+        fi
+        echo "✅ robqbot_NAME: $robqbot_NAME"
+        
+        # Verify workspace directory exists
+        if [ ! -d "$TRAVIS_BUILD_DIR" ]; then
+          echo "❌ ERROR: Workspace directory does not exist: $TRAVIS_BUILD_DIR"
+          exit 1
+        fi
+        echo "✅ Workspace directory exists: $TRAVIS_BUILD_DIR"
+        
+        # Verify scripts directory exists
+        if [ ! -d "$TRAVIS_BUILD_DIR/.scripts" ]; then
+          echo "❌ ERROR: Scripts directory does not exist: $TRAVIS_BUILD_DIR/.scripts"
+          exit 1
+        fi
+        echo "✅ Scripts directory exists: $TRAVIS_BUILD_DIR/.scripts"
+        
+        # Verify R_doc.sh script exists and is executable
+        if [ ! -f "$TRAVIS_BUILD_DIR/.scripts/R_doc.sh" ]; then
+          echo "❌ ERROR: R_doc.sh script not found: $TRAVIS_BUILD_DIR/.scripts/R_doc.sh"
+          exit 1
+        fi
+        echo "✅ R_doc.sh script found: $TRAVIS_BUILD_DIR/.scripts/R_doc.sh"
+        
+        # Verify R_publish_framework.sh script exists
+        if [ ! -f "$TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh" ]; then
+          echo "❌ ERROR: R_publish_framework.sh script not found: $TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh"
+          exit 1
+        fi
+        echo "✅ R_publish_framework.sh script found: $TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh"
+        
+        echo "🎯 All destination variables validated successfully!"
+        
+        # Run the documentation script
+        echo "🚀 Running documentation script..."
+        if [ -x "$TRAVIS_BUILD_DIR/.scripts/R_doc.sh" ]; then
+          bash -x "$TRAVIS_BUILD_DIR/.scripts/R_doc.sh"
+        else
+          bash -x "$TRAVIS_BUILD_DIR/.scripts/R_doc.sh"
+        fi
+        
+        # Calculate step duration
+        doc_end_time=$(date +%s)
+        doc_duration=$((doc_end_time - doc_start_time))
+        
+        echo "📊 Post-documentation resource status:"
+        metrics "POST-DOCUMENTATION"
+        
+        # Step performance summary
+        echo "⏱️  STEP PERFORMANCE SUMMARY:"
+        echo "  Documentation Duration: ${doc_duration} seconds"
+        echo "  Start Time: $(date -d @$doc_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
+
 
     - name: Run debug script on failure
       if: failure() && github.ref == 'refs/heads/develop'
       run: |
+        # Resource monitoring function for individual steps
+        metrics() {
+          local step_name="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE METRICS - $step_name"
+          echo "⏰ Timestamp: $timestamp"
+          echo "=========================================="
+          
+          # System Information
+          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
+          echo "⏱️  UPTIME: $(uptime)"
+          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
+          
+          # CPU Performance
+          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
+          echo "⚡ CPU USAGE: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')%"
+          
+          # Memory Performance
+          if command -v free >/dev/null 2>&1; then
+            local mem_usage=$(free | grep Mem | awk '{printf "%.1f%%", $3/$2 * 100.0}')
+            local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f%%", $3/$2 * 100.0; else print "0%"}')
+            echo "💾 MEMORY: ${mem_usage} | SWAP: ${swap_usage}"
+          fi
+          
+          # Disk Performance
+          echo "💿 DISK: $(df / | tail -1 | awk '{print $5}' || echo 'N/A')"
+          
+          # Process Performance
+          echo "⚡ PROCESSES: $(ps aux | wc -l) total | $(ps aux | grep -v grep | grep -c '^R') running"
+          echo "🔝 TOP MEM: $(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          echo "🔝 TOP CPU: $(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          
+          echo "=========================================="
+        }
+        
+        # Start timing for this step
+        debug_start_time=$(date +%s)
+        
+        echo "📊 Pre-debug resource status:"
+        metrics "PRE-DEBUG"
+        
         bash .scripts/R_debug.sh
+        
+        # Calculate step duration
+        debug_end_time=$(date +%s)
+        debug_duration=$((debug_end_time - debug_start_time))
+        
+        echo "📊 Post-debug resource status:"
+        metrics "POST-DEBUG"
+        
+        # Step performance summary
+        echo "⏱️  STEP PERFORMANCE SUMMARY:"
+        echo "  Debug Duration: ${debug_duration} seconds"
+        echo "  Start Time: $(date -d @$debug_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
     - name: Add PR Comment - Success
       if: github.event_name == 'pull_request' && success()
-      uses: peter-evans/create-or-update-comment@v4
+      uses: thollander/actions-comment-pull-request@v3
       with:
-        issue-number: ${{ github.event.pull_request.number }}
-        body: |
+        message: |
           ✅ **Build Successful** 
           
           **Branch:** `${{ github.head_ref }}`
           **Commit:** `${{ github.sha }}`
           **Triggered by:** `${{ github.actor }}`
           
-          All R package dependencies installed successfully and build completed.
+          **Job Status:**
+          - ✅ Dependencies setup completed
+          - ✅ Build completed successfully
           
           **Cache Status:**
-          - All packages and system dependencies: ✅ Cached
+          - R packages: ✅ Cached
+          - System dependencies: ✅ Cached
           
           **Next Steps:** Ready for review and testing.
-        token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Add PR Comment - Failure
       if: github.event_name == 'pull_request' && failure()
-      uses: peter-evans/create-or-update-comment@v4
+      uses: thollander/actions-comment-pull-request@v3
       with:
-        issue-number: ${{ github.event.pull_request.number }}
-        body: |
+        message: |
           ❌ **Build Failed**
           
           **Branch:** `${{ github.head_ref }}`
@@ -291,17 +1110,25 @@ jobs:
           
           The build encountered an error. Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           
+          **Job Status:**
+          - Dependencies setup: Check logs for status
+          - Build: ❌ Failed
+          
           **Common Issues to Check:**
           - R package dependencies
           - System library requirements
           - Cache corruption
           
           **Debug Info:** Debug script has been executed to help diagnose the issue.
-        token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
+    needs: [setup-dependencies, build]
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
+    env:
+      R_LIBS_USER: ${{ github.workspace }}/Rlibs
+      R_LIBS_SITE: ${{ github.workspace }}/Rlibs-site
     permissions:
       contents: write
 
@@ -312,8 +1139,51 @@ jobs:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
 
+
     - name: Print deploy git context
       run: |
+        # Resource monitoring function for individual steps
+        metrics() {
+          local step_name="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE METRICS - $step_name"
+          echo "⏰ Timestamp: $timestamp"
+          echo "=========================================="
+          
+          # System Information
+          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
+          echo "⏱️  UPTIME: $(uptime)"
+          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
+          
+          # CPU Performance
+          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
+          echo "⚡ CPU USAGE: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')%"
+          
+          # Memory Performance
+          if command -v free >/dev/null 2>&1; then
+            local mem_usage=$(free | grep Mem | awk '{printf "%.1f%%", $3/$2 * 100.0}')
+            local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f%%", $3/$2 * 100.0; else print "0%"}')
+            echo "💾 MEMORY: ${mem_usage} | SWAP: ${swap_usage}"
+          fi
+          
+          # Disk Performance
+          echo "💿 DISK: $(df / | tail -1 | awk '{print $5}' || echo 'N/A')"
+          
+          # Process Performance
+          echo "⚡ PROCESSES: $(ps aux | wc -l) total | $(ps aux | grep -v grep | grep -c '^R') running"
+          echo "🔝 TOP MEM: $(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          echo "🔝 TOP CPU: $(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          
+          echo "=========================================="
+        }
+        
+        # Start timing for this step
+        git_context_start_time=$(date +%s)
+        
+        echo "📊 Pre-git context resource status:"
+        metrics "PRE-GIT-CONTEXT"
+        
         echo "Event: ${{ github.event_name }}"
         echo "ref: ${{ github.ref }}"
         echo "ref_name: ${{ github.ref_name }}"
@@ -334,11 +1204,80 @@ jobs:
         ls -la .scripts || true
         echo "Top of Jekyll_deploy.sh:"
         head -n 80 .scripts/Jekyll_deploy.sh || true
+        
+        # Calculate step duration
+        git_context_end_time=$(date +%s)
+        git_context_duration=$((git_context_end_time - git_context_start_time))
+        
+        echo "📊 Post-git context resource status:"
+        metrics "POST-GIT-CONTEXT"
+        
+        # Step performance summary
+        echo "⏱️  STEP PERFORMANCE SUMMARY:"
+        echo "  Git Context Duration: ${git_context_duration} seconds"
+        echo "  Start Time: $(date -d @$git_context_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
     - name: Configure Git user
       run: |
+        # Resource monitoring function for individual steps
+        metrics() {
+          local step_name="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE METRICS - $step_name"
+          echo "⏰ Timestamp: $timestamp"
+          echo "=========================================="
+          
+          # System Information
+          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
+          echo "⏱️  UPTIME: $(uptime)"
+          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
+          
+          # CPU Performance
+          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
+          echo "⚡ CPU USAGE: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')%"
+          
+          # Memory Performance
+          if command -v free >/dev/null 2>&1; then
+            local mem_usage=$(free | grep Mem | awk '{printf "%.1f%%", $3/$2 * 100.0}')
+            local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f%%", $3/$2 * 100.0; else print "0%"}')
+            echo "💾 MEMORY: ${mem_usage} | SWAP: ${swap_usage}"
+          fi
+          
+          # Disk Performance
+          echo "💿 DISK: $(df / | tail -1 | awk '{print $5}' || echo 'N/A')"
+          
+          # Process Performance
+          echo "⚡ PROCESSES: $(ps aux | wc -l) total | $(ps aux | grep -v grep | grep -c '^R') running"
+          echo "🔝 TOP MEM: $(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          echo "🔝 TOP CPU: $(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          
+          echo "=========================================="
+        }
+        
+        # Start timing for this step
+        git_config_start_time=$(date +%s)
+        
+        echo "📊 Pre-git config resource status:"
+        metrics "PRE-GIT-CONFIG"
+        
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        
+        # Calculate step duration
+        git_config_end_time=$(date +%s)
+        git_config_duration=$((git_config_end_time - git_config_start_time))
+        
+        echo "📊 Post-git config resource status:"
+        metrics "POST-GIT-CONFIG"
+        
+        # Step performance summary
+        echo "⏱️  STEP PERFORMANCE SUMMARY:"
+        echo "  Git Config Duration: ${git_config_duration} seconds"
+        echo "  Start Time: $(date -d @$git_config_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
+
 
     - name: Deploy compiled vignettes to gh-pages
       env:
@@ -347,13 +1286,148 @@ jobs:
         REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GIT_TRACE: '1'
         GIT_CURL_VERBOSE: '1'
+        TRAVIS_BUILD_DIR: ${{ github.workspace }}
+        TRAVIS_BUILD_NUMBER: ${{ github.run_number }}
+        jekyllFolder: docs
+        robqbot_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        robqbot_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+        robqbot_NAME: "github-actions[bot]"
       run: |
         set -euxo pipefail
+        
+        # Resource monitoring function for individual steps
+        metrics() {
+          local step_name="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE METRICS - $step_name"
+          echo "⏰ Timestamp: $timestamp"
+          echo "=========================================="
+          
+          # System Information
+          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
+          echo "⏱️  UPTIME: $(uptime)"
+          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
+          
+          # CPU Performance
+          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
+          echo "⚡ CPU USAGE: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')%"
+          
+          # Memory Performance
+          if command -v free >/dev/null 2>&1; then
+            local mem_usage=$(free | grep Mem | awk '{printf "%.1f%%", $3/$2 * 100.0}')
+            local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f%%", $3/$2 * 100.0; else print "0%"}')
+            echo "💾 MEMORY: ${mem_usage} | SWAP: ${swap_usage}"
+          fi
+          
+          # Disk Performance
+          echo "💿 DISK: $(df / | tail -1 | awk '{print $5}' || echo 'N/A')"
+          
+          # Process Performance
+          echo "⚡ PROCESSES: $(ps aux | wc -l) total | $(ps aux | grep -v grep | grep -c '^R') running"
+          echo "🔝 TOP MEM: $(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          echo "🔝 TOP CPU: $(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
+          
+          echo "=========================================="
+        }
+        
+        # Start timing for this step
+        deploy_start_time=$(date +%s)
+        
+        echo "📊 Pre-deploy resource status:"
+        metrics "PRE-DEPLOY"
+        
+        # Validate required environment variables
+        echo "🔍 Validating deploy destination variables..."
+        
+        # Check TRAVIS_BUILD_DIR (GitHub Actions equivalent)
+        if [ -z "$TRAVIS_BUILD_DIR" ]; then
+          echo "❌ ERROR: TRAVIS_BUILD_DIR is not set"
+          exit 1
+        fi
+        echo "✅ TRAVIS_BUILD_DIR: $TRAVIS_BUILD_DIR"
+        
+        # Check TRAVIS_BUILD_NUMBER (GitHub Actions equivalent)
+        if [ -z "$TRAVIS_BUILD_NUMBER" ]; then
+          echo "❌ ERROR: TRAVIS_BUILD_NUMBER is not set"
+          exit 1
+        fi
+        echo "✅ TRAVIS_BUILD_NUMBER: $TRAVIS_BUILD_NUMBER"
+        
+        # Check jekyllFolder destination
+        if [ -z "$jekyllFolder" ]; then
+          echo "❌ ERROR: jekyllFolder destination is not set"
+          exit 1
+        fi
+        echo "✅ jekyllFolder destination: $jekyllFolder"
+        
+        # Check robqbot credentials
+        if [ -z "$robqbot_TOKEN" ]; then
+          echo "❌ ERROR: robqbot_TOKEN is not set"
+          exit 1
+        fi
+        echo "✅ robqbot_TOKEN: [SET]"
+        
+        if [ -z "$robqbot_EMAIL" ]; then
+          echo "❌ ERROR: robqbot_EMAIL is not set"
+          exit 1
+        fi
+        echo "✅ robqbot_EMAIL: $robqbot_EMAIL"
+        
+        if [ -z "$robqbot_NAME" ]; then
+          echo "❌ ERROR: robqbot_NAME is not set"
+          exit 1
+        fi
+        echo "✅ robqbot_NAME: $robqbot_NAME"
+        
+        # Verify workspace directory exists
+        if [ ! -d "$TRAVIS_BUILD_DIR" ]; then
+          echo "❌ ERROR: Workspace directory does not exist: $TRAVIS_BUILD_DIR"
+          exit 1
+        fi
+        echo "✅ Workspace directory exists: $TRAVIS_BUILD_DIR"
+        
+        # Verify scripts directory exists
+        if [ ! -d "$TRAVIS_BUILD_DIR/.scripts" ]; then
+          echo "❌ ERROR: Scripts directory does not exist: $TRAVIS_BUILD_DIR/.scripts"
+          exit 1
+        fi
+        echo "✅ Scripts directory exists: $TRAVIS_BUILD_DIR/.scripts"
+        
+        # Verify Jekyll_deploy.sh script exists
+        if [ ! -f "$TRAVIS_BUILD_DIR/.scripts/Jekyll_deploy.sh" ]; then
+          echo "❌ ERROR: Jekyll_deploy.sh script not found: $TRAVIS_BUILD_DIR/.scripts/Jekyll_deploy.sh"
+          exit 1
+        fi
+        echo "✅ Jekyll_deploy.sh script found: $TRAVIS_BUILD_DIR/.scripts/Jekyll_deploy.sh"
+        
+        # Verify R_publish_framework.sh script exists
+        if [ ! -f "$TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh" ]; then
+          echo "❌ ERROR: R_publish_framework.sh script not found: $TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh"
+          exit 1
+        fi
+        echo "✅ R_publish_framework.sh script found: $TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh"
+        
+        echo "🎯 All deploy destination variables validated successfully!"
+        
         echo "Git status before deploy:";
         git status || true
         echo "Current origin configuration:";
         git remote -v || true
         echo "Running deploy script with trace..."
-        bash -x .scripts/Jekyll_deploy.sh
+        bash -x "$TRAVIS_BUILD_DIR/.scripts/Jekyll_deploy.sh"
         echo "Git status after deploy:";
         git status || true
+        
+        # Calculate step duration
+        deploy_end_time=$(date +%s)
+        deploy_duration=$((deploy_end_time - deploy_start_time))
+        
+        echo "📊 Post-deploy resource status:"
+        metrics "POST-DEPLOY"
+        
+        # Step performance summary
+        echo "⏱️  STEP PERFORMANCE SUMMARY:"
+        echo "  Deploy Duration: ${deploy_duration} seconds"
+        echo "  Start Time: $(date -d @$deploy_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
