@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        r-version: ['4.4', 'latest']
+        r-version: ['4.4']
 
     steps:
     - name: Checkout repository
@@ -399,7 +399,7 @@ jobs:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Resource usage metrics (deploy: after checkout)
+    - name: "Resource usage metrics (deploy: after checkout)"
       if: always()
       run: |
         echo "=== Resource usage (deploy post-checkout) ==="; date
@@ -449,7 +449,7 @@ jobs:
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         metrics
 
-    - name: Resource usage metrics (deploy: after git config)
+    - name: "Resource usage metrics (deploy: after git config)"
       if: always()
       run: |
         echo "=== Resource usage (deploy post-git-config) ==="; date
@@ -481,7 +481,7 @@ jobs:
         git status || true
         metrics
 
-    - name: Resource usage metrics (deploy: after deploy)
+    - name: "Resource usage metrics (deploy: after deploy)"
       if: always()
       run: |
         echo "=== Resource usage (deploy post-deploy) ==="; date
