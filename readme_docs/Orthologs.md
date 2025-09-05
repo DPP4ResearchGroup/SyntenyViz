@@ -1,5 +1,26 @@
-# Searching Orthologs in a Target Spices
-`SyntenyViz` has a dependency on R package `orthogene` of version `1.12.0` or above for orthologs matching mechanism. As of version `1.12.0` stands, the following species are supported and can be searched against.
+# Ortholog Analysis in SyntenyViz
+
+`SyntenyViz` provides comprehensive ortholog analysis capabilities, including ortholog identification, coordinate retrieval, and synteny block visualization. The package has a dependency on R package `orthogene` of version `1.12.0` or above for orthologs matching mechanism.
+
+## Ortholog Functions
+
+### 1. Ortholog Identification
+- `getOrthHomolog()`: Search for orthologous genes across species
+- Uses the `orthogene` package for high-confidence ortholog identification
+
+### 2. Ortholog Coordinate Retrieval
+- `getOrthologCoordinates()`: Retrieve genomic coordinates for orthologous genes
+- Maps orthologs to their genomic positions in both source and target species
+- Returns structured data for synteny analysis
+
+### 3. Synteny Block Visualization
+- `createSyntenyBlockData()`: Create synteny block data structures
+- `plotSyntenyBlocks()`: Visualize synteny blocks with ortholog connections
+- `getOrthologSyntenySummary()`: Generate synteny conservation metrics
+
+## Supported Species
+
+As of version `1.12.0` stands, the following species are supported and can be searched against:
 
 
 | Scientific Name              | Taxonomy ID | Source      | ID             | Scientific Name Formatted       |

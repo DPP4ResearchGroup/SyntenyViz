@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- **Ortholog Coordinate Retrieval**: New `getOrthologCoordinates()` function to retrieve genomic coordinates for orthologous genes
+- **Synteny Block Visualization**: New `createSyntenyBlockData()` and `plotSyntenyBlocks()` functions for enhanced synteny visualization
+- **Synteny Conservation Metrics**: New `getOrthologSyntenySummary()` function to generate comprehensive synteny conservation statistics
+- **Enhanced Workflow**: Updated comprehensive user example with new ortholog coordinate retrieval and synteny block visualization workflow
+- **Documentation Updates**: Updated workflow flowcharts and examples to include new functions
+
 ### Bug Fixes
 
 - fix #42 - JOSS compile w/ 2025

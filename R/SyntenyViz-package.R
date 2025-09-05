@@ -1,6 +1,7 @@
 #' Package SyntenyViz
 #'
-#' Package This R package
+#' Package This R package provides tools for synteny visualization and analysis,
+#' including ortholog identification, coordinate retrieval, and synteny block visualization.
 #'
 #' @docType package
 #' @name SyntenyViz

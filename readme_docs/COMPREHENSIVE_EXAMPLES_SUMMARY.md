@@ -13,6 +13,8 @@ A complete R script that demonstrates all major functions and capabilities of th
 - **Gene Annotation**: Gene subset extraction and annotation
 - **Visualization**: Single and multi-species synteny plots
 - **Ortholog Analysis**: Ortholog search and similarity calculations
+- **Ortholog Coordinates**: Coordinate retrieval and mapping for orthologs
+- **Synteny Block Visualization**: Enhanced synteny block plots with ortholog connections
 - **Synteny Analysis**: Synteny similarity calculations between species
 - **Evolutionary Analysis**: Evolutionary and patristic distance analysis
 - **Phylogenetic Operations**: Tree-based distance calculations
@@ -54,27 +56,34 @@ A detailed R Markdown vignette that provides a step-by-step guide through the co
 
 4. **Ortholog Analysis**
    - `getOrthHomolog()`: Search for orthologous genes
+   - `getOrthologCoordinates()`: Retrieve genomic coordinates for orthologs
    - `calculateOrthologSimilarity()`: Calculate various similarity metrics
    - Multiple similarity types: sequence, functional, evolutionary, composite
 
-5. **Synteny Analysis**
+5. **Synteny Block Visualization**
+   - `createSyntenyBlockData()`: Create synteny block data structures
+   - `plotSyntenyBlocks()`: Visualize synteny blocks with ortholog connections
+   - `getOrthologSyntenySummary()`: Generate synteny conservation metrics
+   - Support for comparative and overlay plot types
+
+6. **Synteny Analysis**
    - `calculateSyntenySimilarity()`: Quantify synteny conservation
    - Overlap and order score calculations
    - Ortholog pair identification
 
-6. **Evolutionary Analysis**
+7. **Evolutionary Analysis**
    - `loadEvolutionaryDistances()`: Load evolutionary distance data
    - `getEvolutionaryDistances()`: Query evolutionary distances
    - `loadPatristicDistances()`: Load patristic distance data
    - `getPatristicDistances()`: Query patristic distances
 
-7. **Phylogenetic Operations**
+8. **Phylogenetic Operations**
    - `calculatePatristicDistance()`: Calculate distances from trees
    - `patristicToDivergenceTime()`: Convert distances to time
    - `divergenceTimeToPatristic()`: Convert time to distances
    - `validatePatristicDistances()`: Validate against trees
 
-8. **Database Management**
+9. **Database Management**
    - `getPkgs()`: Get organism-specific packages
    - `orgmsCollection.init()`: Initialize organism collections
    - `orgmsAdd()`: Add organisms to collections
@@ -87,10 +96,12 @@ The examples follow a logical progression:
 2. **Gene Extraction**: Extract and annotate genes from regions
 3. **Visualization**: Create synteny plots for single and multiple species
 4. **Ortholog Search**: Find orthologous genes across species
-5. **Similarity Analysis**: Calculate various similarity metrics
-6. **Synteny Quantification**: Measure synteny conservation
-7. **Evolutionary Analysis**: Work with evolutionary distances
-8. **Advanced Features**: Integrate phylogenetic information
+5. **Ortholog Coordinates**: Retrieve genomic coordinates for orthologs
+6. **Synteny Block Visualization**: Create enhanced synteny plots with ortholog connections
+7. **Similarity Analysis**: Calculate various similarity metrics
+8. **Synteny Quantification**: Measure synteny conservation
+9. **Evolutionary Analysis**: Work with evolutionary distances
+10. **Advanced Features**: Integrate phylogenetic information
 
 ## Data Sources
 

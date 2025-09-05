@@ -137,6 +137,111 @@ if (!is.null(orthologs_reverse)) {
 cat("\n")
 
 # =============================================================================
+# 5.5. ORTHOLOG COORDINATE RETRIEVAL
+# =============================================================================
+
+cat("5.5. ORTHOLOG COORDINATE RETRIEVAL\n")
+cat("==================================\n")
+
+# Retrieve coordinates for orthologs
+if (!is.null(orthologs) && nrow(orthologs) > 0) {
+    cat("Retrieving coordinates for orthologs...\n")
+    
+    # Get ortholog coordinates
+    ortholog_coords <- getOrthologCoordinates(orthologs, "Mmusculus", "Hsapiens", 
+                                            human_coords, mouse_coords, verbose = TRUE)
+    
+    if (!is.null(ortholog_coords)) {
+        cat("Ortholog coordinates retrieved successfully\n")
+        cat("  Source orthologs:", nrow(ortholog_coords$source), "\n")
+        cat("  Target orthologs:", nrow(ortholog_coords$target), "\n")
+        cat("  Ortholog mappings:", nrow(ortholog_coords$ortholog_mappings), "\n")
+        
+        # Display sample coordinates
+        if (nrow(ortholog_coords$source) > 0) {
+            cat("Sample source ortholog coordinates:\n")
+            print(head(ortholog_coords$source[, c("gene_id", "seqnames", "start", "end", "gene_name")], 3))
+        }
+        
+        if (nrow(ortholog_coords$target) > 0) {
+            cat("Sample target ortholog coordinates:\n")
+            print(head(ortholog_coords$target[, c("gene_id", "seqnames", "start", "end", "gene_name")], 3))
+        }
+    } else {
+        cat("Failed to retrieve ortholog coordinates\n")
+    }
+} else {
+    cat("No orthologs available for coordinate retrieval\n")
+}
+
+cat("\n")
+
+# =============================================================================
+# 5.6. SYNTHENY BLOCK VISUALIZATION
+# =============================================================================
+
+cat("5.6. SYNTHENY BLOCK VISUALIZATION\n")
+cat("==================================\n")
+
+# Create and visualize synteny blocks
+if (exists("ortholog_coords") && !is.null(ortholog_coords)) {
+    cat("Creating synteny block data...\n")
+    
+    # Create synteny block data
+    synteny_data <- createSyntenyBlockData(ortholog_coords$source, ortholog_coords$target,
+                                         "Hsapiens", "Mmusculus", verbose = TRUE)
+    
+    if (!is.null(synteny_data)) {
+        cat("Synteny block data created successfully\n")
+        cat("  Source genes:", nrow(synteny_data$source_genes), "\n")
+        cat("  Target genes:", nrow(synteny_data$target_genes), "\n")
+        cat("  Connections:", nrow(synteny_data$connections), "\n")
+        
+        # Create synteny block plots
+        cat("Creating synteny block plots...\n")
+        
+        # Comparative plot (side-by-side)
+        cat("Creating comparative synteny plot...\n")
+        tryCatch({
+            plotSyntenyBlocks(synteny_data, plot_type = "comparative", verbose = TRUE)
+            cat("Comparative synteny plot created successfully\n")
+        }, error = function(e) {
+            cat("Error creating comparative plot:", e$message, "\n")
+        })
+        
+        # Overlay plot (stacked)
+        cat("Creating overlay synteny plot...\n")
+        tryCatch({
+            plotSyntenyBlocks(synteny_data, plot_type = "overlay", verbose = TRUE)
+            cat("Overlay synteny plot created successfully\n")
+        }, error = function(e) {
+            cat("Error creating overlay plot:", e$message, "\n")
+        })
+        
+        # Generate synteny summary
+        cat("Generating synteny summary...\n")
+        synteny_summary <- getOrthologSyntenySummary(orthologs, human_coords, mouse_coords,
+                                                   "Hsapiens", "Mmusculus", verbose = TRUE)
+        
+        if (!is.null(synteny_summary)) {
+            cat("Synteny summary generated:\n")
+            cat("  Ortholog coverage:", round(synteny_summary$ortholog_coverage, 2), "%\n")
+            cat("  Synteny block size:", synteny_summary$synteny_block_size, "genes\n")
+            cat("  Conservation score:", round(synteny_summary$conservation_score, 3), "\n")
+            cat("  Synteny breaks:", synteny_summary$synteny_breaks, "\n")
+            cat("  Gene density (human):", round(synteny_summary$gene_density$species1, 2), "genes/Mb\n")
+            cat("  Gene density (mouse):", round(synteny_summary$gene_density$species2, 2), "genes/Mb\n")
+        }
+    } else {
+        cat("Failed to create synteny block data\n")
+    }
+} else {
+    cat("No ortholog coordinates available for synteny block visualization\n")
+}
+
+cat("\n")
+
+# =============================================================================
 # 6. ORTHOLOG SIMILARITY CALCULATIONS
 # =============================================================================
 

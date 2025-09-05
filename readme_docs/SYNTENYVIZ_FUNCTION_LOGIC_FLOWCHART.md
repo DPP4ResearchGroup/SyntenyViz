@@ -70,6 +70,32 @@ flowchart TD
     QUERY_ORTHO --> FILTER_ORTHO["🔍 Filter Ortholog Results<br/>Method: Confidence score filtering<br/>Scientific Criteria: E-value thresholds and coverage requirements"]
     FILTER_ORTHO --> ORTHO_OUT["✅ Output: Ortholog Pairs<br/>Data Structure: Ortholog relationship matrix<br/>Scientific Value: High-confidence homologous gene pairs"]
     
+    %% Ortholog Coordinate Functions
+    ORTHO_OUT --> GET_ORTH_COORDS["📍 getOrthologCoordinates Function<br/>Purpose: Retrieve genomic coordinates for orthologous genes<br/>Scientific Method: Coordinate mapping and validation"]
+    GET_ORTH_COORDS --> COORDS_LOGIC{"🔍 Retrieve Ortholog Coordinates<br/>Validation: Species compatibility and coordinate validity<br/>Scientific Context: Genomic position mapping for orthologs"}
+    COORDS_LOGIC --> EXTRACT_SOURCE["🧬 Extract Source Coordinates<br/>Method: geneSubset() for source species<br/>Scientific Algorithm: Genomic range overlap detection"]
+    EXTRACT_SOURCE --> EXTRACT_TARGET["🧬 Extract Target Coordinates<br/>Method: geneSubset() for target species<br/>Scientific Algorithm: Ortholog-specific coordinate retrieval"]
+    EXTRACT_TARGET --> MAP_ORTHOLOGS["🔗 Map Ortholog Coordinates<br/>Method: Coordinate matching and validation<br/>Scientific Output: Paired ortholog coordinate data"]
+    MAP_ORTHOLOGS --> COORDS_OUT["✅ Output: Ortholog Coordinates<br/>Data Structure: Source and target coordinate matrices<br/>Scientific Value: Genomic position data for ortholog pairs"]
+    
+    COORDS_OUT --> CREATE_SYNTENY_DATA["🧬 createSyntenyBlockData Function<br/>Purpose: Create synteny block data structures for visualization<br/>Scientific Method: Relative positioning and connection mapping"]
+    CREATE_SYNTENY_DATA --> SYNTENY_DATA_LOGIC{"🔍 Create Synteny Block Data<br/>Validation: Coordinate data completeness<br/>Scientific Context: Synteny block structure preparation"}
+    SYNTENY_DATA_LOGIC --> CALC_RELATIVE["📐 Calculate Relative Positions<br/>Method: Normalized position calculation within regions<br/>Scientific Formula: (position - region_start) / region_length"]
+    CALC_RELATIVE --> CREATE_CONNECTIONS["🔗 Create Ortholog Connections<br/>Method: Pair-wise ortholog mapping<br/>Scientific Algorithm: Connection matrix construction"]
+    CREATE_CONNECTIONS --> SYNTENY_DATA_OUT["✅ Output: Synteny Block Data<br/>Data Structure: Structured synteny visualization data<br/>Scientific Value: Prepared data for comparative visualization"]
+    
+    SYNTENY_DATA_OUT --> PLOT_SYNTENY_BLOCKS["🎨 plotSyntenyBlocks Function<br/>Purpose: Visualize synteny blocks with ortholog connections<br/>Scientific Method: Gviz track-based visualization"]
+    PLOT_SYNTENY_BLOCKS --> PLOT_LOGIC{"🔍 Generate Synteny Visualization<br/>Validation: Data structure compatibility<br/>Scientific Context: Comparative genomic visualization"}
+    PLOT_LOGIC --> CREATE_TRACKS["📊 Create Gviz Tracks<br/>Method: AnnotationTrack, GenomeAxisTrack, IdeogramTrack<br/>Scientific Algorithm: Multi-track genomic visualization"]
+    CREATE_TRACKS --> RENDER_SYNTENY["🎨 Render Synteny Plot<br/>Method: Gviz plotTracks() rendering<br/>Scientific Output: Publication-ready synteny visualization"]
+    RENDER_SYNTENY --> PLOT_SYNTENY_OUT["✅ Output: Synteny Block Plot<br/>Data Structure: Gviz plot object<br/>Scientific Value: Visual representation of synteny conservation"]
+    
+    PLOT_SYNTENY_OUT --> GET_SYNTENY_SUMMARY["📊 getOrthologSyntenySummary Function<br/>Purpose: Generate synteny conservation metrics and statistics<br/>Scientific Method: Quantitative synteny analysis"]
+    GET_SYNTENY_SUMMARY --> SUMMARY_LOGIC{"🔍 Calculate Synteny Metrics<br/>Validation: Data completeness and quality<br/>Scientific Context: Synteny conservation quantification"}
+    SUMMARY_LOGIC --> CALC_COVERAGE["📈 Calculate Ortholog Coverage<br/>Method: Percentage of genes with orthologs<br/>Scientific Formula: (Orthologs found / Total genes) × 100"]
+    CALC_COVERAGE --> CALC_CONSERVATION["🔄 Calculate Conservation Score<br/>Method: Synteny block size and density analysis<br/>Scientific Algorithm: Conservation metric integration"]
+    CALC_CONSERVATION --> SUMMARY_OUT["✅ Output: Synteny Summary<br/>Data Structure: Comprehensive synteny metrics<br/>Scientific Value: Quantitative synteny conservation assessment"]
+    
     %% Similarity Calculation Functions
     ORTHO_OUT --> CALC_SEQ_SIM["🧬 calculateSequenceSimilarity Function<br/>Purpose: Calculate DNA/protein sequence similarity<br/>Scientific Method: Sequence alignment and identity calculation"]
     CALC_SEQ_SIM --> SEQ_LOGIC{"🔍 Calculate Sequence Similarity<br/>Validation: Sequence quality check<br/>Scientific Context: Molecular sequence conservation analysis"}

@@ -25,7 +25,10 @@ flowchart TD
     %% Analysis Pipeline
     SINGLE_PLOT --> ORTHOLOGS[🔗 Ortholog Analysis<br/>getOrthHomolog]
     MULTI_PLOT --> ORTHOLOGS
-    ORTHOLOGS --> SIMILARITY[📊 Multi-Dimensional Similarity<br/>Sequence + Functional + Evolutionary]
+    ORTHOLOGS --> ORTHO_COORDS[📍 Ortholog Coordinates<br/>getOrthologCoordinates]
+    ORTHO_COORDS --> SYNTENY_BLOCKS[🧬 Synteny Block Data<br/>createSyntenyBlockData]
+    SYNTENY_BLOCKS --> SYNTENY_PLOTS[🎨 Synteny Block Plots<br/>plotSyntenyBlocks]
+    SYNTENY_PLOTS --> SIMILARITY[📊 Multi-Dimensional Similarity<br/>Sequence + Functional + Evolutionary]
     SIMILARITY --> SYNTENY[🔄 Synteny Conservation<br/>calculateSyntenySimilarity]
     
     %% Evolutionary Analysis
@@ -202,7 +205,17 @@ Quality Control ← validatePatristicDistances() ← Evolutionary Data
 - **Processing**: Tree-based distance calculations and time conversions
 - **Output**: Patristic distance analysis with temporal context
 
-### ✅ **Phase 10: Validation & Quality Control**
+### ✅ **Phase 10: Enhanced Ortholog Analysis**
+**Purpose**: Retrieve ortholog coordinates and create synteny block visualizations
+- **Key Functions**:
+  - `getOrthologCoordinates()` - Retrieves genomic coordinates for orthologs
+  - `createSyntenyBlockData()` - Creates synteny block data structures
+  - `plotSyntenyBlocks()` - Visualizes synteny blocks with ortholog connections
+  - `getOrthologSyntenySummary()` - Generates synteny conservation metrics
+- **Processing**: Coordinate retrieval, relative positioning, connection mapping
+- **Output**: Enhanced synteny visualizations with ortholog-specific analysis
+
+### ✅ **Phase 11: Validation & Quality Control**
 **Purpose**: Ensure data integrity and assign confidence levels
 - **Key Functions**:
   - `validatePatristicDistances()` - Validates distance data integrity
@@ -211,7 +224,7 @@ Quality Control ← validatePatristicDistances() ← Evolutionary Data
 - **Processing**: Data validation, confidence assessment, summary generation
 - **Output**: Validated analysis results with quality metrics
 
-### 🗄️ **Phase 11: Database Management**
+### 🗄️ **Phase 12: Database Management**
 **Purpose**: Manage species-specific database resources
 - **Key Functions**:
   - `orgmOrgDB()` - Lists available organisms
@@ -219,7 +232,7 @@ Quality Control ← validatePatristicDistances() ← Evolutionary Data
 - **Processing**: Database resource management and availability checking
 - **Output**: Database resource management information
 
-### 🛠️ **Phase 12: Error Handling & Diagnostics**
+### 🛠️ **Phase 13: Error Handling & Diagnostics**
 **Purpose**: Provide robust error management and troubleshooting
 - **Key Functions**:
   - `diagnostics_function()` - Runs comprehensive diagnostics
