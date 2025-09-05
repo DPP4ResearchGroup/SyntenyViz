@@ -20,4 +20,10 @@ vignettes/SyntenyViz_workflow_cache/
 # ignore aux
 *.swp
 .DS_Store
+
 prompts/
+*dev-docs/features/
+
+*node_modules/
+*package-lock.json
+*package.json
