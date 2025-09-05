@@ -20,3 +20,4 @@ vignettes/SyntenyViz_workflow_cache/
 # ignore aux
 *.swp
 .DS_Store
+prompts/
