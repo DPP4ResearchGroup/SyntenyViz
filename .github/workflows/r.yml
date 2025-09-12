@@ -871,9 +871,9 @@ jobs:
         TRAVIS_BUILD_DIR: ${{ github.workspace }}
         TRAVIS_BUILD_NUMBER: ${{ github.run_number }}
         jekyllFolder: docs
-        robqbot_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        robqbot_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
-        robqbot_NAME: "github-actions[bot]"
+        robqbot_TOKEN: ${{ secrets.ROBQBOT_TOKEN }}
+        robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
+        robqbot_NAME: ${{ secrets.ROBQBOT_NAME }}
       run: |
         set -euxo pipefail
         
