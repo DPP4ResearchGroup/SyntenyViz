@@ -45,7 +45,7 @@ jobs:
         restore-keys: |
           r-${{ matrix.r-version }}-packages-
 
-    - name: Set up R with performance monitoring
+    - name: Install R using centralized script
       run: |
         # Resource monitoring function for individual steps with performance tracking
         metrics() {
@@ -135,33 +135,8 @@ jobs:
         echo "📊 Pre-R setup resource status:"
         metrics "PRE-R-SETUP"
         
-        echo "🚀 Setting up R version ${{ matrix.r-version }}..."
-        
-        # Install R using the same method as r-lib/actions/setup-r@v2
-        # Use user-writable APT cache to enable caching without root permission errors
-        export APT_CACHE="$HOME/apt-cache"
-        mkdir -p "$APT_CACHE/archives" "$APT_CACHE/lists"
-        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" update
-        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y software-properties-common
-        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
-        sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
-        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" update
-        
-        if [ "${{ matrix.r-version }}" = "latest" ]; then
-          sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y r-base r-base-dev
-        else
-          sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y r-base=${{ matrix.r-version }}* r-base-dev=${{ matrix.r-version }}*
-        fi
-        
-        # Verify R installation
-        echo "🔍 Verifying R installation..."
-        if command -v R >/dev/null 2>&1; then
-          echo "✅ R is installed and available"
-          R --version | head -1
-        else
-          echo "❌ ERROR: R is not installed or not in PATH"
-          exit 1
-        fi
+        echo "🚀 Installing R using centralized script..."
+        bash .scripts/install_dependencies.sh r ${{ matrix.r-version }}
         
         # Check R version
         echo "📋 R version details:"
@@ -458,15 +433,6 @@ jobs:
         echo "  Start Time: $(date -d @$r_deps_start_time '+%Y-%m-%d %H:%M:%S')"
         echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
-    - name: Cache APT packages (system deps, TeX Live, Pandoc)
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ runner.temp }}/../home/runner/apt-cache/archives
-          ${{ runner.temp }}/../home/runner/apt-cache/lists
-        key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/r.yml') }}
-        restore-keys: |
-          apt-${{ runner.os }}-
 
     - name: Install system dependencies, TeX Live, and Pandoc
       run: |
@@ -556,27 +522,10 @@ jobs:
         echo "📊 Pre-system dependencies, TeX Live, and Pandoc resource status:"
         metrics "PRE-SYSTEM-DEPENDENCIES-TEX-PANDOC"
         
-        echo "Installing system dependencies..."
-        export APT_CACHE="$HOME/apt-cache"
-        mkdir -p "$APT_CACHE/archives" "$APT_CACHE/lists"
-        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" update
-        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y libcurl4-openssl-dev libssl-dev libxml2-dev libnlopt-dev
-        
-        echo "Installing TeX Live (LaTeX) for documentation generation..."
-        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra texlive-latex-recommended
-        
-        echo "Installing Pandoc for R Markdown vignette compilation..."
-        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y pandoc
-        
-        # Verify Pandoc installation
-        echo "🔍 Verifying Pandoc installation..."
-        if command -v pandoc >/dev/null 2>&1; then
-          echo "✅ Pandoc is installed and available"
-          pandoc --version | head -1
-        else
-          echo "❌ ERROR: Pandoc is not installed or not in PATH"
-          exit 1
-        fi
+        echo "🚀 Installing system dependencies using centralized script..."
+        bash .scripts/install_dependencies.sh system
+        bash .scripts/install_dependencies.sh texlive
+        bash .scripts/install_dependencies.sh pandoc
         
         # Calculate step duration
         step_end_time=$(date +%s)
@@ -595,6 +544,9 @@ jobs:
   build:
     needs: setup-dependencies
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     strategy:
       matrix:
         r-version: ['latest']
@@ -604,17 +556,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-
-    - name: Restore APT cache (system deps, TeX Live, Pandoc)
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/apt-cache/archives
-          ~/apt-cache/lists
-        key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/r.yml') }}
-        restore-keys: |
-          apt-${{ runner.os }}-
-
+      
     - name: Restore R packages cache
       uses: actions/cache@v4
       with:
@@ -627,20 +569,8 @@ jobs:
 
     - name: Set up R (minimal)
       run: |
-        # Install R using the same method as r-lib/actions/setup-r@v2
-        export APT_CACHE="$HOME/apt-cache"
-        mkdir -p "$APT_CACHE/archives" "$APT_CACHE/lists"
-        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" update
-        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y software-properties-common
-        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
-        sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
-        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" update
-        
-        if [ "${{ matrix.r-version }}" = "latest" ]; then
-          sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y r-base r-base-dev
-        else
-          sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y r-base=${{ matrix.r-version }}* r-base-dev=${{ matrix.r-version }}*
-        fi
+        # Install R using centralized script
+        bash .scripts/install_dependencies.sh r ${{ matrix.r-version }}
         
         # Set up user-writable R library paths
         mkdir -p "$R_LIBS_USER"
@@ -1182,15 +1112,6 @@ jobs:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Restore APT cache (system deps, TeX Live, Pandoc)
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/apt-cache/archives
-          ~/apt-cache/lists
-        key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/r.yml') }}
-        restore-keys: |
-          apt-${{ runner.os }}-
 
 
     - name: Print deploy git context
