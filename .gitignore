@@ -23,6 +23,7 @@ vignettes/SyntenyViz_workflow_cache/
 
 prompts/
 *dev-docs/features/
+*secret*
 
 *node_modules/
 *package-lock.json
