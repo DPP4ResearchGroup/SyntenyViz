@@ -455,7 +455,7 @@ jobs:
         echo "  Start Time: $(date -d @$r_deps_start_time '+%Y-%m-%d %H:%M:%S')"
         echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
-    - name: Install system dependencies and TeX Live
+    - name: Install system dependencies, TeX Live, and Pandoc
       run: |
         # Resource monitoring function for individual steps with performance tracking
         metrics() {
@@ -540,8 +540,8 @@ jobs:
         # Start timing for this step
         step_start_time=$(date +%s)
         
-        echo "📊 Pre-system dependencies and TeX Live resource status:"
-        metrics "PRE-SYSTEM-DEPENDENCIES-TEX"
+        echo "📊 Pre-system dependencies, TeX Live, and Pandoc resource status:"
+        metrics "PRE-SYSTEM-DEPENDENCIES-TEX-PANDOC"
         
         echo "Installing system dependencies..."
         sudo apt-get update
@@ -550,13 +550,26 @@ jobs:
         echo "Installing TeX Live (LaTeX) for documentation generation..."
         sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra texlive-latex-recommended
         
+        echo "Installing Pandoc for R Markdown vignette compilation..."
+        sudo apt-get install -y pandoc
+        
+        # Verify Pandoc installation
+        echo "🔍 Verifying Pandoc installation..."
+        if command -v pandoc >/dev/null 2>&1; then
+          echo "✅ Pandoc is installed and available"
+          pandoc --version | head -1
+        else
+          echo "❌ ERROR: Pandoc is not installed or not in PATH"
+          exit 1
+        fi
+        
         # Calculate step duration
         step_end_time=$(date +%s)
         step_duration=$((step_end_time - step_start_time))
         
-        echo "✅ System dependencies and TeX Live installed successfully!"
-        echo "📊 Post-system dependencies and TeX Live resource status:"
-        metrics "POST-SYSTEM-DEPENDENCIES-TEX"
+        echo "✅ System dependencies, TeX Live, and Pandoc installed successfully!"
+        echo "📊 Post-system dependencies, TeX Live, and Pandoc resource status:"
+        metrics "POST-SYSTEM-DEPENDENCIES-TEX-PANDOC"
         
         # Step performance summary
         echo "⏱️  STEP PERFORMANCE SUMMARY:"
@@ -873,7 +886,7 @@ jobs:
         jekyllFolder: docs
         robqbot_TOKEN: ${{ secrets.ROBQBOT_TOKEN }}
         robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
-        robqbot_NAME: ${{ secrets.ROBQBOT_NAME }}
+        robqbot_NAME: "robqbot"
       run: |
         set -euxo pipefail
         
