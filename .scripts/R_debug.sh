@@ -22,6 +22,18 @@ commit_R_debug() {
     return 1
   fi
 
+  # Preflight: verify token has required scope/permission for Gists
+  # Classic PAT must include 'gist' scope. Fine-grained PAT must grant 'Gists: Read and write'.
+  HEADER_CHECK=$(curl -sSI -H "Authorization: Bearer ${robqbot_TOKEN}" https://api.github.com/user || true)
+  OAUTH_SCOPES=$(printf "%s" "$HEADER_CHECK" | tr -d '\r' | grep -i '^x-oauth-scopes:' | cut -d':' -f2- | sed 's/^ *//')
+  if ! printf "%s" "$OAUTH_SCOPES" | grep -qi 'gist'; then
+    echo "⚠️  robqbot_TOKEN may be missing 'gist' scope/permission (X-OAuth-Scopes: ${OAUTH_SCOPES:-none})."
+    echo "   Create a token with Gist access:"
+    echo "   - Classic PAT: enable 'gist' scope"
+    echo "   - Fine-grained PAT: Resource owner = your user; Permissions → Gists = Read and write"
+    echo "   See: https://docs.github.com/en/rest/gists/gists?apiVersion=2022-11-28#create-a-gist"
+  fi
+
   # Find the first Rcheck directory
   RCHECK_DIR=$(ls -d ./*.Rcheck 2>/dev/null | head -n 1 || true)
   if [ -z "$RCHECK_DIR" ]; then
@@ -90,10 +102,18 @@ EOF
 
   GIST_ID=$(python3 -c "import sys,json;print(json.load(sys.stdin).get('id',''))" <<< "$RESPONSE")
   GIST_URL=$(python3 -c "import sys,json;print(json.load(sys.stdin).get('html_url',''))" <<< "$RESPONSE")
+  STATUS_CODE=$(python3 -c "import sys,json;print(json.load(sys.stdin).get('status',''))" <<< "$RESPONSE" 2>/dev/null || echo "")
 
   if [ -z "$GIST_ID" ]; then
     echo "❌ Failed to create gist"
     echo "$RESPONSE"
+    if printf "%s" "$RESPONSE" | grep -q 'Resource not accessible by personal access token'; then
+      echo "👉 The token used does not have permission to access Gists."
+      echo "   Fix by using a token with Gist write access:"
+      echo "   - Classic PAT: include 'gist' scope"
+      echo "   - Fine-grained PAT: grant 'Gists: Read and write'"
+      echo "   Then set robqbot_TOKEN accordingly (repository/organization secret or environment)."
+    fi
     rm -rf "$TMP_DIR"
     return 1
   fi

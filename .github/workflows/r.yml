@@ -138,16 +138,19 @@ jobs:
         echo "🚀 Setting up R version ${{ matrix.r-version }}..."
         
         # Install R using the same method as r-lib/actions/setup-r@v2
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common
+        # Use user-writable APT cache to enable caching without root permission errors
+        export APT_CACHE="$HOME/apt-cache"
+        mkdir -p "$APT_CACHE/archives" "$APT_CACHE/lists"
+        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" update
+        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y software-properties-common
         sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
         sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
-        sudo apt-get update
+        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" update
         
         if [ "${{ matrix.r-version }}" = "latest" ]; then
-          sudo apt-get install -y r-base r-base-dev
+          sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y r-base r-base-dev
         else
-          sudo apt-get install -y r-base=${{ matrix.r-version }}* r-base-dev=${{ matrix.r-version }}*
+          sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y r-base=${{ matrix.r-version }}* r-base-dev=${{ matrix.r-version }}*
         fi
         
         # Verify R installation
@@ -455,6 +458,16 @@ jobs:
         echo "  Start Time: $(date -d @$r_deps_start_time '+%Y-%m-%d %H:%M:%S')"
         echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
+    - name: Cache APT packages (system deps, TeX Live, Pandoc)
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ runner.temp }}/../home/runner/apt-cache/archives
+          ${{ runner.temp }}/../home/runner/apt-cache/lists
+        key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/r.yml') }}
+        restore-keys: |
+          apt-${{ runner.os }}-
+
     - name: Install system dependencies, TeX Live, and Pandoc
       run: |
         # Resource monitoring function for individual steps with performance tracking
@@ -544,14 +557,16 @@ jobs:
         metrics "PRE-SYSTEM-DEPENDENCIES-TEX-PANDOC"
         
         echo "Installing system dependencies..."
-        sudo apt-get update
-        sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libnlopt-dev
+        export APT_CACHE="$HOME/apt-cache"
+        mkdir -p "$APT_CACHE/archives" "$APT_CACHE/lists"
+        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" update
+        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y libcurl4-openssl-dev libssl-dev libxml2-dev libnlopt-dev
         
         echo "Installing TeX Live (LaTeX) for documentation generation..."
-        sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra texlive-latex-recommended
+        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra texlive-latex-recommended
         
         echo "Installing Pandoc for R Markdown vignette compilation..."
-        sudo apt-get install -y pandoc
+        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y pandoc
         
         # Verify Pandoc installation
         echo "🔍 Verifying Pandoc installation..."
@@ -590,6 +605,16 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Restore APT cache (system deps, TeX Live, Pandoc)
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/apt-cache/archives
+          ~/apt-cache/lists
+        key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/r.yml') }}
+        restore-keys: |
+          apt-${{ runner.os }}-
+
     - name: Restore R packages cache
       uses: actions/cache@v4
       with:
@@ -603,16 +628,18 @@ jobs:
     - name: Set up R (minimal)
       run: |
         # Install R using the same method as r-lib/actions/setup-r@v2
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common
+        export APT_CACHE="$HOME/apt-cache"
+        mkdir -p "$APT_CACHE/archives" "$APT_CACHE/lists"
+        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" update
+        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y software-properties-common
         sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
         sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
-        sudo apt-get update
+        sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" update
         
         if [ "${{ matrix.r-version }}" = "latest" ]; then
-          sudo apt-get install -y r-base r-base-dev
+          sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y r-base r-base-dev
         else
-          sudo apt-get install -y r-base=${{ matrix.r-version }}* r-base-dev=${{ matrix.r-version }}*
+          sudo apt-get -o dir::cache::archives="$APT_CACHE/archives" -o dir::state::lists="$APT_CACHE/lists" install -y r-base=${{ matrix.r-version }}* r-base-dev=${{ matrix.r-version }}*
         fi
         
         # Set up user-writable R library paths
@@ -1155,6 +1182,16 @@ jobs:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Restore APT cache (system deps, TeX Live, Pandoc)
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/apt-cache/archives
+          ~/apt-cache/lists
+        key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/r.yml') }}
+        restore-keys: |
+          apt-${{ runner.os }}-
+
 
     - name: Print deploy git context
       run: |
@@ -1305,9 +1342,9 @@ jobs:
         TRAVIS_BUILD_DIR: ${{ github.workspace }}
         TRAVIS_BUILD_NUMBER: ${{ github.run_number }}
         jekyllFolder: docs
-        robqbot_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        robqbot_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
-        robqbot_NAME: "github-actions[bot]"
+        robqbot_TOKEN: ${{ secrets.ROBQBOT_DPP4_TOKEN }}
+        robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
+        robqbot_NAME: "robqbot"
       run: |
         set -euxo pipefail
         

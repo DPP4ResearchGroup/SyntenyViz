@@ -28,7 +28,9 @@ r_packages:
 # Add system dependencies for Linux
 before_install:
   - sudo apt-get update
+  - sudo apt-get install -y jq
   - sudo apt-get install -y libfribidi-dev
+  # - bash .scripts/wait_for_github_actions.sh
 
 branches:
   only:
