@@ -34,4 +34,5 @@ using Gviz tracks.
                                         "Hsapiens", "Mmusculus")
   plotSyntenyBlocks(synteny_data, plot_type = "comparative")
 }
+
 }

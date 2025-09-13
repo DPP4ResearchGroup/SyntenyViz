@@ -45,4 +45,5 @@ ortholog coverage, synteny block size, and conservation scores.
   summary <- getOrthologSyntenySummary(orthologs, "2:15.95e7:16.45e7", 
                                       "2:6.0e7:6.5e7", "Hsapiens", "Mmusculus")
 }
+
 }

@@ -44,4 +44,5 @@ by matching ortholog pairs between species and calculating relative positions.
   synteny_data <- createSyntenyBlockData(coords$source, coords$target, 
                                         "Hsapiens", "Mmusculus")
 }
+
 }

@@ -5,7 +5,7 @@
 \title{multisynvizPlots
 A multi synteny plot for comparison and new insight discovery}
 \usage{
-multisynvizPlots(orgmsCollection)
+multisynvizPlots(orgmsCollection, verbose = FALSE)
 }
 \arguments{
 \item{orgmsCollection}{A GRangesList object that contains a list of search targets in GRange form}
