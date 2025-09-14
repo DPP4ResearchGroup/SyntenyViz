@@ -600,9 +600,15 @@ jobs:
         echo "  Start Time: $(date -d @$step_start_time '+%Y-%m-%d %H:%M:%S')"
         echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
-    # Dependencies are installed via setup-dependencies job
-    - name: Run build script on develop branch (Safe Mode - No Commits)
+    - name: Comprehensive Build and Documentation (Live Mode - With Commits)
       if: github.ref == 'refs/heads/develop'
+      env:
+        TRAVIS_BUILD_DIR: ${{ github.workspace }}
+        TRAVIS_BUILD_NUMBER: ${{ github.run_number }}
+        jekyllFolder: docs
+        robqbot_TOKEN: ${{ secrets.ROBQBOT_DPP4_TOKEN }}
+        robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
+        robqbot_NAME: "robqbot"
       run: |
         set -euxo pipefail
         
@@ -688,302 +694,228 @@ jobs:
           echo "=========================================="
         }
         
-        # Start timing for this step
-        build_start_time=$(date +%s)
+        # Start timing for this comprehensive step
+        comprehensive_start_time=$(date +%s)
         
-        echo "📊 Pre-build resource status:"
-        metrics "PRE-BUILD"
+        echo "📊 Pre-comprehensive build resource status:"
+        metrics "PRE-COMPREHENSIVE-BUILD"
         
-        echo "Starting build process..."
-        echo "🔒 BUILD JOB: This job will compile and test the R package"
-        echo "🚫 NO COMMITS: Commits and pushes are disabled during build"
-        echo "📦 DEPLOY LATER: Changes will be committed by the deploy job"
+        echo "🚀 Starting comprehensive build process..."
+        echo "🔓 LIVE BUILD JOB: This job will compile, test, document, and commit changes"
+        echo "✅ COMMITS ENABLED: Changes will be committed directly"
         echo "Current directory: $(pwd)"
         echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-        echo "Contents of current directory:"
-        ls -la
-        echo "Contents of .scripts directory:"
-        ls -la .scripts/ || true
-        echo "Package DESCRIPTION file:"
-        test -f DESCRIPTION && cat DESCRIPTION || echo "DESCRIPTION not found"
-        echo "Package NAMESPACE file:"
-        test -f NAMESPACE && cat NAMESPACE || echo "NAMESPACE not found"
         
-        # Configure git to prevent commits during build
-        echo "🔒 Configuring git to prevent commits during build..."
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        
-        # Create a temporary build script that prevents commits/pushes
-        echo "📝 Creating safe build script..."
-        cat > .scripts/R_build_safe.sh << 'EOF'
-        #!/bin/bash
-        set -euxo pipefail
-        
-        echo "🔒 SAFE BUILD MODE: Preventing commits and pushes"
-        
-        # Override git commands to prevent commits
-        git() {
-          case "$1" in
-            commit|push|add)
-              echo "🚫 BLOCKED: git $* - Commits and pushes are disabled during build"
-              echo "   This will be handled by the deploy job instead"
-              return 0
-              ;;
-            *)
-              command git "$@"
-              ;;
-          esac
-        }
-        
-        # Export the function so it's available to subshells
-        export -f git
-        
-        # Run the original build script
-        echo "🚀 Running original build script in safe mode..."
-        bash -x .scripts/R_build.sh
-        EOF
-        
-        chmod +x .scripts/R_build_safe.sh
-        
-        echo "Running safe build script..."
-        bash -x .scripts/R_build_safe.sh
-        
-        # Calculate step duration
-        build_end_time=$(date +%s)
-        build_duration=$((build_end_time - build_start_time))
-        
-        echo "📊 Post-build resource status:"
-        metrics "POST-BUILD"
-        
-        # Build summary
-        echo "🎯 BUILD SUMMARY:"
-        echo "  ✅ Package compilation completed"
-        echo "  ✅ Tests executed successfully"
-        echo "  🚫 No commits made (as expected)"
-        echo "  📦 Ready for deploy job to handle commits"
-        
-        # Step performance summary
-        echo "⏱️  STEP PERFORMANCE SUMMARY:"
-        echo "  Build Duration: ${build_duration} seconds"
-        echo "  Start Time: $(date -d @$build_start_time '+%Y-%m-%d %H:%M:%S')"
-        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
-
-
-    - name: Print branch information
-      run: |
-        # Resource monitoring function for individual steps
-        metrics() {
-          local step_name="$1"
-          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-          echo "=========================================="
-          echo "📊 RESOURCE METRICS - $step_name"
-          echo "⏰ Timestamp: $timestamp"
-          echo "=========================================="
-          
-          # System Information
-          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
-          echo "⏱️  UPTIME: $(uptime)"
-          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
-          
-          # CPU Performance
-          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
-          echo "⚡ CPU USAGE: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')%"
-          
-          # Memory Performance
-          if command -v free >/dev/null 2>&1; then
-            local mem_usage=$(free | grep Mem | awk '{printf "%.1f%%", $3/$2 * 100.0}')
-            local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f%%", $3/$2 * 100.0; else print "0%"}')
-            echo "💾 MEMORY: ${mem_usage} | SWAP: ${swap_usage}"
-          fi
-          
-          # Disk Performance
-          echo "💿 DISK: $(df / | tail -1 | awk '{print $5}' || echo 'N/A')"
-          
-          # Process Performance
-          echo "⚡ PROCESSES: $(ps aux | wc -l) total | $(ps aux | grep -v grep | grep -c '^R') running"
-          echo "🔝 TOP MEM: $(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
-          echo "🔝 TOP CPU: $(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
-          
-          echo "=========================================="
-        }
-        
-        # Start timing for this step
-        branch_info_start_time=$(date +%s)
-        
-        echo "📊 Pre-branch info resource status:"
-        metrics "PRE-BRANCH-INFO"
-        
-        echo "Event: ${{ github.event_name }}"
-        echo "ref: ${{ github.ref }}"
-        echo "ref_name: ${{ github.ref_name }}"
-        echo "head_ref (PR only): ${{ github.head_ref }}"
-        echo "base_ref (PR only): ${{ github.base_ref }}"
-        echo "Current commit SHA: ${{ github.sha }}"
-        
-        # Calculate step duration
-        branch_info_end_time=$(date +%s)
-        branch_info_duration=$((branch_info_end_time - branch_info_start_time))
-        
-        echo "📊 Post-branch info resource status:"
-        metrics "POST-BRANCH-INFO"
-        
-        # Step performance summary
-        echo "⏱️  STEP PERFORMANCE SUMMARY:"
-        echo "  Branch Info Duration: ${branch_info_duration} seconds"
-        echo "  Start Time: $(date -d @$branch_info_start_time '+%Y-%m-%d %H:%M:%S')"
-        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
-
-    - name: Run documentation script on develop branch
-      if: github.ref == 'refs/heads/develop'
-      env:
-        TRAVIS_BUILD_DIR: ${{ github.workspace }}
-        TRAVIS_BUILD_NUMBER: ${{ github.run_number }}
-        jekyllFolder: docs
-        robqbot_TOKEN: ${{ secrets.ROBQBOT_DPP4_TOKEN }}
-        robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
-        robqbot_NAME: "robqbot"
-      run: |
-        set -euxo pipefail
-        
-        # Resource monitoring function for individual steps
-        metrics() {
-          local step_name="$1"
-          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-          echo "=========================================="
-          echo "📊 RESOURCE METRICS - $step_name"
-          echo "⏰ Timestamp: $timestamp"
-          echo "=========================================="
-          
-          # System Information
-          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
-          echo "⏱️  UPTIME: $(uptime)"
-          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
-          
-          # CPU Performance
-          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
-          echo "⚡ CPU USAGE: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')%"
-          
-          # Memory Performance
-          if command -v free >/dev/null 2>&1; then
-            local mem_usage=$(free | grep Mem | awk '{printf "%.1f%%", $3/$2 * 100.0}')
-            local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f%%", $3/$2 * 100.0; else print "0%"}')
-            echo "💾 MEMORY: ${mem_usage} | SWAP: ${swap_usage}"
-          fi
-          
-          # Disk Performance
-          echo "💿 DISK: $(df / | tail -1 | awk '{print $5}' || echo 'N/A')"
-          
-          # Process Performance
-          echo "⚡ PROCESSES: $(ps aux | wc -l) total | $(ps aux | grep -v grep | grep -c '^R') running"
-          echo "🔝 TOP MEM: $(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
-          echo "🔝 TOP CPU: $(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3"%"}')"
-          
-          echo "=========================================="
-        }
-        
-        # Start timing for this step
-        doc_start_time=$(date +%s)
-        
-        echo "📊 Pre-documentation resource status:"
-        metrics "PRE-DOCUMENTATION"
-        
-        # Validate required environment variables
-        echo "🔍 Validating destination variables..."
-        
-        # Check TRAVIS_BUILD_DIR (GitHub Actions equivalent)
+        # Validate environment
+        echo "🔍 Validating environment variables..."
         if [ -z "$TRAVIS_BUILD_DIR" ]; then
           echo "❌ ERROR: TRAVIS_BUILD_DIR is not set"
           exit 1
         fi
         echo "✅ TRAVIS_BUILD_DIR: $TRAVIS_BUILD_DIR"
         
-        # Check TRAVIS_BUILD_NUMBER (GitHub Actions equivalent)
         if [ -z "$TRAVIS_BUILD_NUMBER" ]; then
           echo "❌ ERROR: TRAVIS_BUILD_NUMBER is not set"
           exit 1
         fi
         echo "✅ TRAVIS_BUILD_NUMBER: $TRAVIS_BUILD_NUMBER"
         
-        # Check jekyllFolder destination
-        if [ -z "$jekyllFolder" ]; then
-          echo "❌ ERROR: jekyllFolder destination is not set"
-          exit 1
-        fi
-        echo "✅ jekyllFolder destination: $jekyllFolder"
-        
-        # Check robqbot credentials
-        if [ -z "$robqbot_TOKEN" ]; then
-          echo "❌ ERROR: robqbot_TOKEN is not set"
-          exit 1
-        fi
-        echo "✅ robqbot_TOKEN: [SET]"
-        
-        if [ -z "$robqbot_EMAIL" ]; then
-          echo "❌ ERROR: robqbot_EMAIL is not set"
-          exit 1
-        fi
-        echo "✅ robqbot_EMAIL: $robqbot_EMAIL"
-        
-        if [ -z "$robqbot_NAME" ]; then
-          echo "❌ ERROR: robqbot_NAME is not set"
-          exit 1
-        fi
-        echo "✅ robqbot_NAME: $robqbot_NAME"
-        
-        # Verify workspace directory exists
+        # Verify workspace and scripts
+        echo "🔍 Verifying workspace and scripts..."
         if [ ! -d "$TRAVIS_BUILD_DIR" ]; then
           echo "❌ ERROR: Workspace directory does not exist: $TRAVIS_BUILD_DIR"
           exit 1
         fi
         echo "✅ Workspace directory exists: $TRAVIS_BUILD_DIR"
         
-        # Verify scripts directory exists
         if [ ! -d "$TRAVIS_BUILD_DIR/.scripts" ]; then
           echo "❌ ERROR: Scripts directory does not exist: $TRAVIS_BUILD_DIR/.scripts"
           exit 1
         fi
         echo "✅ Scripts directory exists: $TRAVIS_BUILD_DIR/.scripts"
         
-        # Verify R_doc.sh script exists and is executable
-        if [ ! -f "$TRAVIS_BUILD_DIR/.scripts/R_doc.sh" ]; then
-          echo "❌ ERROR: R_doc.sh script not found: $TRAVIS_BUILD_DIR/.scripts/R_doc.sh"
+        # Check package files
+        echo "📋 Package information:"
+        echo "Contents of current directory:"
+        ls -la
+        echo "Package DESCRIPTION file:"
+        test -f DESCRIPTION && cat DESCRIPTION || echo "DESCRIPTION not found"
+        echo "Package NAMESPACE file:"
+        test -f NAMESPACE && cat NAMESPACE || echo "NAMESPACE not found"
+        
+        # Configure git for commits
+        echo "🔧 Configuring git for commits..."
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        
+        # Build documentation and vignettes first
+        echo "📚 Building documentation and vignettes..."
+        echo "📊 Pre-documentation build resource status:"
+        metrics "PRE-DOC-BUILD"
+        
+        # Build documentation with error handling
+        if ! Rscript -e 'devtools::document()'; then
+          echo "❌ ERROR: devtools::document() failed"
           exit 1
         fi
-        echo "✅ R_doc.sh script found: $TRAVIS_BUILD_DIR/.scripts/R_doc.sh"
+        echo "✅ devtools::document() completed successfully"
         
-        # Verify R_publish_framework.sh script exists
-        if [ ! -f "$TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh" ]; then
-          echo "❌ ERROR: R_publish_framework.sh script not found: $TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh"
+        # Build vignettes with comprehensive error handling
+        echo "📖 Building vignettes..."
+        if ! Rscript -e 'devtools::build_vignettes()'; then
+          echo "❌ ERROR: devtools::build_vignettes() failed"
+          echo "🔍 Checking vignette files for issues..."
+          
+          # List all vignette files
+          echo "Vignette files found:"
+          find vignettes -name "*.Rmd" -o -name "*.R" | head -10
+          
+          # Check each vignette individually
+          for vignette in vignettes/*.Rmd; do
+            if [ -f "$vignette" ]; then
+              echo "🔍 Checking vignette: $vignette"
+              if ! Rscript -e "rmarkdown::render('$vignette', quiet = FALSE)"; then
+                echo "❌ ERROR: Vignette $vignette failed to render"
+                echo "📋 Vignette content (first 50 lines):"
+                head -50 "$vignette"
+                exit 1
+              else
+                echo "✅ Vignette $vignette rendered successfully"
+              fi
+            fi
+          done
+          
+          # If we get here, try build_vignettes again
+          echo "🔄 Retrying devtools::build_vignettes()..."
+          if ! Rscript -e 'devtools::build_vignettes()'; then
+            echo "❌ ERROR: devtools::build_vignettes() failed on retry"
+            exit 1
+          fi
+        fi
+        echo "✅ devtools::build_vignettes() completed successfully"
+        
+        echo "📊 Post-documentation build resource status:"
+        metrics "POST-DOC-BUILD"
+        
+        # Build and check package
+        echo "📦 Building and checking package..."
+        echo "📊 Pre-package build resource status:"
+        metrics "PRE-PKG-BUILD"
+        
+        # Use GitHub Actions workspace instead of TRAVIS_BUILD_DIR
+        cd "${GITHUB_WORKSPACE}/.." || exit 1
+        
+        # Build package with error handling
+        if ! R CMD build "SyntenyViz"; then
+          echo "❌ ERROR: R CMD build failed"
           exit 1
         fi
-        echo "✅ R_publish_framework.sh script found: $TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh"
+        echo "✅ R CMD build completed successfully"
         
-        echo "🎯 All destination variables validated successfully!"
-        
-        # Run the documentation script
-        echo "🚀 Running documentation script..."
-        if [ -x "$TRAVIS_BUILD_DIR/.scripts/R_doc.sh" ]; then
-          bash -x "$TRAVIS_BUILD_DIR/.scripts/R_doc.sh"
-        else
-          bash -x "$TRAVIS_BUILD_DIR/.scripts/R_doc.sh"
+        # Check package with error handling
+        if ! R CMD check "SyntenyViz_*.tar.gz" --check-subdirs=yes; then
+          echo "❌ ERROR: R CMD check failed"
+          echo "🔍 Checking for common issues..."
+          
+          # List check results
+          if [ -d "SyntenyViz.Rcheck" ]; then
+            echo "📋 Check results directory contents:"
+            ls -la SyntenyViz.Rcheck/
+            
+            if [ -f "SyntenyViz.Rcheck/00check.log" ]; then
+              echo "📋 Check log (last 100 lines):"
+              tail -100 SyntenyViz.Rcheck/00check.log
+            fi
+          fi
+          exit 1
         fi
+        echo "✅ R CMD check completed successfully"
+        
+        echo "📊 Post-package build resource status:"
+        metrics "POST-PKG-BUILD"
+        
+        # Verify all outputs
+        echo "🔍 Verifying all build outputs..."
+        echo "📊 Pre-verification resource status:"
+        metrics "PRE-VERIFICATION"
+        
+        # Go back to the package directory
+        cd "${GITHUB_WORKSPACE}" || exit 1
+        
+        # Check if documentation was created
+        if [ ! -d "man" ] || [ -z "$(ls -A man 2>/dev/null)" ]; then
+          echo "❌ ERROR: No man pages found in man/ directory"
+          exit 1
+        fi
+        echo "✅ Man pages found: $(ls man/ | wc -l) files"
+        
+        # Check if vignettes were built
+        if [ ! -d "vignettes" ] || [ -z "$(find vignettes -name "*.html" 2>/dev/null)" ]; then
+          echo "❌ ERROR: No built vignettes found"
+          echo "📋 Vignettes directory contents:"
+          ls -la vignettes/
+          exit 1
+        fi
+        echo "✅ Built vignettes found: $(find vignettes -name "*.html" | wc -l) files"
+        
+        # Check if package tarball was created
+        if [ ! -f "../SyntenyViz_*.tar.gz" ]; then
+          echo "❌ ERROR: No package tarball found"
+          exit 1
+        fi
+        echo "✅ Package tarball created: $(ls ../SyntenyViz_*.tar.gz)"
+        
+        # List all outputs
+        echo "📋 All build outputs:"
+        echo "  Man pages: $(ls man/ | wc -l) files"
+        echo "  Vignettes: $(find vignettes -name "*.html" | wc -l) files"
+        echo "  Package: $(ls ../SyntenyViz_*.tar.gz | wc -l) tarball(s)"
+        
+        echo "📊 Post-verification resource status:"
+        metrics "POST-VERIFICATION"
+        
+        # Now use R_doc.sh for documentation commits and deployment
+        echo "🚀 Running R_doc.sh for documentation commits and deployment..."
+        echo "📊 Pre-R_doc.sh resource status:"
+        metrics "PRE-R-DOC-SCRIPT"
+        
+        # Set required environment variables for R_doc.sh
+        export jekyllFolder="docs"
+        export robqbot_TOKEN="${robqbot_TOKEN}"
+        export robqbot_EMAIL="${robqbot_EMAIL}"
+        export robqbot_NAME="${robqbot_NAME}"
+        
+        # Run R_doc.sh script
+        bash -x .scripts/R_doc.sh
+        
+        echo "📊 Post-R_doc.sh resource status:"
+        metrics "POST-R-DOC-SCRIPT"
         
         # Calculate step duration
-        doc_end_time=$(date +%s)
-        doc_duration=$((doc_end_time - doc_start_time))
+        comprehensive_end_time=$(date +%s)
+        comprehensive_duration=$((comprehensive_end_time - comprehensive_start_time))
         
-        echo "📊 Post-documentation resource status:"
-        metrics "POST-DOCUMENTATION"
+        echo "📊 Post-comprehensive build resource status:"
+        metrics "POST-COMPREHENSIVE-BUILD"
+        
+        # Comprehensive build summary
+        echo "🎯 COMPREHENSIVE BUILD SUMMARY:"
+        echo "  ✅ Package compilation completed"
+        echo "  ✅ Documentation built successfully"
+        echo "  ✅ All vignettes built successfully"
+        echo "  ✅ Package checks passed"
+        echo "  ✅ All outputs verified"
+        echo "  ✅ R_doc.sh executed for commits and deployment"
+        echo "  📦 Build completed and deployed"
         
         # Step performance summary
         echo "⏱️  STEP PERFORMANCE SUMMARY:"
-        echo "  Documentation Duration: ${doc_duration} seconds"
-        echo "  Start Time: $(date -d @$doc_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  Comprehensive Build Duration: ${comprehensive_duration} seconds"
+        echo "  Start Time: $(date -d @$comprehensive_start_time '+%Y-%m-%d %H:%M:%S')"
         echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
 
-    - name: Run debug script on failure
+    - name: Run comprehensive debug script on failure
       if: failure() && github.ref == 'refs/heads/develop'
       env:
         robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
@@ -1029,21 +961,69 @@ jobs:
         # Start timing for this step
         debug_start_time=$(date +%s)
         
-        echo "📊 Pre-debug resource status:"
-        metrics "PRE-DEBUG"
+        echo "📊 Pre-comprehensive debug resource status:"
+        metrics "PRE-COMPREHENSIVE-DEBUG"
         
-        bash .scripts/R_debug.sh
+        echo "🔍 Running comprehensive debug analysis..."
+        
+        # Check build artifacts
+        echo "📋 Build artifacts analysis:"
+        echo "Current directory: $(pwd)"
+        echo "Contents:"
+        ls -la
+        
+        # Check if man directory exists and has content
+        if [ -d "man" ]; then
+          echo "📚 Man directory exists with $(ls man/ | wc -l) files"
+          echo "Man files:"
+          ls -la man/ | head -10
+        else
+          echo "❌ Man directory not found"
+        fi
+        
+        # Check vignettes
+        if [ -d "vignettes" ]; then
+          echo "📖 Vignettes directory exists"
+          echo "Vignette files:"
+          find vignettes -type f | head -10
+          echo "Built vignettes (HTML):"
+          find vignettes -name "*.html" | head -10
+        else
+          echo "❌ Vignettes directory not found"
+        fi
+        
+        # Check for package tarball
+        echo "📦 Package tarballs:"
+        find . -name "SyntenyViz_*.tar.gz" -type f
+        
+        # Check R check results
+        if [ -d "SyntenyViz.Rcheck" ]; then
+          echo "🔍 R check results found:"
+          ls -la SyntenyViz.Rcheck/
+          if [ -f "SyntenyViz.Rcheck/00check.log" ]; then
+            echo "📋 Check log (last 50 lines):"
+            tail -50 SyntenyViz.Rcheck/00check.log
+          fi
+        fi
+        
+        # Run original debug script if it exists
+        if [ -f ".scripts/R_debug.sh" ]; then
+          echo "🚀 Running original debug script..."
+          bash .scripts/R_debug.sh
+        else
+          echo "⚠️  Original debug script not found"
+        fi
         
         # Calculate step duration
         debug_end_time=$(date +%s)
         debug_duration=$((debug_end_time - debug_start_time))
         
-        echo "📊 Post-debug resource status:"
-        metrics "POST-DEBUG"
+        echo "📊 Post-comprehensive debug resource status:"
+        metrics "POST-COMPREHENSIVE-DEBUG"
         
         # Step performance summary
         echo "⏱️  STEP PERFORMANCE SUMMARY:"
-        echo "  Debug Duration: ${debug_duration} seconds"
+        echo "  Comprehensive Debug Duration: ${debug_duration} seconds"
         echo "  Start Time: $(date -d @$debug_start_time '+%Y-%m-%d %H:%M:%S')"
         echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
@@ -1052,7 +1032,7 @@ jobs:
       uses: thollander/actions-comment-pull-request@v3
       with:
         message: |
-          ✅ **Build Successful** 
+          ✅ **Comprehensive Build Successful** 
           
           **Branch:** `${{ github.head_ref }}`
           **Commit:** `${{ github.sha }}`
@@ -1060,11 +1040,22 @@ jobs:
           
           **Job Status:**
           - ✅ Dependencies setup completed
-          - ✅ Build completed successfully
+          - ✅ System dependencies installed
+          - ✅ Package compilation completed
+          - ✅ Documentation built successfully
+          - ✅ All vignettes built successfully
+          - ✅ Package checks passed
+          - ✅ All outputs verified
+          - ✅ R_doc.sh executed for commits and deployment
           
           **Cache Status:**
           - R packages: ✅ Cached
           - System dependencies: ✅ Cached
+          
+          **Build Artifacts:**
+          - Man pages: Generated
+          - Vignettes: Built and verified
+          - Package tarball: Created
           
           **Next Steps:** Ready for review and testing.
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -1074,24 +1065,33 @@ jobs:
       uses: thollander/actions-comment-pull-request@v3
       with:
         message: |
-          ❌ **Build Failed**
+          ❌ **Comprehensive Build Failed**
           
           **Branch:** `${{ github.head_ref }}`
           **Commit:** `${{ github.sha }}`
           **Triggered by:** `${{ github.actor }}`
           
-          The build encountered an error. Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          The comprehensive build encountered an error. Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           
           **Job Status:**
           - Dependencies setup: Check logs for status
-          - Build: ❌ Failed
+          - System dependencies: Check logs for status
+          - Package compilation: Check logs for status
+          - Documentation build: Check logs for status
+          - Vignette build: Check logs for status
+          - Package check: Check logs for status
+          - Output verification: Check logs for status
+          - R_doc.sh execution: Check logs for status
           
           **Common Issues to Check:**
           - R package dependencies
           - System library requirements
+          - Vignette rendering errors
+          - Documentation generation issues
+          - Package check failures
           - Cache corruption
           
-          **Debug Info:** Debug script has been executed to help diagnose the issue.
+          **Debug Info:** Comprehensive debug script has been executed to help diagnose the issue.
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
