@@ -45,7 +45,7 @@ jobs:
         restore-keys: |
           r-${{ matrix.r-version }}-packages-
 
-    - name: Install R using centralized script
+    - name: Install R and Sys deps using centralized script
       run: |
         # Resource monitoring function for individual steps with performance tracking
         metrics() {
@@ -434,7 +434,66 @@ jobs:
         echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
 
-    - name: Install system dependencies, TeX Live, and Pandoc
+  build:
+    needs: setup-dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    strategy:
+      matrix:
+        r-version: ['latest']
+    env:
+      R_LIBS_USER: ${{ github.workspace }}/Rlibs
+      R_LIBS_SITE: ${{ github.workspace }}/Rlibs-site
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Restore R packages cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.R_LIBS_USER }}
+          ${{ env.R_LIBS_SITE }}
+        key: ${{ needs.setup-dependencies.outputs.cache-key }}
+        restore-keys: |
+          r-${{ matrix.r-version }}-packages-
+
+    - name: Set up R (minimal)
+      run: |
+        # Install R using centralized script
+        bash .scripts/install_dependencies.sh r ${{ matrix.r-version }}
+        
+        # Set up user-writable R library paths
+        mkdir -p "$R_LIBS_USER"
+        mkdir -p "$R_LIBS_SITE"
+        
+        echo "📁 R library paths configured:"
+        echo "  R_LIBS_USER: $R_LIBS_USER"
+        echo "  R_LIBS_SITE: $R_LIBS_SITE"
+        
+        # Verify R installation
+        echo "🔍 Verifying R installation..."
+        if command -v R >/dev/null 2>&1; then
+          echo "✅ R is installed and available"
+          R --version | head -1
+        else
+          echo "❌ ERROR: R is not installed or not in PATH"
+          exit 1
+        fi
+        
+        # Verify R can access cached packages
+        echo "🔍 Verifying cached packages accessibility..."
+        if [ -d "$R_LIBS_USER" ] && [ "$(ls -A $R_LIBS_USER 2>/dev/null)" ]; then
+          echo "✅ Cached packages found: $(ls "$R_LIBS_USER" | wc -l) packages"
+          echo "📋 Available packages:"
+          ls "$R_LIBS_USER" | head -10
+        else
+          echo "⚠️  No cached packages found in $R_LIBS_USER"
+        fi
+
+    - name: fix SyntenyViz specific system dependencies, TeX Live, and Pandoc
       run: |
         # Resource monitoring function for individual steps with performance tracking
         metrics() {
@@ -541,67 +600,7 @@ jobs:
         echo "  Start Time: $(date -d @$step_start_time '+%Y-%m-%d %H:%M:%S')"
         echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
-  build:
-    needs: setup-dependencies
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    strategy:
-      matrix:
-        r-version: ['latest']
-    env:
-      R_LIBS_USER: ${{ github.workspace }}/Rlibs
-      R_LIBS_SITE: ${{ github.workspace }}/Rlibs-site
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      
-    - name: Restore R packages cache
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ env.R_LIBS_USER }}
-          ${{ env.R_LIBS_SITE }}
-        key: ${{ needs.setup-dependencies.outputs.cache-key }}
-        restore-keys: |
-          r-${{ matrix.r-version }}-packages-
-
-    - name: Set up R (minimal)
-      run: |
-        # Install R using centralized script
-        bash .scripts/install_dependencies.sh r ${{ matrix.r-version }}
-        
-        # Set up user-writable R library paths
-        mkdir -p "$R_LIBS_USER"
-        mkdir -p "$R_LIBS_SITE"
-        
-        echo "📁 R library paths configured:"
-        echo "  R_LIBS_USER: $R_LIBS_USER"
-        echo "  R_LIBS_SITE: $R_LIBS_SITE"
-        
-        # Verify R installation
-        echo "🔍 Verifying R installation..."
-        if command -v R >/dev/null 2>&1; then
-          echo "✅ R is installed and available"
-          R --version | head -1
-        else
-          echo "❌ ERROR: R is not installed or not in PATH"
-          exit 1
-        fi
-        
-        # Verify R can access cached packages
-        echo "🔍 Verifying cached packages accessibility..."
-        if [ -d "$R_LIBS_USER" ] && [ "$(ls -A $R_LIBS_USER 2>/dev/null)" ]; then
-          echo "✅ Cached packages found: $(ls "$R_LIBS_USER" | wc -l) packages"
-          echo "📋 Available packages:"
-          ls "$R_LIBS_USER" | head -10
-        else
-          echo "⚠️  No cached packages found in $R_LIBS_USER"
-        fi
-
     # Dependencies are installed via setup-dependencies job
-
     - name: Run build script on develop branch (Safe Mode - No Commits)
       if: github.ref == 'refs/heads/develop'
       run: |
