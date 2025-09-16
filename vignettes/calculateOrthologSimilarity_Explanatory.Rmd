@@ -3,7 +3,7 @@ title: "Explanatory Note: calculateOrthologSimilarity Function"
 author: "SyntenyViz Development Team"
 date: "`r Sys.Date()`"
 output: 
-  rmarkdown::html_document:
+  rmarkdown::html_vignette:
     toc: true
     toc_float: true
     code_folding: show
