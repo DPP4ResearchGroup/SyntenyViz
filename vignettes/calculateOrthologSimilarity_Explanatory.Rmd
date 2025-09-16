@@ -5,9 +5,7 @@ date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
     toc: true
-    toc_float: true
     code_folding: show
-    theme: cosmo
     highlight: tango
 vignette: >
   %\VignetteIndexEntry{Explanatory Note: calculateOrthologSimilarity Function}
@@ -23,6 +21,12 @@ knitr::opts_chunk$set(
   fig.width = 8,
   fig.height = 6
 )
+
+# This is an explanatory vignette - no package loading required
+# The vignette provides documentation and examples without executing code
+
+# Simple validation to ensure vignette builds properly
+cat("Explanatory vignette loaded successfully\n")
 ```
 
 # Explanatory Note: calculateOrthologSimilarity Function
@@ -33,7 +37,8 @@ The `calculateOrthologSimilarity` function implements a comprehensive framework 
 
 ## Function Signature
 
-```r
+```{r eval=FALSE, echo=TRUE}
+# Example function call (not executed in this explanatory vignette)
 calculateOrthologSimilarity(ortholog_data, species1, species2, 
                           similarity_type = "composite", use_cache = TRUE, 
                           verbose = FALSE, debug = FALSE)
@@ -52,8 +57,8 @@ calculateOrthologSimilarity(ortholog_data, species1, species2,
 
 **Mathematical Basis**:
 ```
-Sequence Identity = (Identical Positions / Total Aligned Positions) × 100
-Sequence Coverage = (Aligned Length / Reference Length) × 100
+Sequence Identity = (Identical Positions / Total Aligned Positions) * 100
+Sequence Coverage = (Aligned Length / Reference Length) * 100
 Sequence Similarity = Weighted average of identity, coverage, and gap penalties
 ```
 
@@ -90,7 +95,7 @@ Functional Similarity = Weighted combination of GO and pathway scores
 ```
 Evolutionary Distance = Molecular clock estimate (normalized 0-1)
 Evolutionary Similarity = 1 - Evolutionary Distance
-Divergence Time (MYA) = Evolutionary Distance × 100
+Divergence Time (MYA) = Evolutionary Distance * 100
 ```
 
 **Scientific Context**: Evolutionary distance reflects the time since species divergence and provides context for interpreting sequence and functional similarities.
@@ -106,13 +111,13 @@ Divergence Time (MYA) = Evolutionary Distance × 100
 
 **Mathematical Basis**:
 ```
-Composite Score = (Sequence Similarity × 0.4) + 
-                 (Functional Similarity × 0.35) + 
-                 (Evolutionary Similarity × 0.25)
+Composite Score = (Sequence Similarity * 0.4) + 
+                 (Functional Similarity * 0.35) + 
+                 (Evolutionary Similarity * 0.25)
 ```
 
 **Confidence Levels**:
-- **High**: ≥ 0.9 - Strong evidence of orthology
+- **High**: >= 0.9 - Strong evidence of orthology
 - **Medium**: 0.7-0.9 - Good evidence of orthology
 - **Low**: 0.5-0.7 - Moderate evidence of orthology
 - **Very Low**: < 0.5 - Weak evidence of orthology

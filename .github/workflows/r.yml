@@ -268,16 +268,7 @@ jobs:
         # Function to check if package is available
         check_package() {
           local pkg="$1"
-          R -e "
-          .libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE'))
-          if (requireNamespace('$pkg', quietly = TRUE)) {
-            cat('$pkg: AVAILABLE\n')
-            quit(status = 0)
-          } else {
-            cat('$pkg: NOT_AVAILABLE\n')
-            quit(status = 1)
-          }
-          " 2>/dev/null
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (requireNamespace('$pkg', quietly = TRUE)) { cat('$pkg: AVAILABLE\n'); quit(status = 0) } else { cat('$pkg: NOT_AVAILABLE\n'); quit(status = 1) }" 2>/dev/null
           return $?
         }
         
@@ -288,10 +279,7 @@ jobs:
             echo "✅ $pkg is already available, skipping installation"
           else
             echo "📦 Installing $pkg..."
-            R -e "
-            .libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE'))
-            install.packages('$pkg', repos = 'https://cran.rstudio.com/', lib = '$R_LIBS_USER')
-            "
+            R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); install.packages('$pkg', repos = 'https://cran.rstudio.com/', lib = '$R_LIBS_USER')"
           fi
         }
         
@@ -301,10 +289,7 @@ jobs:
           echo "✅ pak is already available"
         else
           echo "📦 Installing pak..."
-          R -e "
-          .libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE'))
-          install.packages('pak', repos = 'https://r-lib.github.io/p/pak/stable/', lib = '$R_LIBS_USER')
-          "
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); install.packages('pak', repos = 'https://r-lib.github.io/p/pak/stable/', lib = '$R_LIBS_USER')"
         fi
         
         # List of packages to check and install if needed
@@ -337,10 +322,7 @@ jobs:
         # Install missing packages using pak if any are needed
         if [ ${#packages_to_install[@]} -gt 0 ]; then
           echo "📦 Installing missing packages: ${packages_to_install[*]}"
-          R -e "
-          .libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE'))
-          pak::pkg_install(c($(printf "'%s'," "${packages_to_install[@]}" | sed 's/,$//')), ask = FALSE, lib = '$R_LIBS_USER')
-          "
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); pak::pkg_install(c($(printf "'%s'," "${packages_to_install[@]}" | sed 's/,$//')), ask = FALSE, lib = '$R_LIBS_USER')"
         else
           echo "🎉 All packages are already available! No installation needed."
         fi
@@ -362,13 +344,7 @@ jobs:
         # Install missing Bioconductor packages if any are needed
         if [ ${#bioc_to_install[@]} -gt 0 ]; then
           echo "📦 Installing missing Bioconductor packages: ${bioc_to_install[*]}"
-          R -e "
-          .libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE'))
-          if (!requireNamespace('BiocManager', quietly = TRUE)) {
-            install.packages('BiocManager', lib = '$R_LIBS_USER')
-          }
-          BiocManager::install(c($(printf "'%s'," "${bioc_to_install[@]}" | sed 's/,$//')), ask = FALSE, lib = '$R_LIBS_USER')
-          "
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (!requireNamespace('BiocManager', quietly = TRUE)) { install.packages('BiocManager', lib = '$R_LIBS_USER') }; BiocManager::install(c($(printf "'%s'," "${bioc_to_install[@]}" | sed 's/,$//')), ask = FALSE, lib = '$R_LIBS_USER')"
         else
           echo "🎉 All Bioconductor packages are already available! No installation needed."
         fi
@@ -489,6 +465,10 @@ jobs:
           echo "✅ Cached packages found: $(ls "$R_LIBS_USER" | wc -l) packages"
           echo "📋 Available packages:"
           ls "$R_LIBS_USER" | head -10
+          
+          # Set up R library paths to use cached packages
+          echo "🔧 Setting up R library paths for cached packages..."
+          Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); cat('R library paths configured for cached packages')"
         else
           echo "⚠️  No cached packages found in $R_LIBS_USER"
         fi
@@ -604,315 +584,234 @@ jobs:
       if: github.ref == 'refs/heads/develop'
       env:
         TRAVIS_BUILD_DIR: ${{ github.workspace }}
-        TRAVIS_BUILD_NUMBER: ${{ github.run_number }}
-        jekyllFolder: docs
-        robqbot_TOKEN: ${{ secrets.ROBQBOT_DPP4_TOKEN }}
-        robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
         robqbot_NAME: "robqbot"
+        robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
+        robqbot_TOKEN: ${{ secrets.ROBQBOT_TOKEN }}
       run: |
         set -euxo pipefail
         
-        # Resource monitoring function for individual steps with performance tracking
-        metrics() {
-          local step_name="$1"
-          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-          
-          # Initialize performance tracking file if it doesn't exist
-          local perf_file="/tmp/performance_metrics.txt"
-          if [ ! -f "$perf_file" ]; then
-            echo "step_name,timestamp,cpu_usage,memory_usage,swap_usage,disk_usage,process_count,r_processes,top_mem,top_cpu" > "$perf_file"
-          fi
-          
-          # Capture current metrics
-          local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo 'N/A')
-          local mem_usage=$(free | grep Mem | awk '{printf "%.1f", $3/$2 * 100.0}' 2>/dev/null || echo 'N/A')
-          local swap_usage=$(free | grep Swap | awk '{if($2>0) printf "%.1f", $3/$2 * 100.0; else print "0"}' 2>/dev/null || echo 'N/A')
-          local disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//' || echo 'N/A')
-          local process_count=$(ps aux | wc -l)
-          local r_processes=$(ps aux | grep -v grep | grep -c '^R' || echo '0')
-          local top_mem=$(ps -eo pid,comm,%mem --sort=-%mem | head -2 | tail -1 | awk '{print $2 " " $3}' | sed 's/%//' || echo 'N/A')
-          local top_cpu=$(ps -eo pid,comm,%cpu --sort=-%cpu | head -2 | tail -1 | awk '{print $2 " " $3}' | sed 's/%//' || echo 'N/A')
-          
-          # Store metrics for averaging
-          echo "$step_name,$timestamp,$cpu_usage,$mem_usage,$swap_usage,$disk_usage,$process_count,$r_processes,$top_mem,$top_cpu" >> "$perf_file"
-          
-          # Calculate averages for this step
-          local step_metrics=$(grep "^$step_name," "$perf_file" | tail -5)
-          local avg_cpu=$(echo "$step_metrics" | awk -F',' '{sum+=$3; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
-          local avg_mem=$(echo "$step_metrics" | awk -F',' '{sum+=$4; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
-          local avg_swap=$(echo "$step_metrics" | awk -F',' '{sum+=$5; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
-          local avg_disk=$(echo "$step_metrics" | awk -F',' '{sum+=$6; count++} END {if(count>0) printf "%.1f", sum/count; else print "N/A"}' 2>/dev/null)
-          local avg_processes=$(echo "$step_metrics" | awk -F',' '{sum+=$7; count++} END {if(count>0) printf "%.0f", sum/count; else print "N/A"}' 2>/dev/null)
-          local avg_r_processes=$(echo "$step_metrics" | awk -F',' '{sum+=$8; count++} END {if(count>0) printf "%.0f", sum/count; else print "N/A"}' 2>/dev/null)
-          
-          echo "=========================================="
-          echo "📊 PERFORMANCE METRICS - $step_name"
-          echo "⏰ Timestamp: $timestamp"
-          echo "=========================================="
-          
-          # System Information
-          echo "🖥️  SYSTEM: $(hostname) | $(uname -a | cut -d' ' -f1-3)"
-          echo "⏱️  UPTIME: $(uptime)"
-          echo "📊 LOAD: $(cat /proc/loadavg 2>/dev/null || echo 'N/A')"
-          
-          # CPU Performance (Current + Average)
-          echo "🔧 CPU: $(nproc) cores | $(lscpu | grep 'Model name' | cut -d: -f2 | xargs || echo 'N/A')"
-          echo "⚡ CPU USAGE: Current: ${cpu_usage}% | Average: ${avg_cpu}%"
-          
-          # Memory Performance (Current + Average)
-          if [ "$mem_usage" != "N/A" ]; then
-            echo "💾 MEMORY: Current: ${mem_usage}% | Average: ${avg_mem}%"
-          else
-            echo "💾 MEMORY: Current: N/A | Average: ${avg_mem}%"
-          fi
-          
-          if [ "$swap_usage" != "N/A" ]; then
-            echo "💾 SWAP: Current: ${swap_usage}% | Average: ${avg_swap}%"
-          else
-            echo "💾 SWAP: Current: N/A | Average: ${avg_swap}%"
-          fi
-          
-          # Disk Performance (Current + Average)
-          if [ "$disk_usage" != "N/A" ]; then
-            echo "💿 DISK: Current: ${disk_usage}% | Average: ${avg_disk}%"
-          else
-            echo "💿 DISK: Current: N/A | Average: ${avg_disk}%"
-          fi
-          
-          # Process Performance (Current + Average)
-          echo "⚡ PROCESSES: Current: ${process_count} total | Average: ${avg_processes} total"
-          echo "⚡ R PROCESSES: Current: ${r_processes} running | Average: ${avg_r_processes} running"
-          echo "🔝 TOP MEM: $top_mem%"
-          echo "🔝 TOP CPU: $top_cpu%"
-          
-          # Performance Trends
-          echo "📈 PERFORMANCE TRENDS (Last 5 measurements):"
-          echo "  CPU: $(echo "$step_metrics" | awk -F',' '{print $3}' | tr '\n' ' ' | sed 's/ $//')"
-          echo "  Memory: $(echo "$step_metrics" | awk -F',' '{print $4}' | tr '\n' ' ' | sed 's/ $//')"
-          echo "  Processes: $(echo "$step_metrics" | awk -F',' '{print $7}' | tr '\n' ' ' | sed 's/ $//')"
-          
-          echo "=========================================="
+        # Create debug log file
+        DEBUG_LOG="/tmp/build_debug.log"
+        echo "=== COMPREHENSIVE BUILD DEBUG LOG ===" > "$DEBUG_LOG"
+        echo "Start Time: $(date '+%Y-%m-%d %H:%M:%S')" >> "$DEBUG_LOG"
+        echo "GitHub Event: ${{ github.event_name }}" >> "$DEBUG_LOG"
+        echo "GitHub Ref: ${{ github.ref }}" >> "$DEBUG_LOG"
+        echo "GitHub SHA: ${{ github.sha }}" >> "$DEBUG_LOG"
+        echo "=====================================" >> "$DEBUG_LOG"
+        
+        # Function to log errors with context
+        log_error() {
+          local step="$1"
+          local error_msg="$2"
+          echo "❌ ERROR in $step: $error_msg" | tee -a "$DEBUG_LOG"
+          echo "Step: $step" >> "$DEBUG_LOG"
+          echo "Error: $error_msg" >> "$DEBUG_LOG"
+          echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')" >> "$DEBUG_LOG"
+          echo "Current directory: $(pwd)" >> "$DEBUG_LOG"
+          echo "Environment variables:" >> "$DEBUG_LOG"
+          env | grep -E "(R_|GITHUB_|TRAVIS_)" >> "$DEBUG_LOG" || true
+          echo "---" >> "$DEBUG_LOG"
         }
         
-        # Start timing for this comprehensive step
-        comprehensive_start_time=$(date +%s)
-        
-        echo "📊 Pre-comprehensive build resource status:"
-        metrics "PRE-COMPREHENSIVE-BUILD"
-        
-        echo "🚀 Starting comprehensive build process..."
-        echo "🔓 LIVE BUILD JOB: This job will compile, test, document, and commit changes"
-        echo "✅ COMMITS ENABLED: Changes will be committed directly"
-        echo "Current directory: $(pwd)"
-        echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-        
-        # Validate environment
-        echo "🔍 Validating environment variables..."
-        if [ -z "$TRAVIS_BUILD_DIR" ]; then
-          echo "❌ ERROR: TRAVIS_BUILD_DIR is not set"
-          exit 1
-        fi
-        echo "✅ TRAVIS_BUILD_DIR: $TRAVIS_BUILD_DIR"
-        
-        if [ -z "$TRAVIS_BUILD_NUMBER" ]; then
-          echo "❌ ERROR: TRAVIS_BUILD_NUMBER is not set"
-          exit 1
-        fi
-        echo "✅ TRAVIS_BUILD_NUMBER: $TRAVIS_BUILD_NUMBER"
-        
-        # Verify workspace and scripts
-        echo "🔍 Verifying workspace and scripts..."
-        if [ ! -d "$TRAVIS_BUILD_DIR" ]; then
-          echo "❌ ERROR: Workspace directory does not exist: $TRAVIS_BUILD_DIR"
-          exit 1
-        fi
-        echo "✅ Workspace directory exists: $TRAVIS_BUILD_DIR"
-        
-        if [ ! -d "$TRAVIS_BUILD_DIR/.scripts" ]; then
-          echo "❌ ERROR: Scripts directory does not exist: $TRAVIS_BUILD_DIR/.scripts"
-          exit 1
-        fi
-        echo "✅ Scripts directory exists: $TRAVIS_BUILD_DIR/.scripts"
-        
-        # Check package files
-        echo "📋 Package information:"
-        echo "Contents of current directory:"
-        ls -la
-        echo "Package DESCRIPTION file:"
-        test -f DESCRIPTION && cat DESCRIPTION || echo "DESCRIPTION not found"
-        echo "Package NAMESPACE file:"
-        test -f NAMESPACE && cat NAMESPACE || echo "NAMESPACE not found"
-        
-        # Configure git for commits
-        echo "🔧 Configuring git for commits..."
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        
-        # Build documentation and vignettes first
-        echo "📚 Building documentation and vignettes..."
-        echo "📊 Pre-documentation build resource status:"
-        metrics "PRE-DOC-BUILD"
-        
-        # Build documentation with error handling
-        if ! Rscript -e 'devtools::document()'; then
-          echo "❌ ERROR: devtools::document() failed"
-          exit 1
-        fi
-        echo "✅ devtools::document() completed successfully"
-        
-        # Build vignettes with comprehensive error handling
-        echo "📖 Building vignettes..."
-        if ! Rscript -e 'devtools::build_vignettes()'; then
-          echo "❌ ERROR: devtools::build_vignettes() failed"
-          echo "🔍 Checking vignette files for issues..."
+        # Function to capture R command output
+        run_r_command() {
+          local step="$1"
+          local r_code="$2"
+          echo "🔄 Executing: $step"
+          echo "R Code: $r_code" >> "$DEBUG_LOG"
           
-          # List all vignette files
-          echo "Vignette files found:"
-          find vignettes -name "*.Rmd" -o -name "*.R" | head -10
+          if Rscript -e "$r_code" 2>&1 | tee -a "$DEBUG_LOG"; then
+            echo "✅ SUCCESS: $step"
+            return 0
+          else
+            local exit_code=$?
+            log_error "$step" "R command failed with exit code $exit_code"
+            return $exit_code
+          fi
+        }
+        
+        # Configure Git user
+        echo "🔧 Configuring Git user..."
+        git config --global user.name "${robqbot_NAME}"
+        git config --global user.email "${robqbot_EMAIL}"
+        
+        echo "🚀 Starting comprehensive build and documentation..."
+        echo "Build started at: $(date '+%Y-%m-%d %H:%M:%S')" >> "$DEBUG_LOG"
+        
+        # Set R library paths
+        echo "📁 Setting R library paths..."
+        export R_LIBS_USER=${{ github.workspace }}/Rlibs
+        echo "R_LIBS_USER: $R_LIBS_USER" >> "$DEBUG_LOG"
+        
+        if ! run_r_command "Set R library paths" ".libPaths(c(Sys.getenv('R_LIBS_USER'), .libPaths())); cat('R library paths set successfully')"; then
+          log_error "R Library Setup" "Failed to set R library paths"
+          exit 1
+        fi
+        
+        # Check if devtools is already available from cache
+        echo "🔍 Checking if devtools is available..."
+        if run_r_command "Check devtools" "library(devtools); cat('devtools already available')" 2>/dev/null; then
+          echo "✅ devtools is already available from cache"
+        else
+          echo "📦 Installing devtools (not found in cache)..."
+          if ! run_r_command "Install devtools" "install.packages('devtools', repos = 'https://cloud.r-project.org', lib = '$R_LIBS_USER')"; then
+            log_error "Devtools Installation" "Failed to install devtools package"
+            exit 1
+          fi
           
-          # Check each vignette individually
-          for vignette in vignettes/*.Rmd; do
-            if [ -f "$vignette" ]; then
-              echo "🔍 Checking vignette: $vignette"
-              if ! Rscript -e "rmarkdown::render('$vignette', quiet = FALSE)"; then
-                echo "❌ ERROR: Vignette $vignette failed to render"
-                echo "📋 Vignette content (first 50 lines):"
-                head -50 "$vignette"
-                exit 1
-              else
-                echo "✅ Vignette $vignette rendered successfully"
-              fi
-            fi
-          done
-          
-          # If we get here, try build_vignettes again
-          echo "🔄 Retrying devtools::build_vignettes()..."
-          if ! Rscript -e 'devtools::build_vignettes()'; then
-            echo "❌ ERROR: devtools::build_vignettes() failed on retry"
+          # Verify devtools is available after installation
+          echo "🔍 Verifying devtools installation..."
+          if ! run_r_command "Verify devtools" "library(devtools); cat('devtools loaded successfully')"; then
+            log_error "Devtools Verification" "devtools package is not available after installation"
             exit 1
           fi
         fi
-        echo "✅ devtools::build_vignettes() completed successfully"
         
-        echo "📊 Post-documentation build resource status:"
-        metrics "POST-DOC-BUILD"
-        
-        # Build and check package
-        echo "📦 Building and checking package..."
-        echo "📊 Pre-package build resource status:"
-        metrics "PRE-PKG-BUILD"
-        
-        # Use GitHub Actions workspace instead of TRAVIS_BUILD_DIR
-        cd "${GITHUB_WORKSPACE}/.." || exit 1
-        
-        # Build package with error handling
-        if ! R CMD build "SyntenyViz"; then
-          echo "❌ ERROR: R CMD build failed"
+        # Install package dependencies
+        echo "📦 Installing package dependencies..."
+        if ! run_r_command "Install dependencies" "devtools::install_deps(dependencies = TRUE)"; then
+          log_error "Dependencies Installation" "Failed to install package dependencies"
           exit 1
         fi
-        echo "✅ R CMD build completed successfully"
         
-        # Check package with error handling
-        if ! R CMD check "SyntenyViz_*.tar.gz" --check-subdirs=yes; then
-          echo "❌ ERROR: R CMD check failed"
-          echo "🔍 Checking for common issues..."
+        # Build and install the package
+        echo "📦 Building and installing SyntenyViz..."
+        if ! run_r_command "Package installation" "devtools::install()"; then
+          log_error "Package Installation" "Failed to build and install SyntenyViz package"
+          exit 1
+        fi
+        
+        # Clean up Rlibs to minimize package size and warnings
+        echo "🧹 Cleaning up Rlibs directory to minimize package size..."
+        if [ -d "Rlibs" ]; then
+          echo "Removing Rlibs directory from package build to avoid long path warnings"
+          rm -rf Rlibs
+        fi
+        
+        # Build package tarball with suppressed warnings
+        echo "📦 Building package tarball..."
+        # Suppress tar warnings about long paths by setting environment variable
+        export R_TAR_CMD="tar --format=ustar"
+        # Build with warnings suppressed
+        if ! run_r_command "Package tarball build" "suppressWarnings(devtools::build(quiet = TRUE))"; then
+          log_error "Package Tarball Build" "Failed to build package tarball"
+          exit 1
+        fi
+        
+        # Build documentation
+        echo "📖 Building documentation..."
+        if ! run_r_command "Documentation build" "devtools::document()"; then
+          log_error "Documentation Build" "Failed to build package documentation"
+          exit 1
+        fi
+        
+        # Build vignettes with detailed error handling
+        echo "📖 Building vignettes..."
+        if ! run_r_command "Vignette build" "devtools::build_vignettes()"; then
+          echo "❌ ERROR: devtools::build_vignettes() failed. Starting individual vignette check."
+          log_error "Vignette Build" "devtools::build_vignettes() failed, starting individual vignette analysis"
           
-          # List check results
-          if [ -d "SyntenyViz.Rcheck" ]; then
-            echo "📋 Check results directory contents:"
-            ls -la SyntenyViz.Rcheck/
+          # Find and attempt to render each vignette to isolate the failure
+          echo "🔍 Analyzing individual vignettes..."
+          failed_vignettes=()
+          
+          for vignette in $(find vignettes -name "*.Rmd"); do
+            echo "--- Checking vignette: $vignette ---"
+            echo "Checking vignette: $vignette" >> "$DEBUG_LOG"
             
-            if [ -f "SyntenyViz.Rcheck/00check.log" ]; then
-              echo "📋 Check log (last 100 lines):"
-              tail -100 SyntenyViz.Rcheck/00check.log
+            if ! Rscript -e "cat('Attempting to render $vignette...'); rmarkdown::render('$vignette')" 2>&1 | tee -a "$DEBUG_LOG"; then
+              echo "❌ FAILURE: Vignette '$vignette' failed to render."
+              log_error "Individual Vignette: $vignette" "Vignette rendering failed"
+              failed_vignettes+=("$vignette")
+              
+              echo "📋 Displaying first 100 lines of failing vignette:"
+              head -n 100 "$vignette" | tee -a "$DEBUG_LOG"
+              
+              echo "📋 Vignette file info:"
+              ls -la "$vignette" | tee -a "$DEBUG_LOG"
+              
+              echo "📋 Checking for common vignette issues:"
+              echo "YAML header:" | tee -a "$DEBUG_LOG"
+              head -n 20 "$vignette" | tee -a "$DEBUG_LOG"
+              
+              # Check for theme conflicts
+              if grep -q "theme:" "$vignette"; then
+                echo "⚠️  WARNING: Found 'theme:' in vignette - potential conflict" | tee -a "$DEBUG_LOG"
+                grep -n "theme:" "$vignette" | tee -a "$DEBUG_LOG"
+              fi
+              
+            else
+              echo "✅ SUCCESS: Vignette '$vignette' rendered successfully."
             fi
+          done
+          
+          if [ ${#failed_vignettes[@]} -gt 0 ]; then
+            echo "❌ ERROR: The following vignettes failed to render: ${failed_vignettes[*]}"
+            log_error "Vignette Analysis" "Multiple vignettes failed: ${failed_vignettes[*]}"
+            exit 1
+          else
+            echo "❌ ERROR: Individual vignette check completed, but the source of the error in devtools::build_vignettes() was not found."
+            log_error "Vignette Analysis" "All individual vignettes passed but devtools::build_vignettes() still failed"
+            exit 1
           fi
-          exit 1
         fi
-        echo "✅ R CMD check completed successfully"
         
-        echo "📊 Post-package build resource status:"
-        metrics "POST-PKG-BUILD"
+        echo "✅ All vignettes built successfully."
+        echo "Build completed at: $(date '+%Y-%m-%d %H:%M:%S')" >> "$DEBUG_LOG"
+        echo "End Time: $(date '+%Y-%m-%d %H:%M:%S')"
         
-        # Verify all outputs
-        echo "🔍 Verifying all build outputs..."
-        echo "📊 Pre-verification resource status:"
-        metrics "PRE-VERIFICATION"
+        # Create success Gist for reference
+        echo "🔍 Creating success Gist for reference..."
         
-        # Go back to the package directory
-        cd "${GITHUB_WORKSPACE}" || exit 1
+        SUCCESS_CONTENT=""
+        SUCCESS_CONTENT+="# SyntenyViz Build Success Report\n\n"
+        SUCCESS_CONTENT+="**Workflow Run:** ${{ github.run_id }}\n"
+        SUCCESS_CONTENT+="**Branch:** ${{ github.ref_name }}\n"
+        SUCCESS_CONTENT+="**Commit:** ${{ github.sha }}\n"
+        SUCCESS_CONTENT+="**Triggered by:** ${{ github.actor }}\n"
+        SUCCESS_CONTENT+="**Timestamp:** $(date '+%Y-%m-%d %H:%M:%S UTC')\n\n"
+        SUCCESS_CONTENT+="## Build Summary\n\n"
+        SUCCESS_CONTENT+="✅ **All build steps completed successfully**\n\n"
+        SUCCESS_CONTENT+="- ✅ Dependencies installed\n"
+        SUCCESS_CONTENT+="- ✅ Package built and installed\n"
+        SUCCESS_CONTENT+="- ✅ Documentation generated\n"
+        SUCCESS_CONTENT+="- ✅ All vignettes built successfully\n\n"
         
-        # Check if documentation was created
-        if [ ! -d "man" ] || [ -z "$(ls -A man 2>/dev/null)" ]; then
-          echo "❌ ERROR: No man pages found in man/ directory"
-          exit 1
+        if [ -f "/tmp/build_debug.log" ]; then
+          SUCCESS_CONTENT+="## Build Log (Success)\n\n"
+          SUCCESS_CONTENT+="\`\`\`\n"
+          SUCCESS_CONTENT+="$(tail -50 /tmp/build_debug.log)\n"
+          SUCCESS_CONTENT+="\`\`\`\n\n"
         fi
-        echo "✅ Man pages found: $(ls man/ | wc -l) files"
         
-        # Check if vignettes were built
-        if [ ! -d "vignettes" ] || [ -z "$(find vignettes -name "*.html" 2>/dev/null)" ]; then
-          echo "❌ ERROR: No built vignettes found"
-          echo "📋 Vignettes directory contents:"
-          ls -la vignettes/
-          exit 1
+        SUCCESS_CONTENT+="## System Information\n\n"
+        SUCCESS_CONTENT+="**Hostname:** $(hostname)\n"
+        SUCCESS_CONTENT+="**OS:** $(uname -a)\n"
+        SUCCESS_CONTENT+="**R Version:**\n"
+        SUCCESS_CONTENT+="\`\`\`\n"
+        SUCCESS_CONTENT+="$(R --version | head -3)\n"
+        SUCCESS_CONTENT+="\`\`\`\n\n"
+        
+        # Create success Gist
+        SUCCESS_GIST_RESPONSE=$(curl -s -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/gists \
+          -d "{
+            \"description\": \"SyntenyViz Build Success - Run ${{ github.run_number }}\",
+            \"public\": false,
+            \"files\": {
+              \"build-success-${{ github.run_number }}.md\": {
+                \"content\": \"$SUCCESS_CONTENT\"
+              }
+            }
+          }")
+        
+        SUCCESS_GIST_URL=$(echo "$SUCCESS_GIST_RESPONSE" | grep -o '"html_url": "[^"]*"' | cut -d'"' -f4)
+        if [ -n "$SUCCESS_GIST_URL" ]; then
+          echo "✅ Success Gist created: $SUCCESS_GIST_URL"
+          echo "SUCCESS_GIST_URL=$SUCCESS_GIST_URL" >> $GITHUB_ENV
         fi
-        echo "✅ Built vignettes found: $(find vignettes -name "*.html" | wc -l) files"
-        
-        # Check if package tarball was created
-        if [ ! -f "../SyntenyViz_*.tar.gz" ]; then
-          echo "❌ ERROR: No package tarball found"
-          exit 1
-        fi
-        echo "✅ Package tarball created: $(ls ../SyntenyViz_*.tar.gz)"
-        
-        # List all outputs
-        echo "📋 All build outputs:"
-        echo "  Man pages: $(ls man/ | wc -l) files"
-        echo "  Vignettes: $(find vignettes -name "*.html" | wc -l) files"
-        echo "  Package: $(ls ../SyntenyViz_*.tar.gz | wc -l) tarball(s)"
-        
-        echo "📊 Post-verification resource status:"
-        metrics "POST-VERIFICATION"
-        
-        # Now use R_doc.sh for documentation commits and deployment
-        echo "🚀 Running R_doc.sh for documentation commits and deployment..."
-        echo "📊 Pre-R_doc.sh resource status:"
-        metrics "PRE-R-DOC-SCRIPT"
-        
-        # Set required environment variables for R_doc.sh
-        export jekyllFolder="docs"
-        export robqbot_TOKEN="${robqbot_TOKEN}"
-        export robqbot_EMAIL="${robqbot_EMAIL}"
-        export robqbot_NAME="${robqbot_NAME}"
-        
-        # Run R_doc.sh script
-        bash -x .scripts/R_doc.sh
-        
-        echo "📊 Post-R_doc.sh resource status:"
-        metrics "POST-R-DOC-SCRIPT"
-        
-        # Calculate step duration
-        comprehensive_end_time=$(date +%s)
-        comprehensive_duration=$((comprehensive_end_time - comprehensive_start_time))
-        
-        echo "📊 Post-comprehensive build resource status:"
-        metrics "POST-COMPREHENSIVE-BUILD"
-        
-        # Comprehensive build summary
-        echo "🎯 COMPREHENSIVE BUILD SUMMARY:"
-        echo "  ✅ Package compilation completed"
-        echo "  ✅ Documentation built successfully"
-        echo "  ✅ All vignettes built successfully"
-        echo "  ✅ Package checks passed"
-        echo "  ✅ All outputs verified"
-        echo "  ✅ R_doc.sh executed for commits and deployment"
-        echo "  📦 Build completed and deployed"
-        
-        # Step performance summary
-        echo "⏱️  STEP PERFORMANCE SUMMARY:"
-        echo "  Comprehensive Build Duration: ${comprehensive_duration} seconds"
-        echo "  Start Time: $(date -d @$comprehensive_start_time '+%Y-%m-%d %H:%M:%S')"
-        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
 
 
     - name: Run comprehensive debug script on failure
@@ -966,6 +865,16 @@ jobs:
         
         echo "🔍 Running comprehensive debug analysis..."
         
+        # Check for build debug log
+        if [ -f "/tmp/build_debug.log" ]; then
+          echo "📋 BUILD DEBUG LOG FOUND:"
+          echo "=========================================="
+          cat "/tmp/build_debug.log"
+          echo "=========================================="
+        else
+          echo "⚠️  No build debug log found at /tmp/build_debug.log"
+        fi
+        
         # Check build artifacts
         echo "📋 Build artifacts analysis:"
         echo "Current directory: $(pwd)"
@@ -1006,6 +915,84 @@ jobs:
           fi
         fi
         
+        # Enhanced error analysis
+        echo "🔍 ENHANCED ERROR ANALYSIS:"
+        echo "=========================================="
+        
+        # Check R installation and version
+        echo "📋 R Installation Status:"
+        if command -v R >/dev/null 2>&1; then
+          echo "✅ R is installed"
+          R --version | head -3
+        else
+          echo "❌ R is not installed or not in PATH"
+        fi
+        
+        # Check Rscript availability
+        if command -v Rscript >/dev/null 2>&1; then
+          echo "✅ Rscript is available"
+        else
+          echo "❌ Rscript is not available"
+        fi
+        
+        # Check R library paths
+        echo "📋 R Library Paths:"
+        Rscript -e ".libPaths()" 2>/dev/null || echo "❌ Could not get R library paths"
+        
+        # Check installed packages
+        echo "📋 Key R Packages Status:"
+        for pkg in devtools BiocManager knitr rmarkdown testthat; do
+          if Rscript -e "if (requireNamespace('$pkg', quietly = TRUE)) cat('$pkg: OK\n') else cat('$pkg: MISSING\n')" 2>/dev/null; then
+            echo "✅ $pkg is available"
+          else
+            echo "❌ $pkg is missing"
+          fi
+        done
+        
+        # Check package DESCRIPTION file
+        if [ -f "DESCRIPTION" ]; then
+          echo "📋 Package DESCRIPTION:"
+          head -20 DESCRIPTION
+        else
+          echo "❌ DESCRIPTION file not found"
+        fi
+        
+        # Check for common build issues
+        echo "📋 Common Build Issue Checks:"
+        
+        # Check for theme conflicts in vignettes
+        echo "🔍 Checking for theme conflicts in vignettes:"
+        theme_files=$(find vignettes -name "*.Rmd" -exec grep -l "theme:" {} \; 2>/dev/null)
+        if [ -n "$theme_files" ]; then
+          echo "⚠️  Found vignettes with 'theme:' - potential conflicts:"
+          echo "$theme_files" | while read -r file; do
+            echo "  File: $file"
+            grep -n "theme:" "$file" | head -3
+          done
+        else
+          echo "✅ No theme conflicts found in vignettes"
+        fi
+        
+        # Check for YAML syntax issues
+        echo "🔍 Checking YAML syntax in vignettes:"
+        for vignette in $(find vignettes -name "*.Rmd" 2>/dev/null); do
+          if ! head -20 "$vignette" | grep -q "^---$"; then
+            echo "⚠️  Potential YAML issue in $vignette - no opening --- found"
+          fi
+        done
+        
+        # Check for R syntax issues in vignettes
+        echo "🔍 Checking for R syntax issues:"
+        for vignette in $(find vignettes -name "*.Rmd" 2>/dev/null); do
+          if grep -q "```{r" "$vignette"; then
+            echo "📋 Found R chunks in $vignette"
+            # Extract R code and check for common issues
+            if grep -A 20 "```{r" "$vignette" | grep -q "theme("; then
+              echo "⚠️  Found theme() calls in $vignette"
+            fi
+          fi
+        done
+        
         # Run original debug script if it exists
         if [ -f ".scripts/R_debug.sh" ]; then
           echo "🚀 Running original debug script..."
@@ -1021,11 +1008,201 @@ jobs:
         echo "📊 Post-comprehensive debug resource status:"
         metrics "POST-COMPREHENSIVE-DEBUG"
         
+        # Create comprehensive debug summary
+        echo "📋 CREATING COMPREHENSIVE DEBUG SUMMARY:"
+        DEBUG_SUMMARY="/tmp/debug_summary.txt"
+        {
+          echo "=== COMPREHENSIVE DEBUG SUMMARY ==="
+          echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "GitHub Event: ${{ github.event_name }}"
+          echo "GitHub Ref: ${{ github.ref }}"
+          echo "GitHub SHA: ${{ github.sha }}"
+          echo "Workflow Run ID: ${{ github.run_id }}"
+          echo "====================================="
+          echo ""
+          echo "BUILD DEBUG LOG:"
+          if [ -f "/tmp/build_debug.log" ]; then
+            cat "/tmp/build_debug.log"
+          else
+            echo "No build debug log found"
+          fi
+          echo ""
+          echo "SYSTEM INFORMATION:"
+          echo "Hostname: $(hostname)"
+          echo "OS: $(uname -a)"
+          echo "Current directory: $(pwd)"
+          echo "Disk usage:"
+          df -h
+          echo ""
+          echo "R ENVIRONMENT:"
+          if command -v R >/dev/null 2>&1; then
+            R --version
+          else
+            echo "R not found"
+          fi
+          echo ""
+          echo "PACKAGE STATUS:"
+          if [ -f "DESCRIPTION" ]; then
+            echo "DESCRIPTION file exists"
+            head -10 DESCRIPTION
+          else
+            echo "DESCRIPTION file not found"
+          fi
+        } > "$DEBUG_SUMMARY"
+        
+        echo "📋 Debug summary created: $DEBUG_SUMMARY"
+        echo "📋 Debug summary size: $(wc -l < "$DEBUG_SUMMARY") lines"
+        
         # Step performance summary
         echo "⏱️  STEP PERFORMANCE SUMMARY:"
         echo "  Comprehensive Debug Duration: ${debug_duration} seconds"
         echo "  Start Time: $(date -d @$debug_start_time '+%Y-%m-%d %H:%M:%S')"
         echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
+
+    - name: Create debug Gist on failure
+      if: failure() && github.ref == 'refs/heads/develop'
+      env:
+        robqbot_NAME: "robqbot"
+        robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
+        robqbot_TOKEN: ${{ secrets.ROBQBOT_TOKEN }}
+      run: |
+        echo "🔍 Creating debug Gist for failure analysis..."
+        
+        # Prepare debug content
+        DEBUG_CONTENT=""
+        
+        # Add header
+        DEBUG_CONTENT+="# SyntenyViz Build Failure Debug Report\n\n"
+        DEBUG_CONTENT+="**Workflow Run:** ${{ github.run_id }}\n"
+        DEBUG_CONTENT+="**Branch:** ${{ github.ref_name }}\n"
+        DEBUG_CONTENT+="**Commit:** ${{ github.sha }}\n"
+        DEBUG_CONTENT+="**Triggered by:** ${{ github.actor }}\n"
+        DEBUG_CONTENT+="**Timestamp:** $(date '+%Y-%m-%d %H:%M:%S UTC')\n\n"
+        
+        # Add build debug log if available
+        if [ -f "/tmp/build_debug.log" ]; then
+          DEBUG_CONTENT+="## Build Debug Log\n\n"
+          DEBUG_CONTENT+="\`\`\`\n"
+          DEBUG_CONTENT+="$(cat /tmp/build_debug.log)\n"
+          DEBUG_CONTENT+="\`\`\`\n\n"
+        fi
+        
+        # Add debug summary if available
+        if [ -f "/tmp/debug_summary.txt" ]; then
+          DEBUG_CONTENT+="## Debug Summary\n\n"
+          DEBUG_CONTENT+="\`\`\`\n"
+          DEBUG_CONTENT+="$(cat /tmp/debug_summary.txt)\n"
+          DEBUG_CONTENT+="\`\`\`\n\n"
+        fi
+        
+        # Add performance metrics if available
+        if [ -f "/tmp/performance_metrics.txt" ]; then
+          DEBUG_CONTENT+="## Performance Metrics\n\n"
+          DEBUG_CONTENT+="\`\`\`\n"
+          DEBUG_CONTENT+="$(cat /tmp/performance_metrics.txt)\n"
+          DEBUG_CONTENT+="\`\`\`\n\n"
+        fi
+        
+        # Add system information
+        DEBUG_CONTENT+="## System Information\n\n"
+        DEBUG_CONTENT+="**Hostname:** $(hostname)\n"
+        DEBUG_CONTENT+="**OS:** $(uname -a)\n"
+        DEBUG_CONTENT+="**Current Directory:** $(pwd)\n"
+        DEBUG_CONTENT+="**Disk Usage:**\n"
+        DEBUG_CONTENT+="\`\`\`\n"
+        DEBUG_CONTENT+="$(df -h)\n"
+        DEBUG_CONTENT+="\`\`\`\n\n"
+        
+        # Add R environment
+        DEBUG_CONTENT+="## R Environment\n\n"
+        if command -v R >/dev/null 2>&1; then
+          DEBUG_CONTENT+="**R Version:**\n"
+          DEBUG_CONTENT+="\`\`\`\n"
+          DEBUG_CONTENT+="$(R --version)\n"
+          DEBUG_CONTENT+="\`\`\`\n\n"
+        else
+          DEBUG_CONTENT+="❌ R not found\n\n"
+        fi
+        
+        # Add package status
+        DEBUG_CONTENT+="## Package Status\n\n"
+        if [ -f "DESCRIPTION" ]; then
+          DEBUG_CONTENT+="**DESCRIPTION file:**\n"
+          DEBUG_CONTENT+="\`\`\`\n"
+          DEBUG_CONTENT+="$(head -20 DESCRIPTION)\n"
+          DEBUG_CONTENT+="\`\`\`\n\n"
+        else
+          DEBUG_CONTENT+="❌ DESCRIPTION file not found\n\n"
+        fi
+        
+        # Add vignette analysis
+        DEBUG_CONTENT+="## Vignette Analysis\n\n"
+        if [ -d "vignettes" ]; then
+          DEBUG_CONTENT+="**Vignette files:**\n"
+          DEBUG_CONTENT+="\`\`\`\n"
+          DEBUG_CONTENT+="$(find vignettes -name "*.Rmd" -exec basename {} \;)\n"
+          DEBUG_CONTENT+="\`\`\`\n\n"
+          
+          # Check for theme conflicts
+          theme_files_debug=$(find vignettes -name "*.Rmd" -exec grep -l "theme:" {} \; 2>/dev/null)
+          if [ -n "$theme_files_debug" ]; then
+            DEBUG_CONTENT+="⚠️ **Theme conflicts detected:**\n"
+            echo "$theme_files_debug" | while read -r file; do
+              DEBUG_CONTENT+="- $file\n"
+            done
+            DEBUG_CONTENT+="\n"
+          else
+            DEBUG_CONTENT+="✅ No theme conflicts found\n\n"
+          fi
+        else
+          DEBUG_CONTENT+="❌ Vignettes directory not found\n\n"
+        fi
+        
+        # Create Gist
+        GIST_TITLE="SyntenyViz Build Failure Debug - Run ${{ github.run_number }}"
+        GIST_FILENAME="build-failure-debug-${{ github.run_number }}.md"
+        
+        # Create the Gist using GitHub API
+        GIST_RESPONSE=$(curl -s -X POST \
+          -H "Authorization: token ${robqbot_TOKEN}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/gists \
+          -d "{
+            \"description\": \"$GIST_TITLE\",
+            \"public\": false,
+            \"files\": {
+              \"$GIST_FILENAME\": {
+                \"content\": \"$DEBUG_CONTENT\"
+              }
+            }
+          }")
+        
+        # Extract Gist URL
+        GIST_URL=$(echo "$GIST_RESPONSE" | grep -o '"html_url": "[^"]*"' | cut -d'"' -f4)
+        
+        if [ -n "$GIST_URL" ]; then
+          echo "✅ Debug Gist created successfully: $GIST_URL"
+          echo "GIST_URL=$GIST_URL" >> $GITHUB_ENV
+          
+          # Clean up old debug Gists (keep last 10)
+          echo "🧹 Cleaning up old debug Gists..."
+          OLD_GISTS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/gists?per_page=100" | \
+            jq -r '.[] | select(.description | contains("SyntenyViz Build Failure Debug")) | .id' | \
+            tail -n +11)
+          
+          for gist_id in $OLD_GISTS; do
+            echo "Deleting old debug Gist: $gist_id"
+            curl -s -X DELETE \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/gists/$gist_id" || true
+          done
+        else
+          echo "❌ Failed to create debug Gist"
+          echo "Response: $GIST_RESPONSE"
+          echo "GIST_URL=" >> $GITHUB_ENV
+        fi
 
     - name: Add PR Comment - Success
       if: github.event_name == 'pull_request' && success()
@@ -1057,6 +1234,9 @@ jobs:
           - Vignettes: Built and verified
           - Package tarball: Created
           
+          **Build Report:**
+          ${{ env.SUCCESS_GIST_URL && format('📋 **Build success report:** [{0}]({0})', env.SUCCESS_GIST_URL) || '⚠️ Success Gist creation failed' }}
+          
           **Next Steps:** Ready for review and testing.
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -1083,15 +1263,18 @@ jobs:
           - Output verification: Check logs for status
           - R_doc.sh execution: Check logs for status
           
+          **Debug Information:**
+          ${{ env.GIST_URL && format('📋 **Detailed debug report available:** [{0}]({0})', env.GIST_URL) || '⚠️ Debug Gist creation failed - check workflow logs for details' }}
+          
           **Common Issues to Check:**
           - R package dependencies
           - System library requirements
-          - Vignette rendering errors
+          - Vignette rendering errors (especially theme conflicts)
           - Documentation generation issues
           - Package check failures
           - Cache corruption
           
-          **Debug Info:** Comprehensive debug script has been executed to help diagnose the issue.
+          **Debug Info:** Comprehensive debug analysis has been performed and assembled into a Gist for detailed review.
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:

@@ -184,3 +184,4 @@ This reference is updated regularly to reflect:
 - Capability changes
 
 For the most current information, always check the latest version of this document and use the validation functions provided in SyntenyViz.
+
