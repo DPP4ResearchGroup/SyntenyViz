@@ -1288,7 +1288,7 @@ jobs:
 
   deploy:
     needs: [setup-dependencies, build]
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     env:
       R_LIBS_USER: ${{ github.workspace }}/Rlibs
@@ -1452,6 +1452,7 @@ jobs:
         GIT_TRACE: '1'
         GIT_CURL_VERBOSE: '1'
         jekyllFolder: docs
+        SOURCE_BRANCH: ${{ github.ref_name }}
         robqbot_TOKEN: ${{ secrets.ROBQBOT_DPP4_TOKEN }}
         robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
         robqbot_NAME: "robqbot"

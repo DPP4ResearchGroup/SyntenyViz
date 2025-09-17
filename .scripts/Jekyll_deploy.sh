@@ -74,8 +74,12 @@ gh_doc_commit () {
     exit 1
   fi
   
-  git fetch origin-SynViz master:master --quiet
-  git checkout -f master -- "${jekyllFolder}" 
+  # Use configurable source branch, default to master if not set
+  SOURCE_BRANCH="${SOURCE_BRANCH:-master}"
+  echo "📋 Using source branch: ${SOURCE_BRANCH}"
+  
+  git fetch origin-SynViz "${SOURCE_BRANCH}:${SOURCE_BRANCH}" --quiet
+  git checkout -f "${SOURCE_BRANCH}" -- "${jekyllFolder}" 
   git add "${jekyllFolder}"
   git commit -m "${SKIP_CI} Jekyll @robqbot ${CI_SYSTEM} build: ${BUILD_NUMBER}"
   
