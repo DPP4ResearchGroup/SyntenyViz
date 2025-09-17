@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+
 require 'w3c_validators'
 
 def validator(file)
@@ -12,17 +14,76 @@ def validator(file)
   end
 end
 
-def validate(file)
-  puts "Checking #{file}..."
-
-  path = File.expand_path "../_site/#{file}", __dir__
-  results = validator(file).validate_file(path)
-
-  return puts 'Valid!' if results.errors.empty?
-
-  results.errors.each { |err| puts err }
-  exit 1
+def check_html_structure(content)
+  errors = []
+  errors << 'Missing DOCTYPE declaration' unless content.match?(/<!DOCTYPE\s+html>/i)
+  errors << 'Missing <html> tag' unless content.match?(/<html[^>]*>/i)
+  errors << 'Missing <head> tag' unless content.match?(/<head[^>]*>/i)
+  errors << 'Missing <body> tag' unless content.match?(/<body[^>]*>/i)
+  errors
 end
 
-validate 'index.html'
-validate File.join 'assets', 'css', 'style.css'
+def check_css_structure(content)
+  errors = []
+  errors << 'No CSS rules found' unless content.match?(/\{[^}]*\}/)
+  errors << 'Unclosed CSS rule' if content.match?(/\{[^}]*$/)
+  errors
+end
+
+def basic_validation(file_path, file_type)
+  puts "Performing basic #{file_type} validation for #{File.basename(file_path)}..."
+  content = File.read(file_path)
+
+  if file_type == 'HTML'
+    check_html_structure(content)
+  else
+    check_css_structure(content)
+  end
+end
+
+def validate_with_w3c(file_path, file_type)
+  puts "Checking #{File.basename(file_path)} with W3C validator..."
+  results = validator(file_path).validate_file(file_path)
+
+  if results.errors.empty?
+    puts 'Valid!'
+    true
+  else
+    puts 'W3C validation errors found:'
+    results.errors.each { |err| puts "  #{err}" }
+    false
+  end
+rescue StandardError => e
+  puts "W3C validator unavailable (#{e.message})"
+  puts 'Falling back to basic validation...'
+
+  errors = basic_validation(file_path, file_type)
+  if errors.empty?
+    puts 'Basic validation passed!'
+    true
+  else
+    puts 'Basic validation errors found:'
+    errors.each { |err| puts "  #{err}" }
+    false
+  end
+end
+
+def validate_file(file)
+  puts "Checking #{file}..."
+  path = File.expand_path "../_site/#{file}", __dir__
+  extension = File.extname(file)
+  file_type = extension == '.html' ? 'HTML' : 'CSS'
+
+  validate_with_w3c(path, file_type)
+end
+
+# Validate files
+html_valid = validate_file 'index.html'
+css_valid = validate_file File.join 'assets', 'css', 'style.css'
+
+# Exit with error code if any validation failed
+exit 1 unless html_valid && css_valid
+
+puts 'All validations passed!'
+
+# rubocop:enable Metrics/AbcSize, Metrics/MethodLength

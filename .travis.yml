@@ -35,6 +35,7 @@ jobs:
 env:
   global:
     - JEKYLL_ENV=production
+    - W3C_VALIDATOR_TIMEOUT=30
 
 # Addons for additional tools
 addons:
