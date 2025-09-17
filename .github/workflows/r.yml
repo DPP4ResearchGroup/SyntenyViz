@@ -33,7 +33,7 @@ jobs:
     - name: Generate cache key
       id: cache-key
       run: |
-        echo "value=r-${{ matrix.r-version }}-packages-$(find . -name "DESCRIPTION" -exec cat {} \; | md5sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+        echo "value=r-${{ matrix.r-version }}-packages-${{ hashFiles('**/DESCRIPTION') }}" >> $GITHUB_OUTPUT
 
     - name: Cache R packages
       uses: actions/cache@v4
@@ -466,11 +466,20 @@ jobs:
           echo "📋 Available packages:"
           ls "$R_LIBS_USER" | head -10
           
+          # Check if devtools is in the cache
+          if [ -d "$R_LIBS_USER/devtools" ]; then
+            echo "✅ devtools package found in cache"
+          else
+            echo "⚠️  devtools package NOT found in cache"
+          fi
+          
           # Set up R library paths to use cached packages
           echo "🔧 Setting up R library paths for cached packages..."
           Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); cat('R library paths configured for cached packages')"
         else
           echo "⚠️  No cached packages found in $R_LIBS_USER"
+          echo "📁 Directory contents:"
+          ls -la "$R_LIBS_USER" 2>/dev/null || echo "Directory does not exist"
         fi
 
     - name: fix SyntenyViz specific system dependencies, TeX Live, and Pandoc
@@ -620,7 +629,10 @@ jobs:
           echo "🔄 Executing: $step"
           echo "R Code: $r_code" >> "$DEBUG_LOG"
           
-          if Rscript -e "$r_code" 2>&1 | tee -a "$DEBUG_LOG"; then
+          # Set R library paths for this command
+          local full_r_code=".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); $r_code"
+          
+          if Rscript -e "$full_r_code" 2>&1 | tee -a "$DEBUG_LOG"; then
             echo "✅ SUCCESS: $step"
             return 0
           else
@@ -641,10 +653,13 @@ jobs:
         # Set R library paths
         echo "📁 Setting R library paths..."
         export R_LIBS_USER=${{ github.workspace }}/Rlibs
+        export R_LIBS_SITE=${{ github.workspace }}/Rlibs-site
         echo "R_LIBS_USER: $R_LIBS_USER" >> "$DEBUG_LOG"
+        echo "R_LIBS_SITE: $R_LIBS_SITE" >> "$DEBUG_LOG"
         
-        if ! run_r_command "Set R library paths" ".libPaths(c(Sys.getenv('R_LIBS_USER'), .libPaths())); cat('R library paths set successfully')"; then
-          log_error "R Library Setup" "Failed to set R library paths"
+        # Verify R library paths are accessible
+        if ! run_r_command "Verify R library paths" "cat('R library paths configured successfully')"; then
+          log_error "R Library Setup" "Failed to configure R library paths"
           exit 1
         fi
         
@@ -654,7 +669,7 @@ jobs:
           echo "✅ devtools is already available from cache"
         else
           echo "📦 Installing devtools (not found in cache)..."
-          if ! run_r_command "Install devtools" "install.packages('devtools', repos = 'https://cloud.r-project.org', lib = '$R_LIBS_USER')"; then
+          if ! run_r_command "Install devtools" "install.packages('devtools', repos = 'https://cloud.r-project.org')"; then
             log_error "Devtools Installation" "Failed to install devtools package"
             exit 1
           fi
@@ -719,7 +734,7 @@ jobs:
             echo "--- Checking vignette: $vignette ---"
             echo "Checking vignette: $vignette" >> "$DEBUG_LOG"
             
-            if ! Rscript -e "cat('Attempting to render $vignette...'); rmarkdown::render('$vignette')" 2>&1 | tee -a "$DEBUG_LOG"; then
+            if ! Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); cat('Attempting to render $vignette...'); rmarkdown::render('$vignette')" 2>&1 | tee -a "$DEBUG_LOG"; then
               echo "❌ FAILURE: Vignette '$vignette' failed to render."
               log_error "Individual Vignette: $vignette" "Vignette rendering failed"
               failed_vignettes+=("$vignette")
@@ -937,12 +952,12 @@ jobs:
         
         # Check R library paths
         echo "📋 R Library Paths:"
-        Rscript -e ".libPaths()" 2>/dev/null || echo "❌ Could not get R library paths"
+        Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); .libPaths()" 2>/dev/null || echo "❌ Could not get R library paths"
         
         # Check installed packages
         echo "📋 Key R Packages Status:"
         for pkg in devtools BiocManager knitr rmarkdown testthat; do
-          if Rscript -e "if (requireNamespace('$pkg', quietly = TRUE)) cat('$pkg: OK\n') else cat('$pkg: MISSING\n')" 2>/dev/null; then
+          if Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); if (requireNamespace('$pkg', quietly = TRUE)) cat('$pkg: OK\n') else cat('$pkg: MISSING\n')" 2>/dev/null; then
             echo "✅ $pkg is available"
           else
             echo "❌ $pkg is missing"
