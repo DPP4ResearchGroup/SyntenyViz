@@ -13,6 +13,7 @@ exclude/
 
 # ignore R vignettes cache
 vignettes/SyntenyViz_workflow_cache/
+.Rd2pdf*/
 
 # ignore logs
 *.log
