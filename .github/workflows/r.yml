@@ -34,6 +34,7 @@ jobs:
       id: cache-key
       run: |
         echo "value=r-${{ matrix.r-version }}-packages-${{ hashFiles('**/DESCRIPTION') }}" >> $GITHUB_OUTPUT
+        echo "value=r-${{ matrix.r-version }}-packages-${{ hashFiles('**/DESCRIPTION') }}" >> $GITHUB_OUTPUT
 
     - name: Cache R packages
       uses: actions/cache@v4
@@ -473,11 +474,20 @@ jobs:
             echo "⚠️  devtools package NOT found in cache"
           fi
           
+          # Check if devtools is in the cache
+          if [ -d "$R_LIBS_USER/devtools" ]; then
+            echo "✅ devtools package found in cache"
+          else
+            echo "⚠️  devtools package NOT found in cache"
+          fi
+          
           # Set up R library paths to use cached packages
           echo "🔧 Setting up R library paths for cached packages..."
           Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); cat('R library paths configured for cached packages')"
         else
           echo "⚠️  No cached packages found in $R_LIBS_USER"
+          echo "📁 Directory contents:"
+          ls -la "$R_LIBS_USER" 2>/dev/null || echo "Directory does not exist"
           echo "📁 Directory contents:"
           ls -la "$R_LIBS_USER" 2>/dev/null || echo "Directory does not exist"
         fi
@@ -592,7 +602,6 @@ jobs:
     - name: Comprehensive Build and Documentation (Live Mode - With Commits)
       if: github.ref == 'refs/heads/develop'
       env:
-        TRAVIS_BUILD_DIR: ${{ github.workspace }}
         robqbot_NAME: "robqbot"
         robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
         robqbot_TOKEN: ${{ secrets.ROBQBOT_TOKEN }}
@@ -618,7 +627,7 @@ jobs:
           echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')" >> "$DEBUG_LOG"
           echo "Current directory: $(pwd)" >> "$DEBUG_LOG"
           echo "Environment variables:" >> "$DEBUG_LOG"
-          env | grep -E "(R_|GITHUB_|TRAVIS_)" >> "$DEBUG_LOG" || true
+          env | grep -E "(R_|GITHUB_)" >> "$DEBUG_LOG" || true
           echo "---" >> "$DEBUG_LOG"
         }
         
@@ -629,6 +638,10 @@ jobs:
           echo "🔄 Executing: $step"
           echo "R Code: $r_code" >> "$DEBUG_LOG"
           
+          # Set R library paths for this command
+          local full_r_code=".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); $r_code"
+          
+          if Rscript -e "$full_r_code" 2>&1 | tee -a "$DEBUG_LOG"; then
           # Set R library paths for this command
           local full_r_code=".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); $r_code"
           
@@ -654,9 +667,14 @@ jobs:
         echo "📁 Setting R library paths..."
         export R_LIBS_USER=${{ github.workspace }}/Rlibs
         export R_LIBS_SITE=${{ github.workspace }}/Rlibs-site
+        export R_LIBS_SITE=${{ github.workspace }}/Rlibs-site
         echo "R_LIBS_USER: $R_LIBS_USER" >> "$DEBUG_LOG"
         echo "R_LIBS_SITE: $R_LIBS_SITE" >> "$DEBUG_LOG"
+        echo "R_LIBS_SITE: $R_LIBS_SITE" >> "$DEBUG_LOG"
         
+        # Verify R library paths are accessible
+        if ! run_r_command "Verify R library paths" "cat('R library paths configured successfully')"; then
+          log_error "R Library Setup" "Failed to configure R library paths"
         # Verify R library paths are accessible
         if ! run_r_command "Verify R library paths" "cat('R library paths configured successfully')"; then
           log_error "R Library Setup" "Failed to configure R library paths"
@@ -669,6 +687,7 @@ jobs:
           echo "✅ devtools is already available from cache"
         else
           echo "📦 Installing devtools (not found in cache)..."
+          if ! run_r_command "Install devtools" "install.packages('devtools', repos = 'https://cloud.r-project.org')"; then
           if ! run_r_command "Install devtools" "install.packages('devtools', repos = 'https://cloud.r-project.org')"; then
             log_error "Devtools Installation" "Failed to install devtools package"
             exit 1
@@ -694,13 +713,6 @@ jobs:
         if ! run_r_command "Package installation" "devtools::install()"; then
           log_error "Package Installation" "Failed to build and install SyntenyViz package"
           exit 1
-        fi
-        
-        # Clean up Rlibs to minimize package size and warnings
-        echo "🧹 Cleaning up Rlibs directory to minimize package size..."
-        if [ -d "Rlibs" ]; then
-          echo "Removing Rlibs directory from package build to avoid long path warnings"
-          rm -rf Rlibs
         fi
         
         # Build package tarball with suppressed warnings
@@ -734,6 +746,7 @@ jobs:
             echo "--- Checking vignette: $vignette ---"
             echo "Checking vignette: $vignette" >> "$DEBUG_LOG"
             
+            if ! Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); cat('Attempting to render $vignette...'); rmarkdown::render('$vignette')" 2>&1 | tee -a "$DEBUG_LOG"; then
             if ! Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); cat('Attempting to render $vignette...'); rmarkdown::render('$vignette')" 2>&1 | tee -a "$DEBUG_LOG"; then
               echo "❌ FAILURE: Vignette '$vignette' failed to render."
               log_error "Individual Vignette: $vignette" "Vignette rendering failed"
@@ -772,70 +785,29 @@ jobs:
         fi
         
         echo "✅ All vignettes built successfully."
+        
+        # Clean up Rlibs to minimize package size and warnings (after all devtools operations)
+        echo "🧹 Cleaning up Rlibs directory to minimize package size..."
+        if [ -d "Rlibs" ]; then
+          echo "Removing Rlibs directory from package build to avoid long path warnings"
+          rm -rf Rlibs
+        fi
+        
         echo "Build completed at: $(date '+%Y-%m-%d %H:%M:%S')" >> "$DEBUG_LOG"
         echo "End Time: $(date '+%Y-%m-%d %H:%M:%S')"
         
-        # Create success Gist for reference
-        echo "🔍 Creating success Gist for reference..."
-        
-        SUCCESS_CONTENT=""
-        SUCCESS_CONTENT+="# SyntenyViz Build Success Report\n\n"
-        SUCCESS_CONTENT+="**Workflow Run:** ${{ github.run_id }}\n"
-        SUCCESS_CONTENT+="**Branch:** ${{ github.ref_name }}\n"
-        SUCCESS_CONTENT+="**Commit:** ${{ github.sha }}\n"
-        SUCCESS_CONTENT+="**Triggered by:** ${{ github.actor }}\n"
-        SUCCESS_CONTENT+="**Timestamp:** $(date '+%Y-%m-%d %H:%M:%S UTC')\n\n"
-        SUCCESS_CONTENT+="## Build Summary\n\n"
-        SUCCESS_CONTENT+="✅ **All build steps completed successfully**\n\n"
-        SUCCESS_CONTENT+="- ✅ Dependencies installed\n"
-        SUCCESS_CONTENT+="- ✅ Package built and installed\n"
-        SUCCESS_CONTENT+="- ✅ Documentation generated\n"
-        SUCCESS_CONTENT+="- ✅ All vignettes built successfully\n\n"
-        
-        if [ -f "/tmp/build_debug.log" ]; then
-          SUCCESS_CONTENT+="## Build Log (Success)\n\n"
-          SUCCESS_CONTENT+="\`\`\`\n"
-          SUCCESS_CONTENT+="$(tail -50 /tmp/build_debug.log)\n"
-          SUCCESS_CONTENT+="\`\`\`\n\n"
-        fi
-        
-        SUCCESS_CONTENT+="## System Information\n\n"
-        SUCCESS_CONTENT+="**Hostname:** $(hostname)\n"
-        SUCCESS_CONTENT+="**OS:** $(uname -a)\n"
-        SUCCESS_CONTENT+="**R Version:**\n"
-        SUCCESS_CONTENT+="\`\`\`\n"
-        SUCCESS_CONTENT+="$(R --version | head -3)\n"
-        SUCCESS_CONTENT+="\`\`\`\n\n"
-        
-        # Create success Gist
-        SUCCESS_GIST_RESPONSE=$(curl -s -X POST \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/gists \
-          -d "{
-            \"description\": \"SyntenyViz Build Success - Run ${{ github.run_number }}\",
-            \"public\": false,
-            \"files\": {
-              \"build-success-${{ github.run_number }}.md\": {
-                \"content\": \"$SUCCESS_CONTENT\"
-              }
-            }
-          }")
-        
-        SUCCESS_GIST_URL=$(echo "$SUCCESS_GIST_RESPONSE" | grep -o '"html_url": "[^"]*"' | cut -d'"' -f4)
-        if [ -n "$SUCCESS_GIST_URL" ]; then
-          echo "✅ Success Gist created: $SUCCESS_GIST_URL"
-          echo "SUCCESS_GIST_URL=$SUCCESS_GIST_URL" >> $GITHUB_ENV
-        fi
+        echo "✅ Build completed successfully - debug reporting will be handled by separate step"
 
 
-    - name: Run comprehensive debug script on failure
-      if: failure() && github.ref == 'refs/heads/develop'
+    - name: Debug Analysis and Gist Reporting
+      if: always() && github.ref == 'refs/heads/develop'
       env:
         robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
         robqbot_NAME: "robqbot"
         robqbot_TOKEN: ${{ secrets.ROBQBOT_TOKEN }}
       run: |
+        set -euxo pipefail
+        
         # Resource monitoring function for individual steps
         metrics() {
           local step_name="$1"
@@ -1139,85 +1111,107 @@ jobs:
           DEBUG_CONTENT+="❌ R not found\n\n"
         fi
         
-        # Add package status
-        DEBUG_CONTENT+="## Package Status\n\n"
-        if [ -f "DESCRIPTION" ]; then
-          DEBUG_CONTENT+="**DESCRIPTION file:**\n"
-          DEBUG_CONTENT+="\`\`\`\n"
-          DEBUG_CONTENT+="$(head -20 DESCRIPTION)\n"
-          DEBUG_CONTENT+="\`\`\`\n\n"
-        else
-          DEBUG_CONTENT+="❌ DESCRIPTION file not found\n\n"
-        fi
+        # Create comprehensive debug file
+        DEBUG_FILE="/tmp/comprehensive_debug.md"
+        collect_comprehensive_debug "$DEBUG_FILE" "$BUILD_STATUS"
         
-        # Add vignette analysis
-        DEBUG_CONTENT+="## Vignette Analysis\n\n"
-        if [ -d "vignettes" ]; then
-          DEBUG_CONTENT+="**Vignette files:**\n"
-          DEBUG_CONTENT+="\`\`\`\n"
-          DEBUG_CONTENT+="$(find vignettes -name "*.Rmd" -exec basename {} \;)\n"
-          DEBUG_CONTENT+="\`\`\`\n\n"
-          
-          # Check for theme conflicts
-          theme_files_debug=$(find vignettes -name "*.Rmd" -exec grep -l "theme:" {} \; 2>/dev/null)
-          if [ -n "$theme_files_debug" ]; then
-            DEBUG_CONTENT+="⚠️ **Theme conflicts detected:**\n"
-            echo "$theme_files_debug" | while read -r file; do
-              DEBUG_CONTENT+="- $file\n"
-            done
-            DEBUG_CONTENT+="\n"
-          else
-            DEBUG_CONTENT+="✅ No theme conflicts found\n\n"
-          fi
-        else
-          DEBUG_CONTENT+="❌ Vignettes directory not found\n\n"
-        fi
+        echo "📋 Comprehensive debug information collected: $DEBUG_FILE"
+        echo "📋 Debug file size: $(wc -l < "$DEBUG_FILE") lines"
+        echo "📋 Build status: $BUILD_STATUS"
         
-        # Create Gist
-        GIST_TITLE="SyntenyViz Build Failure Debug - Run ${{ github.run_number }}"
-        GIST_FILENAME="build-failure-debug-${{ github.run_number }}.md"
+        # Create Gist using enhanced approach
+        echo "🔍 Creating $BUILD_STATUS Gist..."
         
-        # Create the Gist using GitHub API
-        GIST_RESPONSE=$(curl -s -X POST \
-          -H "Authorization: token ${robqbot_TOKEN}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/gists \
-          -d "{
-            \"description\": \"$GIST_TITLE\",
-            \"public\": false,
-            \"files\": {
-              \"$GIST_FILENAME\": {
-                \"content\": \"$DEBUG_CONTENT\"
-              }
+        # Use Python for better JSON handling (like R_debug.sh)
+        GIST_PAYLOAD=$(python3 -c "
+        import json
+        import sys
+        
+        # Read debug content
+        with open('$DEBUG_FILE', 'r', errors='ignore') as f:
+            content = f.read()
+        
+        # Create payload
+        payload = {
+            'description': '$GIST_TITLE',
+            'public': False,
+            'files': {
+                '$GIST_FILENAME': {
+                    'content': content
+                }
             }
-          }")
+        }
         
-        # Extract Gist URL
-        GIST_URL=$(echo "$GIST_RESPONSE" | grep -o '"html_url": "[^"]*"' | cut -d'"' -f4)
+        print(json.dumps(payload))
+        ")
         
-        if [ -n "$GIST_URL" ]; then
-          echo "✅ Debug Gist created successfully: $GIST_URL"
+        # Create the Gist using GitHub API with enhanced error handling
+        GIST_RESPONSE=$(curl -sS -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${robqbot_TOKEN}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -d "$GIST_PAYLOAD" \
+          https://api.github.com/gists)
+        
+        # Extract Gist information using Python (like R_debug.sh)
+        GIST_ID=$(python3 -c "import sys,json;print(json.load(sys.stdin).get('id',''))" <<< "$GIST_RESPONSE")
+        GIST_URL=$(python3 -c "import sys,json;print(json.load(sys.stdin).get('html_url',''))" <<< "$GIST_RESPONSE")
+        STATUS_CODE=$(python3 -c "import sys,json;print(json.load(sys.stdin).get('status',''))" <<< "$GIST_RESPONSE" 2>/dev/null || echo "")
+        
+        if [ -n "$GIST_ID" ] && [ -n "$GIST_URL" ]; then
+          echo "✅ $BUILD_STATUS Gist created successfully: $GIST_URL"
           echo "GIST_URL=$GIST_URL" >> $GITHUB_ENV
+          echo "GIST_ID=$GIST_ID" >> $GITHUB_ENV
           
-          # Clean up old debug Gists (keep last 10)
-          echo "🧹 Cleaning up old debug Gists..."
-          OLD_GISTS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
+          # Clean up old Gists (keep last 15)
+          echo "🧹 Cleaning up old Gists..."
+          OLD_GISTS=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/gists?per_page=100" | \
-            jq -r '.[] | select(.description | contains("SyntenyViz Build Failure Debug")) | .id' | \
-            tail -n +11)
+            python3 -c "
+            import sys,json
+            gists = json.load(sys.stdin)
+            debug_gists = [g['id'] for g in gists if 'SyntenyViz Build' in g.get('description', '')]
+            for gist_id in debug_gists[15:]:  # Keep last 15
+                print(gist_id)
+            " 2>/dev/null || true)
           
           for gist_id in $OLD_GISTS; do
-            echo "Deleting old debug Gist: $gist_id"
+            echo "Deleting old Gist: $gist_id"
             curl -s -X DELETE \
-              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
               "https://api.github.com/gists/$gist_id" || true
           done
         else
-          echo "❌ Failed to create debug Gist"
+          echo "❌ Failed to create $BUILD_STATUS Gist"
           echo "Response: $GIST_RESPONSE"
           echo "GIST_URL=" >> $GITHUB_ENV
+          echo "GIST_ID=" >> $GITHUB_ENV
+          
+          # Enhanced error reporting
+          if echo "$GIST_RESPONSE" | grep -q 'Resource not accessible by personal access token'; then
+            echo "👉 The token used does not have permission to access Gists."
+            echo "   Fix by using a token with Gist write access:"
+            echo "   - Classic PAT: include 'gist' scope"
+            echo "   - Fine-grained PAT: grant 'Gists: Read and write'"
+          fi
         fi
+        
+        # Calculate step duration
+        debug_end_time=$(date +%s)
+        debug_duration=$((debug_end_time - debug_start_time))
+        
+        echo "📊 Post-debug analysis resource status:"
+        metrics "POST-DEBUG-ANALYSIS"
+        
+        # Step performance summary
+        echo "⏱️  STEP PERFORMANCE SUMMARY:"
+        echo "  Debug Analysis Duration: ${debug_duration} seconds"
+        echo "  Start Time: $(date -d @$debug_start_time '+%Y-%m-%d %H:%M:%S')"
+        echo "  End Time: $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "  Build Status: $BUILD_STATUS"
+        echo "  Gist Created: $([ -n "$GIST_URL" ] && echo "Yes ($GIST_URL)" || echo "No")"
 
     - name: Add PR Comment - Success
       if: github.event_name == 'pull_request' && success()
@@ -1294,7 +1288,7 @@ jobs:
 
   deploy:
     needs: [setup-dependencies, build]
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     env:
       R_LIBS_USER: ${{ github.workspace }}/Rlibs
@@ -1552,15 +1546,21 @@ jobs:
         # Verify workspace directory exists
         if [ ! -d "$GITHUB_WORKSPACE" ]; then
           echo "❌ ERROR: Workspace directory does not exist: $GITHUB_WORKSPACE"
+        if [ ! -d "$GITHUB_WORKSPACE" ]; then
+          echo "❌ ERROR: Workspace directory does not exist: $GITHUB_WORKSPACE"
           exit 1
         fi
+        echo "✅ Workspace directory exists: $GITHUB_WORKSPACE"
         echo "✅ Workspace directory exists: $GITHUB_WORKSPACE"
         
         # Verify scripts directory exists
         if [ ! -d "$GITHUB_WORKSPACE/.scripts" ]; then
           echo "❌ ERROR: Scripts directory does not exist: $GITHUB_WORKSPACE/.scripts"
+        if [ ! -d "$GITHUB_WORKSPACE/.scripts" ]; then
+          echo "❌ ERROR: Scripts directory does not exist: $GITHUB_WORKSPACE/.scripts"
           exit 1
         fi
+        echo "✅ Scripts directory exists: $GITHUB_WORKSPACE/.scripts"
         echo "✅ Scripts directory exists: $GITHUB_WORKSPACE/.scripts"
         
         # Verify Jekyll_content_deploy.sh script exists
@@ -1573,8 +1573,11 @@ jobs:
         # Verify R_publish_framework.sh script exists
         if [ ! -f "$GITHUB_WORKSPACE/.scripts/R_publish_framework.sh" ]; then
           echo "❌ ERROR: R_publish_framework.sh script not found: $GITHUB_WORKSPACE/.scripts/R_publish_framework.sh"
+        if [ ! -f "$GITHUB_WORKSPACE/.scripts/R_publish_framework.sh" ]; then
+          echo "❌ ERROR: R_publish_framework.sh script not found: $GITHUB_WORKSPACE/.scripts/R_publish_framework.sh"
           exit 1
         fi
+        echo "✅ R_publish_framework.sh script found: $GITHUB_WORKSPACE/.scripts/R_publish_framework.sh"
         echo "✅ R_publish_framework.sh script found: $GITHUB_WORKSPACE/.scripts/R_publish_framework.sh"
         
         echo "🎯 All deploy destination variables validated successfully!"
