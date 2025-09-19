@@ -75,4 +75,4 @@ deploy:
     branch: master
     ## branch: develop
   script:
-    - bash .scripts/Jekyll_deploy.sh
+    - bash .scripts/Jekyll_content_deploy.sh
