@@ -1373,8 +1373,8 @@ jobs:
         git --no-pager log --oneline -n 5 || true
         echo "Scripts directory contents:"
         ls -la .scripts || true
-        echo "Top of Jekyll_deploy.sh:"
-        head -n 80 .scripts/Jekyll_deploy.sh || true
+        echo "Top of Jekyll_content_deploy.sh:"
+        head -n 80 .scripts/Jekyll_content_deploy.sh || true
         
         # Calculate step duration
         git_context_end_time=$(date +%s)
@@ -1452,14 +1452,12 @@ jobs:
 
     - name: Deploy compiled vignettes to gh-pages
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GIT_TRACE: '1'
-        GIT_CURL_VERBOSE: '1'
-        TRAVIS_BUILD_DIR: ${{ github.workspace }}
-        TRAVIS_BUILD_NUMBER: ${{ github.run_number }}
+        # GitHub Actions environment variables
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        # Deployment configuration
         jekyllFolder: docs
+        # Bot credentials for automated commits
         robqbot_TOKEN: ${{ secrets.ROBQBOT_DPP4_TOKEN }}
         robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
         robqbot_NAME: "robqbot"
@@ -1509,21 +1507,21 @@ jobs:
         metrics "PRE-DEPLOY"
         
         # Validate required environment variables
-        echo "🔍 Validating deploy destination variables..."
+        echo "🔍 Validating GitHub Actions environment variables..."
         
-        # Check TRAVIS_BUILD_DIR (GitHub Actions equivalent)
-        if [ -z "$TRAVIS_BUILD_DIR" ]; then
-          echo "❌ ERROR: TRAVIS_BUILD_DIR is not set"
+        # Check workspace directory
+        if [ -z "$GITHUB_WORKSPACE" ]; then
+          echo "❌ ERROR: GITHUB_WORKSPACE is not set"
           exit 1
         fi
-        echo "✅ TRAVIS_BUILD_DIR: $TRAVIS_BUILD_DIR"
+        echo "✅ GitHub Actions workspace: $GITHUB_WORKSPACE"
         
-        # Check TRAVIS_BUILD_NUMBER (GitHub Actions equivalent)
-        if [ -z "$TRAVIS_BUILD_NUMBER" ]; then
-          echo "❌ ERROR: TRAVIS_BUILD_NUMBER is not set"
+        # Check build number
+        if [ -z "$GITHUB_RUN_NUMBER" ]; then
+          echo "❌ ERROR: GITHUB_RUN_NUMBER is not set"
           exit 1
         fi
-        echo "✅ TRAVIS_BUILD_NUMBER: $TRAVIS_BUILD_NUMBER"
+        echo "✅ GitHub Actions build number: $GITHUB_RUN_NUMBER"
         
         # Check jekyllFolder destination
         if [ -z "$jekyllFolder" ]; then
@@ -1552,32 +1550,32 @@ jobs:
         echo "✅ robqbot_NAME: $robqbot_NAME"
         
         # Verify workspace directory exists
-        if [ ! -d "$TRAVIS_BUILD_DIR" ]; then
-          echo "❌ ERROR: Workspace directory does not exist: $TRAVIS_BUILD_DIR"
+        if [ ! -d "$GITHUB_WORKSPACE" ]; then
+          echo "❌ ERROR: Workspace directory does not exist: $GITHUB_WORKSPACE"
           exit 1
         fi
-        echo "✅ Workspace directory exists: $TRAVIS_BUILD_DIR"
+        echo "✅ Workspace directory exists: $GITHUB_WORKSPACE"
         
         # Verify scripts directory exists
-        if [ ! -d "$TRAVIS_BUILD_DIR/.scripts" ]; then
-          echo "❌ ERROR: Scripts directory does not exist: $TRAVIS_BUILD_DIR/.scripts"
+        if [ ! -d "$GITHUB_WORKSPACE/.scripts" ]; then
+          echo "❌ ERROR: Scripts directory does not exist: $GITHUB_WORKSPACE/.scripts"
           exit 1
         fi
-        echo "✅ Scripts directory exists: $TRAVIS_BUILD_DIR/.scripts"
+        echo "✅ Scripts directory exists: $GITHUB_WORKSPACE/.scripts"
         
-        # Verify Jekyll_deploy.sh script exists
-        if [ ! -f "$TRAVIS_BUILD_DIR/.scripts/Jekyll_deploy.sh" ]; then
-          echo "❌ ERROR: Jekyll_deploy.sh script not found: $TRAVIS_BUILD_DIR/.scripts/Jekyll_deploy.sh"
+        # Verify Jekyll_content_deploy.sh script exists
+        if [ ! -f "$GITHUB_WORKSPACE/.scripts/Jekyll_content_deploy.sh" ]; then
+          echo "❌ ERROR: Jekyll_content_deploy.sh script not found: $GITHUB_WORKSPACE/.scripts/Jekyll_content_deploy.sh"
           exit 1
         fi
-        echo "✅ Jekyll_deploy.sh script found: $TRAVIS_BUILD_DIR/.scripts/Jekyll_deploy.sh"
+        echo "✅ Jekyll_content_deploy.sh script found: $GITHUB_WORKSPACE/.scripts/Jekyll_content_deploy.sh"
         
         # Verify R_publish_framework.sh script exists
-        if [ ! -f "$TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh" ]; then
-          echo "❌ ERROR: R_publish_framework.sh script not found: $TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh"
+        if [ ! -f "$GITHUB_WORKSPACE/.scripts/R_publish_framework.sh" ]; then
+          echo "❌ ERROR: R_publish_framework.sh script not found: $GITHUB_WORKSPACE/.scripts/R_publish_framework.sh"
           exit 1
         fi
-        echo "✅ R_publish_framework.sh script found: $TRAVIS_BUILD_DIR/.scripts/R_publish_framework.sh"
+        echo "✅ R_publish_framework.sh script found: $GITHUB_WORKSPACE/.scripts/R_publish_framework.sh"
         
         echo "🎯 All deploy destination variables validated successfully!"
         
@@ -1586,7 +1584,7 @@ jobs:
         echo "Current origin configuration:";
         git remote -v || true
         echo "Running deploy script with trace..."
-        bash -x "$TRAVIS_BUILD_DIR/.scripts/Jekyll_deploy.sh"
+        bash -x "$GITHUB_WORKSPACE/.scripts/Jekyll_content_deploy.sh"
         echo "Git status after deploy:";
         git status || true
         

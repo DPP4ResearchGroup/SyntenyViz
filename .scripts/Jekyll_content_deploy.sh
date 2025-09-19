@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ###
+# GitHub Actions CI deployment script for SyntenyViz
 # secure:
 #   robqbot_TOKEN
 #   robqbot_EMAIL
@@ -9,7 +10,7 @@
 
 # Include git publish framework
 # shellcheck source=/dev/null
-source "${TRAVIS_BUILD_DIR}/.scripts/R_publish_framework.sh" --source-only
+source "${GITHUB_WORKSPACE}/.scripts/R_publish_framework.sh" --source-only
 
 gh_setup () {
   git remote add origin-SynViz "https://${robqbot_TOKEN}@github.com/DPP4ResearchGroup/SyntenyViz.git" > /dev/null 2>&1
@@ -24,7 +25,7 @@ gh_doc_commit () {
   git fetch origin-SynViz master:master --quiet
   git checkout -f master -- "${jekyllFolder}" 
   git add "${jekyllFolder}"
-  git commit -m "[skip travis] Jekyll @robqbot travis build: ${TRAVIS_BUILD_NUMBER}"  
+  git commit -m "[skip ci] Jekyll @robqbot GitHub Actions build: ${GITHUB_RUN_NUMBER}"  
 }
 
 gh_doc_publish () {
