@@ -181,7 +181,8 @@ manage_r_versions() {
                     echo "✅ Switched to R version: $target_version"
                     
                     # Verify the actual version matches what we expect
-                    local current_version=$(R --version | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
+                    local current_version
+                    current_version=$(R --version | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
                     if [[ "$current_version" == "$target_version"* ]]; then
                         echo "✅ Version confirmed: $current_version (target: $target_version)"
                     else

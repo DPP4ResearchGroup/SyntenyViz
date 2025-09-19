@@ -388,7 +388,14 @@ jobs:
         # Install missing Bioconductor packages if any are needed
         if [ ${#bioc_to_install[@]} -gt 0 ]; then
           echo "📦 Installing missing Bioconductor packages: ${bioc_to_install[*]}"
-          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (!requireNamespace('BiocManager', quietly = TRUE)) { install.packages('BiocManager', lib = '$R_LIBS_USER') }; BiocManager::install(c($(printf "'%s'," "${bioc_to_install[@]}" | sed 's/,$//')), ask = FALSE, lib = '$R_LIBS_USER')"
+          
+          # CRITICAL FIX: Install ggplot2 and ggtree first to prevent check_linewidth error
+          echo "🔧 Installing ggplot2 and ggtree first to prevent check_linewidth error..."
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (!requireNamespace('BiocManager', quietly = TRUE)) { install.packages('BiocManager', lib = '$R_LIBS_USER') }; BiocManager::install('ggplot2', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggtree', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
+          
+          # Now install the remaining Bioconductor packages
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install(c($(printf "'%s'," "${bioc_to_install[@]}" | sed 's/,$//')), ask = FALSE, lib = '$R_LIBS_USER')"
         else
           echo "🎉 All Bioconductor packages are already available! No installation needed."
         fi
@@ -650,6 +657,18 @@ jobs:
             log_error "Devtools Verification" "devtools package is not available after installation"
             exit 1
           fi
+        fi
+        
+        # CRITICAL FIX: Install ggplot2 and ggtree first to prevent check_linewidth error
+        echo "🔧 Installing ggplot2 and ggtree first to prevent check_linewidth error..."
+        if ! run_r_command "Install ggplot2" "if (!requireNamespace('BiocManager', quietly = TRUE)) { install.packages('BiocManager') }; BiocManager::install('ggplot2', force=TRUE)"; then
+          log_error "ggplot2 Installation" "Failed to install ggplot2"
+          exit 1
+        fi
+        
+        if ! run_r_command "Install ggtree" "BiocManager::install('ggtree', force=TRUE)"; then
+          log_error "ggtree Installation" "Failed to install ggtree"
+          exit 1
         fi
         
         # Install package dependencies

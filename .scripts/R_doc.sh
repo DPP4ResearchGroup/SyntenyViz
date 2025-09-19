@@ -111,9 +111,9 @@ echo "  GitHub run number: ${GITHUB_RUN_NUMBER:-N/A}"
 echo "  Travis build number: ${TRAVIS_BUILD_NUMBER:-N/A}"
 
 # Include git publish framework
-# shellcheck source=/dev/null
 # Use GITHUB_WORKSPACE if available, fallback to TRAVIS_BUILD_DIR for compatibility
 WORKSPACE_DIR="${GITHUB_WORKSPACE:-${TRAVIS_BUILD_DIR}}"
+# shellcheck source=.scripts/R_publish_framework.sh
 source "${WORKSPACE_DIR}/.scripts/R_publish_framework.sh" --source-only
 
 commit_R_docs() {
