@@ -748,6 +748,32 @@ jobs:
         
         echo "✅ Build completed successfully - debug reporting will be handled by separate step"
 
+    - name: Commit R Documentation
+      if: github.ref == 'refs/heads/develop'
+      env:
+        robqbot_NAME: "robqbot"
+        robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
+        robqbot_TOKEN: ${{ secrets.ROBQBOT_DPP4_TOKEN }}
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        jekyllFolder: docs
+      run: |
+        set -euxo pipefail
+        
+        echo "📚 Committing R documentation to repository..."
+        echo "Using token: ${robqbot_TOKEN:0:8}... (truncated for security)"
+        echo "Using email: $robqbot_EMAIL"
+        echo "Using name: $robqbot_NAME"
+        echo "Using jekyll folder: $jekyllFolder"
+        
+        # Execute the R documentation script with dynamic token parameters
+        bash .scripts/R_doc.sh \
+          --token "$robqbot_TOKEN" \
+          --email "$robqbot_EMAIL" \
+          --name "$robqbot_NAME" \
+          --jekyll-folder "$jekyllFolder" \
+          --source-branch "develop"
+
     - name: Upload R ${{ matrix.r-version }} Package Artifacts
       uses: actions/upload-artifact@v4
       with:
