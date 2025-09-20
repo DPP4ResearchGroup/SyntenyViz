@@ -221,7 +221,7 @@ manage_r_versions() {
 install_system_deps() {
     echo "📦 Installing system dependencies..."
     sudo apt-get update
-    sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libnlopt-dev
+    sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libnlopt-dev bc
     echo "✅ System dependencies installed"
 }
 

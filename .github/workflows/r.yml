@@ -375,10 +375,42 @@ jobs:
         echo "🔧 Installing compatible ggplot2 and ggtree versions to prevent check_linewidth error..."
         echo "📦 Installing BiocManager if not available..."
         R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (!requireNamespace('BiocManager', quietly = TRUE)) { install.packages('BiocManager', lib = '$R_LIBS_USER') }"
-        echo "📦 Installing ggplot2 via BiocManager (force=TRUE)..."
-        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggplot2', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
-        echo "📦 Installing ggtree via BiocManager (force=TRUE)..."
-        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggtree', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
+        
+        # Check R version and apply compatibility fix for R < 4.5
+        echo "🔍 Checking R version for ggplot2/ggtree compatibility..."
+        R_VERSION=$(R --version | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
+        echo "📊 R version detected: $R_VERSION"
+        
+        # Install core dependencies first to prevent lazy loading issues
+        echo "📦 Installing core dependencies for ggtree..."
+        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); install.packages(c('Rcpp', 'RcppArmadillo', 'ape', 'dplyr', 'tidyr', 'scales', 'rlang', 'cli'), repos = 'https://cran.rstudio.com/', lib = '$R_LIBS_USER')"
+        
+        # Apply R version-specific ggplot2 installation
+        if [ "$(echo "$R_VERSION < 4.5" | bc -l)" -eq 1 ]; then
+          echo "🔧 R < 4.5 detected: Installing compatible ggplot2 3.5.x for ggtree compatibility..."
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); install.packages('ggplot2', repos = 'https://cran.rstudio.com/', lib = '$R_LIBS_USER', version = '3.5.1')"
+        else
+          echo "🔧 R >= 4.5 detected: Installing latest ggplot2 via BiocManager..."
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggplot2', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
+        fi
+        
+        # Install ggtree with retry logic and dependency resolution
+        echo "📦 Installing ggtree via BiocManager with retry logic..."
+        for attempt in 1 2 3; do
+          echo "Attempt $attempt/3: Installing ggtree..."
+          if R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggtree', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER', dependencies = TRUE)"; then
+            echo "✅ ggtree installation successful on attempt $attempt"
+            break
+          else
+            echo "❌ ggtree installation failed on attempt $attempt"
+            if [ $attempt -eq 3 ]; then
+              echo "❌ ERROR: ggtree installation failed after 3 attempts"
+              exit 1
+            fi
+            echo "🔄 Retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
         
         # Additional fix: Install compatible versions to prevent check_linewidth error
         echo "🔧 Installing additional dependencies to prevent check_linewidth error..."
@@ -683,15 +715,49 @@ jobs:
           exit 1
         fi
         
-        if ! run_r_command "Install ggplot2 via BiocManager" "BiocManager::install('ggplot2', force=TRUE)"; then
-          log_error "ggplot2 Installation" "Failed to install ggplot2 via BiocManager"
+        # Check R version and apply compatibility fix for R < 4.5
+        echo "🔍 Checking R version for ggplot2/ggtree compatibility..."
+        R_VERSION=$(R --version | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
+        echo "📊 R version detected: $R_VERSION"
+        
+        # Install core dependencies first to prevent lazy loading issues
+        if ! run_r_command "Install core dependencies" "install.packages(c('Rcpp', 'RcppArmadillo', 'ape', 'dplyr', 'tidyr', 'scales', 'rlang', 'cli'), repos = 'https://cran.rstudio.com/')"; then
+          log_error "Core Dependencies Installation" "Failed to install core dependencies"
           exit 1
         fi
         
-        if ! run_r_command "Install ggtree via BiocManager" "BiocManager::install('ggtree', force=TRUE)"; then
-          log_error "ggtree Installation" "Failed to install ggtree via BiocManager"
-          exit 1
+        # Apply R version-specific ggplot2 installation
+        if [ "$(echo "$R_VERSION < 4.5" | bc -l)" -eq 1 ]; then
+          echo "🔧 R < 4.5 detected: Installing compatible ggplot2 3.5.x for ggtree compatibility..."
+          if ! run_r_command "Install ggplot2 3.5.x" "install.packages('ggplot2', repos = 'https://cran.rstudio.com/', version = '3.5.1')"; then
+            log_error "ggplot2 3.5.x Installation" "Failed to install ggplot2 3.5.x"
+            exit 1
+          fi
+        else
+          echo "🔧 R >= 4.5 detected: Installing latest ggplot2 via BiocManager..."
+          if ! run_r_command "Install ggplot2 via BiocManager" "BiocManager::install('ggplot2', force=TRUE)"; then
+            log_error "ggplot2 Installation" "Failed to install ggplot2 via BiocManager"
+            exit 1
+          fi
         fi
+        
+        # Install ggtree with retry logic and dependency resolution
+        echo "🔧 Installing ggtree with retry logic..."
+        for attempt in 1 2 3; do
+          echo "Attempt $attempt/3: Installing ggtree..."
+          if run_r_command "Install ggtree (attempt $attempt)" "BiocManager::install('ggtree', force=TRUE, dependencies = TRUE)"; then
+            echo "✅ ggtree installation successful on attempt $attempt"
+            break
+          else
+            echo "❌ ggtree installation failed on attempt $attempt"
+            if [ $attempt -eq 3 ]; then
+              log_error "ggtree Installation" "Failed to install ggtree after 3 attempts"
+              exit 1
+            fi
+            echo "🔄 Retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
         
         # Install additional dependencies to prevent check_linewidth error
         if ! run_r_command "Install additional dependencies" "install.packages(c('scales', 'rlang', 'cli'), repos = 'https://cran.rstudio.com/')"; then

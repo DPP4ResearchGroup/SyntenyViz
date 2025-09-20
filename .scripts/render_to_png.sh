@@ -14,12 +14,10 @@ if command -v mmdc &> /dev/null; then
     echo "mermaid-cli found, extracting and rendering..."
     
     # Extract mermaid code from markdown
-    sed -n '/```mermaid/,/```/p' SYNTENYVIZ_WORKFLOW_FLOWCHART.md | sed '1d;$d' > temp_flowchart.mmd
+    sed -n '/```mermaid/,/```/p' SYNTENYVIZ_WORKFLOW_FLOWCHART.md | sed "1d;\$d" > temp_flowchart.mmd
     
     # Render to PNG
-    mmdc -i temp_flowchart.mmd -o SyntenyViz_Workflow_Flowchart.png -w 2000 -H 3000 -b white -s 2
-    
-    if [ $? -eq 0 ]; then
+    if mmdc -i temp_flowchart.mmd -o SyntenyViz_Workflow_Flowchart.png -w 2000 -H 3000 -b white -s 2; then
         echo "✓ PNG created successfully: SyntenyViz_Workflow_Flowchart.png"
         rm temp_flowchart.mmd
     else
