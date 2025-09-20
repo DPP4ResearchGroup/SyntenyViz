@@ -371,50 +371,101 @@ jobs:
           echo "🎉 All packages are already available! No installation needed."
         fi
         
-        # CRITICAL FIX: Install compatible ggplot2 and ggtree versions to prevent check_linewidth error
-        echo "🔧 Installing compatible ggplot2 and ggtree versions to prevent check_linewidth error..."
+        # ========================================================================
+        # CRITICAL R DEPENDENCY MANAGEMENT: ggplot2 and ggtree Compatibility
+        # ========================================================================
+        # Historical Context:
+        # - ggtree 3.14.0 has compatibility issues with ggplot2 4.0.0+
+        # - ggplot2 4.0.0+ introduced breaking changes that cause "lazy loading failed" errors
+        # - R < 4.5 environments often have version conflicts between ggtree and ggplot2
+        # - R >= 4.5 has better dependency resolution and can handle newer versions
+        # 
+        # Solution Strategy:
+        # - R < 4.5: Use ggplot2 3.5.1 (stable, compatible with ggtree 3.14.0)
+        # - R >= 4.5: Use latest ggplot2 via BiocManager (modern approach with better compatibility)
+        # - Always install ggtree via BiocManager for consistent version management
+        # - Install core dependencies first to prevent compilation issues
+        # ========================================================================
+        
+        echo "🔧 R DEPENDENCY MANAGEMENT: Installing compatible ggplot2 and ggtree versions..."
+        echo "📊 Target R version: ${{ matrix.r-version }}"
+        
+        # Install BiocManager if not available
         echo "📦 Installing BiocManager if not available..."
         R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (!requireNamespace('BiocManager', quietly = TRUE)) { install.packages('BiocManager', lib = '$R_LIBS_USER') }"
         
-        # Check R version and apply compatibility fix for R < 4.5
-        echo "🔍 Checking R version for ggplot2/ggtree compatibility..."
+        # Check R version for compatibility decisions
+        echo "🔍 Checking R version for dependency compatibility..."
         R_VERSION=$(R --version | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
-        echo "📊 R version detected: $R_VERSION"
+        echo "📊 Detected R version: $R_VERSION"
         
-        # Install core dependencies first to prevent lazy loading issues
-        echo "📦 Installing core dependencies for ggtree..."
-        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); install.packages(c('Rcpp', 'RcppArmadillo', 'ape', 'dplyr', 'tidyr', 'scales', 'rlang', 'cli'), repos = 'https://cran.rstudio.com/', lib = '$R_LIBS_USER')"
+        # Install all dependencies via BiocManager for consistent version management
+        echo "📦 Installing all dependencies via BiocManager for unified package management..."
+        echo "   - Using BiocManager exclusively for all package installations"
+        echo "   - Ensures consistent version compatibility across all packages"
+        echo "   - BiocManager handles both CRAN and Bioconductor packages"
+        echo "   - Automatic dependency resolution and version management"
         
-        # Apply R version-specific ggplot2 installation
+        # Install core dependencies via BiocManager
+        echo "🔧 Installing core dependencies via BiocManager..."
+        echo "   - Rcpp: Required for C++ compilation"
+        echo "   - RcppArmadillo: Linear algebra library for ggtree"
+        echo "   - ape: Phylogenetic analysis (ggtree dependency)"
+        echo "   - dplyr, tidyr: Data manipulation (ggplot2 dependencies)"
+        echo "   - scales, rlang, cli: Core ggplot2 ecosystem packages"
+        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install(c('Rcpp', 'RcppArmadillo', 'ape', 'dplyr', 'tidyr', 'scales', 'rlang', 'cli'), force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
+        
+        # Apply R version-specific ggplot2 installation strategy using BiocManager exclusively
         if [ "$(echo "$R_VERSION < 4.5" | bc -l)" -eq 1 ]; then
-          echo "🔧 R < 4.5 detected: Installing compatible ggplot2 3.5.x for ggtree compatibility..."
-          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); install.packages('ggplot2', repos = 'https://cran.rstudio.com/', lib = '$R_LIBS_USER', version = '3.5.1')"
+          echo "🔧 R < 4.5 DETECTED: Installing compatible ggplot2 3.5.1 via BiocManager..."
+          echo "   - ggplot2 3.5.1 is the last stable version compatible with ggtree 3.14.0"
+          echo "   - Prevents 'lazy loading failed for package ggtree' errors"
+          echo "   - ggplot2 4.0.0+ introduced breaking changes that cause compatibility issues"
+          echo "   - Using BiocManager with version specification for unified package management"
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggplot2', version = '3.5.1', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
         else
-          echo "🔧 R >= 4.5 detected: Installing latest ggplot2 via BiocManager..."
+          echo "🔧 R >= 4.5 DETECTED: Installing latest ggplot2 via BiocManager..."
+          echo "   - Newer R versions have better dependency resolution"
+          echo "   - BiocManager handles version compatibility automatically"
+          echo "   - Modern approach with enhanced compatibility features"
           R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggplot2', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
         fi
         
-        # Install ggtree with retry logic and dependency resolution
-        echo "📦 Installing ggtree via BiocManager with retry logic..."
+        # Install ggtree with comprehensive retry logic and dependency resolution
+        echo "📦 Installing ggtree via BiocManager with enhanced retry logic..."
+        echo "   - ggtree is a Bioconductor package for phylogenetic tree visualization"
+        echo "   - Requires proper ggplot2 version compatibility (handled above)"
+        echo "   - Using retry logic to handle transient network/compilation issues"
+        
         for attempt in 1 2 3; do
-          echo "Attempt $attempt/3: Installing ggtree..."
+          echo "🔄 Attempt $attempt/3: Installing ggtree..."
+          echo "   - Using BiocManager for consistent version management"
+          echo "   - Force reinstall to ensure clean installation"
+          echo "   - Installing with all dependencies (dependencies = TRUE)"
+          
           if R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggtree', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER', dependencies = TRUE)"; then
             echo "✅ ggtree installation successful on attempt $attempt"
             break
           else
             echo "❌ ggtree installation failed on attempt $attempt"
             if [ $attempt -eq 3 ]; then
-              echo "❌ ERROR: ggtree installation failed after 3 attempts"
+              echo "❌ CRITICAL ERROR: ggtree installation failed after 3 attempts"
+              echo "   - This usually indicates a fundamental compatibility issue"
+              echo "   - Check R version and ggplot2 compatibility"
+              echo "   - Verify system dependencies (Rcpp, RcppArmadillo, ape)"
               exit 1
             fi
             echo "🔄 Retrying in 5 seconds..."
+            echo "   - Transient issues: network, compilation, or dependency conflicts"
             sleep 5
           fi
         done
         
-        # Additional fix: Install compatible versions to prevent check_linewidth error
-        echo "🔧 Installing additional dependencies to prevent check_linewidth error..."
-        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); install.packages(c('scales', 'rlang', 'cli'), repos = 'https://cran.rstudio.com/', lib = '$R_LIBS_USER')"
+        # Additional dependencies via BiocManager to prevent check_linewidth error
+        echo "🔧 Installing additional dependencies via BiocManager to prevent check_linewidth error..."
+        echo "   - These packages are already installed above, but ensuring they're available"
+        echo "   - Using BiocManager for consistency with the unified approach"
+        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install(c('scales', 'rlang', 'cli'), force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
         
         # Check and install Bioconductor packages if needed
         echo "🔍 Checking Bioconductor packages..."
@@ -530,7 +581,7 @@ jobs:
       uses: r-lib/actions/setup-r@v2
       with:
         r-version: ${{ matrix.r-version }}
-      
+
     - name: Restore R packages cache
       uses: actions/cache@v4
       with:
@@ -708,33 +759,50 @@ jobs:
           fi
         fi
         
-        # CRITICAL FIX: Install compatible ggplot2 and ggtree versions to prevent check_linewidth error
-        echo "🔧 Installing compatible ggplot2 and ggtree versions to prevent check_linewidth error..."
+        # ========================================================================
+        # CRITICAL R DEPENDENCY MANAGEMENT: BiocManager-Exclusive Approach
+        # ========================================================================
+        # Strategy: Use BiocManager exclusively for all package management
+        # - Unified package management across CRAN and Bioconductor packages
+        # - Automatic dependency resolution and version compatibility
+        # - Consistent behavior across different R versions
+        # - Eliminates mixed installation methods that can cause conflicts
+        # ========================================================================
+        
+        echo "🔧 R DEPENDENCY MANAGEMENT: BiocManager-exclusive package installation..."
         if ! run_r_command "Install BiocManager" "if (!requireNamespace('BiocManager', quietly = TRUE)) { install.packages('BiocManager') }"; then
           log_error "BiocManager Installation" "Failed to install BiocManager"
           exit 1
         fi
         
-        # Check R version and apply compatibility fix for R < 4.5
-        echo "🔍 Checking R version for ggplot2/ggtree compatibility..."
-        R_VERSION=$(R --version | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
-        echo "📊 R version detected: $R_VERSION"
-        
-        # Install core dependencies first to prevent lazy loading issues
-        if ! run_r_command "Install core dependencies" "install.packages(c('Rcpp', 'RcppArmadillo', 'ape', 'dplyr', 'tidyr', 'scales', 'rlang', 'cli'), repos = 'https://cran.rstudio.com/')"; then
-          log_error "Core Dependencies Installation" "Failed to install core dependencies"
+        # Install all core dependencies via BiocManager for unified management
+        echo "📦 Installing all core dependencies via BiocManager..."
+        if ! run_r_command "Install core dependencies via BiocManager" "BiocManager::install(c('Rcpp', 'RcppArmadillo', 'ape', 'dplyr', 'tidyr', 'scales', 'rlang', 'cli'), force=TRUE)"; then
+          log_error "Core Dependencies Installation" "Failed to install core dependencies via BiocManager"
           exit 1
         fi
         
-        # Apply R version-specific ggplot2 installation
+        # Check R version for ggplot2 compatibility strategy
+        echo "🔍 Checking R version for ggplot2 compatibility strategy..."
+        R_VERSION=$(R --version | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
+        echo "📊 Detected R version: $R_VERSION"
+        
+        # Apply R version-specific ggplot2 installation strategy using BiocManager exclusively
         if [ "$(echo "$R_VERSION < 4.5" | bc -l)" -eq 1 ]; then
-          echo "🔧 R < 4.5 detected: Installing compatible ggplot2 3.5.x for ggtree compatibility..."
-          if ! run_r_command "Install ggplot2 3.5.x" "install.packages('ggplot2', repos = 'https://cran.rstudio.com/', version = '3.5.1')"; then
-            log_error "ggplot2 3.5.x Installation" "Failed to install ggplot2 3.5.x"
+          echo "🔧 R < 4.5 DETECTED: Installing compatible ggplot2 3.5.1 via BiocManager..."
+          echo "   - ggplot2 3.5.1 is the last stable version compatible with ggtree 3.14.0"
+          echo "   - Prevents 'lazy loading failed for package ggtree' errors"
+          echo "   - ggplot2 4.0.0+ introduced breaking changes that cause compatibility issues"
+          echo "   - Using BiocManager with version specification for unified package management"
+          if ! run_r_command "Install ggplot2 3.5.1 via BiocManager" "BiocManager::install('ggplot2', version = '3.5.1', force=TRUE)"; then
+            log_error "ggplot2 3.5.1 Installation" "Failed to install ggplot2 3.5.1 via BiocManager for R < 4.5 compatibility"
             exit 1
           fi
         else
-          echo "🔧 R >= 4.5 detected: Installing latest ggplot2 via BiocManager..."
+          echo "🔧 R >= 4.5 DETECTED: Installing latest ggplot2 via BiocManager..."
+          echo "   - Newer R versions have better dependency resolution"
+          echo "   - BiocManager handles version compatibility automatically"
+          echo "   - Modern approach with enhanced compatibility features"
           if ! run_r_command "Install ggplot2 via BiocManager" "BiocManager::install('ggplot2', force=TRUE)"; then
             log_error "ggplot2 Installation" "Failed to install ggplot2 via BiocManager"
             exit 1
@@ -759,9 +827,10 @@ jobs:
           fi
         done
         
-        # Install additional dependencies to prevent check_linewidth error
-        if ! run_r_command "Install additional dependencies" "install.packages(c('scales', 'rlang', 'cli'), repos = 'https://cran.rstudio.com/')"; then
-          log_error "Additional Dependencies Installation" "Failed to install additional dependencies"
+        # Install additional dependencies via BiocManager to prevent check_linewidth error
+        echo "🔧 Installing additional dependencies via BiocManager..."
+        if ! run_r_command "Install additional dependencies via BiocManager" "BiocManager::install(c('scales', 'rlang', 'cli'), force=TRUE)"; then
+          log_error "Additional Dependencies Installation" "Failed to install additional dependencies via BiocManager"
           exit 1
         fi
         
