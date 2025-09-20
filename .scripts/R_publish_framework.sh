@@ -7,6 +7,15 @@
 #   robqbot_NAME
 ###
 
+# Variables are expected to be set by the calling script
+# These are just for shellcheck to understand the expected variables
+# shellcheck disable=SC2034
+robqbot_EMAIL="${robqbot_EMAIL:-}"
+# shellcheck disable=SC2034
+robqbot_NAME="${robqbot_NAME:-}"
+# shellcheck disable=SC2034
+robqbot_TOKEN="${robqbot_TOKEN:-}"
+
 setup_git() {
   git config --global user.email "${robqbot_EMAIL}"
   git config --global user.name  "${robqbot_NAME}"

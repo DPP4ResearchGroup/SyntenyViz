@@ -371,9 +371,23 @@ jobs:
           echo "🎉 All packages are already available! No installation needed."
         fi
         
+        # CRITICAL FIX: Install compatible ggplot2 and ggtree versions to prevent check_linewidth error
+        echo "🔧 Installing compatible ggplot2 and ggtree versions to prevent check_linewidth error..."
+        echo "📦 Installing BiocManager if not available..."
+        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (!requireNamespace('BiocManager', quietly = TRUE)) { install.packages('BiocManager', lib = '$R_LIBS_USER') }"
+        echo "📦 Installing ggplot2 via BiocManager (force=TRUE)..."
+        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggplot2', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
+        echo "📦 Installing ggtree via BiocManager (force=TRUE)..."
+        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggtree', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
+        
+        # Additional fix: Install compatible versions to prevent check_linewidth error
+        echo "🔧 Installing additional dependencies to prevent check_linewidth error..."
+        R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); install.packages(c('scales', 'rlang', 'cli'), repos = 'https://cran.rstudio.com/', lib = '$R_LIBS_USER')"
+        
         # Check and install Bioconductor packages if needed
         echo "🔍 Checking Bioconductor packages..."
-        bioc_packages=('GenomicRanges' 'Gviz' 'orthogene')
+        # CRITICAL: ggtree must be installed before orthogene since it's a dependency
+        bioc_packages=('ggtree' 'GenomicRanges' 'Gviz' 'orthogene')
         bioc_to_install=()
         
         for pkg in "${bioc_packages[@]}"; do
@@ -388,16 +402,19 @@ jobs:
         # Install missing Bioconductor packages if any are needed
         if [ ${#bioc_to_install[@]} -gt 0 ]; then
           echo "📦 Installing missing Bioconductor packages: ${bioc_to_install[*]}"
-          
-          # CRITICAL FIX: Install ggplot2 and ggtree first to prevent check_linewidth error
-          echo "🔧 Installing ggplot2 and ggtree first to prevent check_linewidth error..."
-          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (!requireNamespace('BiocManager', quietly = TRUE)) { install.packages('BiocManager', lib = '$R_LIBS_USER') }; BiocManager::install('ggplot2', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
-          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggtree', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
-          
-          # Now install the remaining Bioconductor packages
-          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install(c($(printf "'%s'," "${bioc_to_install[@]}" | sed 's/,$//')), ask = FALSE, lib = '$R_LIBS_USER')"
+          echo "🔧 Installing Bioconductor packages in order (ggtree first, then orthogene) with force=TRUE..."
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install(c($(printf "'%s'," "${bioc_to_install[@]}" | sed 's/,$//')), force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
         else
           echo "🎉 All Bioconductor packages are already available! No installation needed."
+        fi
+        
+        # Verify ggtree installation and loading after Bioconductor installation
+        echo "🔍 Verifying ggtree installation after Bioconductor package installation..."
+        if R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (!requireNamespace('ggtree', quietly = TRUE)) { cat('ggtree not found\n'); quit(status = 1) } else { cat('ggtree is available\n') }" 2>/dev/null; then
+          echo "✅ ggtree package is available"
+        else
+          echo "❌ ERROR: ggtree package is not available"
+          exit 1
         fi
         
         # Verify R packages installation
@@ -659,15 +676,39 @@ jobs:
           fi
         fi
         
-        # CRITICAL FIX: Install ggplot2 and ggtree first to prevent check_linewidth error
-        echo "🔧 Installing ggplot2 and ggtree first to prevent check_linewidth error..."
-        if ! run_r_command "Install ggplot2" "if (!requireNamespace('BiocManager', quietly = TRUE)) { install.packages('BiocManager') }; BiocManager::install('ggplot2', force=TRUE)"; then
-          log_error "ggplot2 Installation" "Failed to install ggplot2"
+        # CRITICAL FIX: Install compatible ggplot2 and ggtree versions to prevent check_linewidth error
+        echo "🔧 Installing compatible ggplot2 and ggtree versions to prevent check_linewidth error..."
+        if ! run_r_command "Install BiocManager" "if (!requireNamespace('BiocManager', quietly = TRUE)) { install.packages('BiocManager') }"; then
+          log_error "BiocManager Installation" "Failed to install BiocManager"
           exit 1
         fi
         
-        if ! run_r_command "Install ggtree" "BiocManager::install('ggtree', force=TRUE)"; then
-          log_error "ggtree Installation" "Failed to install ggtree"
+        if ! run_r_command "Install ggplot2 via BiocManager" "BiocManager::install('ggplot2', force=TRUE)"; then
+          log_error "ggplot2 Installation" "Failed to install ggplot2 via BiocManager"
+          exit 1
+        fi
+        
+        if ! run_r_command "Install ggtree via BiocManager" "BiocManager::install('ggtree', force=TRUE)"; then
+          log_error "ggtree Installation" "Failed to install ggtree via BiocManager"
+          exit 1
+        fi
+        
+        # Install additional dependencies to prevent check_linewidth error
+        if ! run_r_command "Install additional dependencies" "install.packages(c('scales', 'rlang', 'cli'), repos = 'https://cran.rstudio.com/')"; then
+          log_error "Additional Dependencies Installation" "Failed to install additional dependencies"
+          exit 1
+        fi
+        
+        # Install remaining Bioconductor packages in correct order (ggtree already installed)
+        echo "🔧 Installing remaining Bioconductor packages in order (GenomicRanges, Gviz, orthogene)..."
+        if ! run_r_command "Install remaining Bioconductor packages" "BiocManager::install(c('GenomicRanges', 'Gviz', 'orthogene'), force=TRUE, ask = FALSE)"; then
+          log_error "Bioconductor Installation" "Failed to install remaining Bioconductor packages"
+          exit 1
+        fi
+        
+        # Verify ggtree installation
+        if ! run_r_command "Verify ggtree" "library(ggtree); cat('ggtree loaded successfully')"; then
+          log_error "ggtree Verification" "ggtree package failed to load - check_linewidth error may persist"
           exit 1
         fi
         

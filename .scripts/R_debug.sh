@@ -55,8 +55,17 @@ done
 # Include git publish framework
 # Use GITHUB_WORKSPACE if available, fallback to TRAVIS_BUILD_DIR for compatibility
 WORKSPACE_DIR="${GITHUB_WORKSPACE:-${TRAVIS_BUILD_DIR}}"
-# shellcheck source=.scripts/R_publish_framework.sh
-source "${WORKSPACE_DIR}/.scripts/R_publish_framework.sh" --source-only
+
+# Source the framework script with proper error handling
+FRAMEWORK_SCRIPT="${WORKSPACE_DIR}/.scripts/R_publish_framework.sh"
+if [ -f "$FRAMEWORK_SCRIPT" ]; then
+  # shellcheck source=.scripts/R_publish_framework.sh
+  source "$FRAMEWORK_SCRIPT" --source-only
+else
+  echo "❌ ERROR: Framework script not found: $FRAMEWORK_SCRIPT"
+  echo "   Please ensure the script exists in the expected location"
+  exit 1
+fi
 
 commit_R_debug() {
   # Build/run number fallback
