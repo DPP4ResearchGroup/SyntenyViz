@@ -222,7 +222,11 @@ install_system_deps() {
     echo "📦 Installing system dependencies..."
     sudo apt-get update
     sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libnlopt-dev bc
-    echo "✅ System dependencies installed"
+    echo "✅ Basic system dependencies installed"
+    
+    echo "📦 Installing graphics and text rendering dependencies..."
+    sudo apt-get install -y libfribidi-dev libharfbuzz-dev libfreetype6-dev libpng-dev libjpeg-dev libtiff-dev libcairo2-dev libxt-dev
+    echo "✅ Graphics dependencies installed"
 }
 
 # Function to install TeX Live (LaTeX)
@@ -272,6 +276,15 @@ install_all_multiple() {
     echo "🎉 All dependencies with multiple R versions installed successfully!"
 }
 
+# Function to install all dependencies except R (for CI environments where R is pre-installed)
+install_all_except_r() {
+    echo "🎯 Installing all dependencies except R (assuming R is pre-installed)..."
+    install_system_deps
+    install_texlive
+    install_pandoc
+    echo "🎉 All dependencies (except R) installed successfully!"
+}
+
 # Main script logic
 case "${1:-all}" in
     "r")
@@ -298,8 +311,11 @@ case "${1:-all}" in
     "all-multiple")
         install_all_multiple "${2:-latest}"
         ;;
+    "all-except-r")
+        install_all_except_r
+        ;;
     *)
-        echo "Usage: $0 {r|r-multiple|r-manage|system|texlive|pandoc|all|all-multiple} [options]"
+        echo "Usage: $0 {r|r-multiple|r-manage|system|texlive|pandoc|all|all-multiple|all-except-r} [options]"
         echo ""
         echo "R Installation:"
         echo "  r            - Install single R version and R development tools"
@@ -314,19 +330,20 @@ case "${1:-all}" in
         echo "Complete Installation:"
         echo "  all          - Install all dependencies with single R version (default)"
         echo "  all-multiple - Install all dependencies with multiple R versions"
+        echo "  all-except-r - Install all dependencies except R (for CI environments)"
         echo ""
         echo "Examples:"
         echo "  # Single R version"
         echo "  $0 all latest"
-        echo "  $0 r 4.3.0"
+        echo "  $0 r 4.4.0"
         echo ""
         echo "  # Multiple R versions"
-        echo "  $0 r-multiple '4.3.0,latest'"
+        echo "  $0 r-multiple '4.4.0,latest'"
         echo "  $0 all-multiple '4.3.0,4.4.0,latest'"
         echo ""
         echo "  # R version management"
         echo "  $0 r-manage list"
-        echo "  $0 r-manage switch 4.3.0"
+        echo "  $0 r-manage switch 4.4.0"
         echo "  $0 r-manage clean"
         echo ""
         echo "  # System dependencies only"
@@ -334,8 +351,8 @@ case "${1:-all}" in
         echo ""
         echo "R Version Formats:"
         echo "  latest       - Latest available R version"
-        echo "  4.3.0        - Specific R version"
-        echo "  4.3.0,latest - Multiple versions (comma-separated)"
+        echo "  4.4.0        - Specific R version"
+        echo "  4.4.0,latest - Multiple versions (comma-separated)"
         exit 1
         ;;
 esac
