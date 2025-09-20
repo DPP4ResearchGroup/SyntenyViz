@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Development script for Jekyll site
 # Provides common development tasks and utilities
 

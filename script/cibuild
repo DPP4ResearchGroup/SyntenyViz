@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # CI Build script for Jekyll site
 # Comprehensive build, test, and validation pipeline
 

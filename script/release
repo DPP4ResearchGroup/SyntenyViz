@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Release script for Jekyll theme
 # Handles versioning, building, testing, and publishing
 

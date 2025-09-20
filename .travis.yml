@@ -1,3 +1,4 @@
+---
 # Modern Travis CI configuration for Jekyll site
 os: linux
 dist: jammy
@@ -14,9 +15,17 @@ matrix:
     - rvm: 3.2
       env: RUBY_VERSION=3.2
       allow_failure: true
+  exclude:
+    - rvm: 3.3
+      script: bundle exec rake
+    - rvm: 3.2
+      script: bundle exec rake
 
 # Fast finish - fail fast if primary job fails
 fast_finish: true
+
+# Override default script to prevent bundle exec rake
+script: echo "Default script overridden - using jobs configuration"
 
 # Comprehensive caching for faster builds
 cache:
@@ -25,34 +34,34 @@ cache:
     # Ruby dependencies
     - vendor/bundle
     - ~/.bundle/cache
-    
+
     # Jekyll build cache
     - .jekyll-cache
     - .sass-cache
-    
+
     # System dependencies and tools
     - ~/.rvm
     - ~/.gem
     - ~/.ruby-version
-    
+
     # Node.js dependencies (if any)
     - node_modules
     - ~/.npm
-    
+
     # Build artifacts
     - _site/assets
     - assets/css/main.css
-    
+
     # Temporary files
     - tmp
     - .tmp
-    
+
   # Cache key strategy optimized for single Ruby version
-  key: "${{ env.TRAVIS_BRANCH }}-ruby-3.3-${{ hashFiles('Gemfile.lock') }}-${{ hashFiles('_config.yml') }}"
-  
+  key: "travis-cache-ruby-3.3-${{ hashFiles('Gemfile.lock') }}"
+
   # Cache timeout (in seconds) - 7 days
   timeout: 604800
-  
+
   # Cache invalidation strategy
   # Cache will be invalidated when:
   # - Branch changes
@@ -104,7 +113,7 @@ env:
     # Primary Ruby version
     - PRIMARY_RUBY_VERSION=3.3
     - FALLBACK_RUBY_VERSION=3.2
-    
+
     # Modern Ruby optimizations (optimized for Ruby 3.3)
     - RUBYOPT=-W0  # Suppress Ruby warnings
     - RUBY_GC_HEAP_INIT_SLOTS=1000000
@@ -117,12 +126,12 @@ env:
     - RUBY_GC_OLDMALLOC_LIMIT=16000000
     - RUBY_GC_OLDMALLOC_LIMIT_MAX=32000000
     - RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR=1.2
-    
+
     # Jekyll and build environment
     - JEKYLL_ENV=production
     - W3C_VALIDATOR_TIMEOUT=30
     - BUNDLE_GEMFILE=Gemfile
-    
+
     # Modern Bundler optimization
     - BUNDLE_CACHE_ALL=true
     - BUNDLE_PATH=vendor/bundle
@@ -130,14 +139,14 @@ env:
     - BUNDLE_JOBS=4
     - BUNDLE_RETRY=3
     - BUNDLE_FORCE_RUBY_PLATFORM=true
-    - BUNDLE_DEPLOYMENT=true
-    - BUNDLE_CLEAN=true
-    
+    - BUNDLE_DEPLOYMENT=false
+    - BUNDLE_CLEAN=false
+
     # Locale and encoding
     - LANG=en_US.UTF-8
     - LC_ALL=en_US.UTF-8
     - LC_CTYPE=en_US.UTF-8
-    
+
     # Modern build tools
     - RAILS_ENV=production
     - NODE_ENV=production
@@ -151,7 +160,7 @@ addons:
       - git
       - curl
       - wget
-      
+
       # Ruby and Jekyll dependencies
       - libcurl4-openssl-dev
       - libssl-dev
@@ -166,16 +175,16 @@ addons:
       - libtool
       - libffi-dev
       - pkg-config
-      
+
       # Modern web tools
       - nodejs
       - npm
       - yarn
-      
+
       # Image processing (for Jekyll plugins)
       - imagemagick
       - libmagickwand-dev
-      
+
       # Compression tools
       - gzip
       - bzip2
@@ -184,43 +193,43 @@ addons:
 # Before install - modern Ruby and Bundler setup
 before_install:
   # System information
-  - echo "System information:"
-  - echo "OS: $(lsb_release -a 2>/dev/null || echo 'Ubuntu Jammy')"
-  - echo "Ruby version: $(ruby --version)"
-  - echo "Ruby platform: $(ruby -e 'puts RUBY_PLATFORM')"
-  - echo "Gem version: $(gem --version)"
-  - echo "Node version: $(node --version 2>/dev/null || echo 'Not installed')"
-  - echo "NPM version: $(npm --version 2>/dev/null || echo 'Not installed')"
-  
+  - echo "System information"
+  - echo "OS=$(lsb_release -a 2>/dev/null || echo 'Ubuntu Jammy')"
+  - echo "Ruby version=$(ruby --version)"
+  - echo "Ruby platform=$(ruby -e 'puts RUBY_PLATFORM')"
+  - echo "Gem version=$(gem --version)"
+  - echo "Node version=$(node --version 2>/dev/null || echo 'Not installed')"
+  - echo "NPM version=$(npm --version 2>/dev/null || echo 'Not installed')"
+
   # Ruby version context
-  - echo "Build context:"
-  - echo "Primary Ruby version: $PRIMARY_RUBY_VERSION"
-  - echo "Fallback Ruby version: $FALLBACK_RUBY_VERSION"
-  - echo "Current Ruby version: $RUBY_VERSION"
-  - if [ "$RUBY_VERSION" = "3.3" ]; then echo "✅ Using primary Ruby version"; else echo "⚠️  Using fallback Ruby version"; fi
-  
+  - echo "Build context"
+  - echo "Primary Ruby version=$PRIMARY_RUBY_VERSION"
+  - echo "Fallback Ruby version=$FALLBACK_RUBY_VERSION"
+  - echo "Current Ruby version=$RUBY_VERSION"
+  - if [ "$RUBY_VERSION" = "3.3" ]; then echo "✅ Primary Ruby"; else echo "⚠️  Fallback Ruby"; fi
+
   # Cache management
   - echo "Managing build cache..."
-  - echo "Cache directories:"
+  - echo "Cache directories"
   - ls -la ~/.bundle/ 2>/dev/null || echo "No bundle cache found"
   - ls -la .jekyll-cache/ 2>/dev/null || echo "No Jekyll cache found"
-  
+
   # Install/update modern bundler
   - gem install bundler --no-document --version ">= 2.4.0"
   - bundle --version
-  
+
   # Restore cached gems if available
   - if [ -d ~/.bundle/cache ]; then echo "Found cached bundle cache"; fi
   - if [ -d vendor/bundle ]; then echo "Found cached vendor bundle"; fi
-  
+
   # Modern Ruby optimizations
-  - echo "Ruby GC settings:"
+  - echo "Ruby GC settings"
   - ruby -e "puts GC.stat"
 
 # Install dependencies with modern practices
 install:
   - script/bootstrap
-  
+
   # Modern Bundler configuration
   - echo "Configuring modern Bundler..."
   - bundle config --local path vendor/bundle
@@ -229,88 +238,87 @@ install:
   - bundle config --local jobs 4
   - bundle config --local retry 3
   - bundle config --local force_ruby_platform true
-  - bundle config --local deployment true
-  - bundle config --local clean true
-  - bundle config --local frozen true
-  
+  - bundle config --local clean false
+
   # Verify modern configuration
-  - echo "Bundler configuration:"
+  - echo "Bundler configuration"
   - bundle config list
-  - echo "Installed gems:"
+  - echo "Installed gems"
   - bundle list | head -10
-  
+
   # Modern gem verification
-  - echo "Gem platform information:"
+  - echo "Gem platform information"
   - bundle exec gem env
-  - echo "Jekyll version:"
+  - echo "Jekyll version"
   - bundle exec jekyll --version
 
 # Before script - modern setup and verification
 before_script:
   - echo "Starting modern CI build process..."
-  - echo "Ruby version: $(ruby --version)"
-  - echo "Ruby platform: $(ruby -e 'puts RUBY_PLATFORM')"
-  - echo "Bundler version: $(bundle --version)"
-  - echo "Jekyll version: $(bundle exec jekyll --version)"
-  - echo "Node version: $(node --version 2>/dev/null || echo 'Not available')"
-  
+  - echo "Ruby version=$(ruby --version)"
+  - echo "Ruby platform=$(ruby -e 'puts RUBY_PLATFORM')"
+  - echo "Bundler version=$(bundle --version)"
+  - echo "Jekyll version=$(bundle exec jekyll --version)"
+  - echo "Node version=$(node --version 2>/dev/null || echo 'Not available')"
+
   # Modern Ruby performance info
-  - echo "Ruby performance settings:"
-  - ruby -e "puts 'GC: ' + GC.stat.inspect"
-  - ruby -e "puts 'Memory: ' + `ps -o pid,rss,vsz,comm -p $$`.split(\"\\n\")[1]"
-  
+  - echo "Ruby performance settings"
+  - ruby -e 'puts GC.stat'
+  - echo "Memory usage"
+  - ps aux | grep ruby
+
   # Cache status reporting
-  - echo "Cache status:"
-  - echo "Bundle cache: $(du -sh ~/.bundle/ 2>/dev/null || echo 'Not found')"
-  - echo "Vendor bundle: $(du -sh vendor/bundle/ 2>/dev/null || echo 'Not found')"
-  - echo "Jekyll cache: $(du -sh .jekyll-cache/ 2>/dev/null || echo 'Not found')"
-  - echo "Sass cache: $(du -sh .sass-cache/ 2>/dev/null || echo 'Not found')"
-  
+  - echo "Cache status"
+  - echo "Bundle cache=$(du -sh ~/.bundle/ 2>/dev/null || echo 'Not found')"
+  - echo "Vendor bundle=$(du -sh vendor/bundle/ 2>/dev/null || echo 'Not found')"
+  - echo "Jekyll cache=$(du -sh .jekyll-cache/ 2>/dev/null || echo 'Not found')"
+  - echo "Sass cache=$(du -sh .sass-cache/ 2>/dev/null || echo 'Not found')"
+
   # Cache hit/miss analysis
-  - if [ -d vendor/bundle ]; then echo "✅ Bundle cache hit"; else echo "❌ Bundle cache miss"; fi
-  - if [ -d .jekyll-cache ]; then echo "✅ Jekyll cache hit"; else echo "❌ Jekyll cache miss"; fi
-  
+  - if [ -d vendor/bundle ]; then echo "✅ Bundle hit"; else echo "❌ Bundle miss"; fi
+  - if [ -d .jekyll-cache ]; then echo "✅ Jekyll hit"; else echo "❌ Jekyll miss"; fi
+
   # Modern build environment verification
-  - echo "Build environment:"
-  - echo "JEKYLL_ENV: $JEKYLL_ENV"
-  - echo "BUNDLE_PATH: $BUNDLE_PATH"
-  - echo "BUNDLE_JOBS: $BUNDLE_JOBS"
+  - echo "Build environment"
+  - echo "JEKYLL_ENV=$JEKYLL_ENV"
+  - echo "BUNDLE_PATH=$BUNDLE_PATH"
+  - echo "BUNDLE_JOBS=$BUNDLE_JOBS"
 
 # After script - cleanup and reporting
 after_script:
   - echo "CI build process completed"
-  - echo "Build artifacts:"
+  - echo "Build artifacts"
   - ls -la _site/ 2>/dev/null || echo "No _site directory"
-  - echo "Gem files:"
+  - echo "Gem files"
   - ls -la *.gem 2>/dev/null || echo "No gem files"
-  
+
   # Cache optimization and cleanup
   - echo "Optimizing cache for next build..."
-  - echo "Cache size before cleanup:"
+  - echo "Cache size before cleanup"
   - du -sh ~/.bundle/ 2>/dev/null || echo "No bundle cache"
   - du -sh .jekyll-cache/ 2>/dev/null || echo "No Jekyll cache"
   - du -sh vendor/bundle/ 2>/dev/null || echo "No vendor bundle"
-  
+
   # Clean up unnecessary files to reduce cache size
   - find ~/.bundle/ -name "*.gem" -delete 2>/dev/null || true
   - find vendor/bundle/ -name "*.gem" -delete 2>/dev/null || true
   - rm -rf _site/ 2>/dev/null || true
-  
-  - echo "Cache size after cleanup:"
+
+  - echo "Cache size after cleanup"
   - du -sh ~/.bundle/ 2>/dev/null || echo "No bundle cache"
   - du -sh .jekyll-cache/ 2>/dev/null || echo "No Jekyll cache"
   - du -sh vendor/bundle/ 2>/dev/null || echo "No vendor bundle"
-  
+
   # Modern performance summary
-  - echo "Build performance summary:"
-  - echo "Ruby version used: $RUBY_VERSION"
-  - echo "Total cache size: $(du -sh ~/.bundle/ .jekyll-cache/ vendor/bundle/ 2>/dev/null | awk '{sum+=$1} END {print sum "B"}')"
-  - echo "Cache efficiency: $(find ~/.bundle/ .jekyll-cache/ vendor/bundle/ -type f 2>/dev/null | wc -l) files cached"
-  - echo "Final Ruby GC stats:"
+  - echo "Build performance summary"
+  - echo "Ruby version used=$RUBY_VERSION"
+  - echo "Total cache size=$(du -sh ~/.bundle/ .jekyll-cache/ vendor/bundle/ 2>/dev/null | wc -l) files"
+  - echo "Cache efficiency=$(find ~/.bundle/ .jekyll-cache/ vendor/bundle/ -type f 2>/dev/null | wc -l) files"
+  - echo "Final Ruby GC stats"
   - ruby -e "puts GC.stat"
-  - echo "Final memory usage:"
-  - ruby -e "puts 'Memory: ' + `ps -o pid,rss,vsz,comm -p $$`.split(\"\\n\")[1]"
-  - if [ "$RUBY_VERSION" = "3.3" ]; then echo "✅ Build completed with primary Ruby 3.3 stack!"; else echo "⚠️  Build completed with fallback Ruby $RUBY_VERSION stack!"; fi
+  - echo "Final memory usage"
+  - ps aux | grep ruby
+  - if [ "$RUBY_VERSION" = "3.3" ]; then echo "✅ Build completed with primary Ruby 3.3!"; else echo "⚠️  Build completed with fallback Ruby $RUBY_VERSION!"; fi
 
 # Notifications (optional - uncomment and configure as needed)
 notifications:

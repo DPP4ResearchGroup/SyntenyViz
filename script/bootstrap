@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Bootstrap script for Jekyll site setup
 # Ensures all dependencies are properly installed and configured
 
@@ -82,8 +82,23 @@ install_bundler() {
 install_dependencies() {
     log_info "Installing project dependencies..."
     
+    # Configure bundle to use vendor/bundle path (consistent with Travis CI)
+    log_info "Configuring bundle path..."
+    bundle config --local path vendor/bundle
+    bundle config --local cache_all true
+    bundle config --local without development:test
+    bundle config --local jobs 4
+    bundle config --local retry 3
+    bundle config --local force_ruby_platform true
+    bundle config --local clean false
+    
+    # Show bundle configuration for debugging
+    log_info "Bundle configuration:"
+    bundle config list
+    
     if [ ! -f "Gemfile.lock" ]; then
         log_warning "Gemfile.lock not found. This may be a fresh installation."
+        log_info "Generating Gemfile.lock for the first time..."
     fi
     
     # Install dependencies with retry logic
@@ -91,17 +106,40 @@ install_dependencies() {
     local max_retries=3
     
     while [ $retry_count -lt $max_retries ]; do
-        if bundle install --retry=3; then
-            log_success "Dependencies installed successfully"
-            return 0
+        # Use different bundle install strategy based on lockfile presence
+        local bundle_output
+        local bundle_exit_code
+        
+        if [ -f "Gemfile.lock" ]; then
+            # Lockfile exists, use standard install
+            bundle_output=$(bundle install --retry=3 2>&1)
+            bundle_exit_code=$?
         else
-            retry_count=$((retry_count + 1))
-            log_warning "Bundle install failed (attempt $retry_count/$max_retries)"
-            
-            if [ $retry_count -lt $max_retries ]; then
-                log_info "Retrying in 5 seconds..."
-                sleep 5
+            # No lockfile, generate it first
+            bundle_output=$(bundle install --retry=3 2>&1)
+            bundle_exit_code=$?
+        fi
+        
+        # Check if bundle install actually succeeded
+        if [ $bundle_exit_code -eq 0 ]; then
+            # Check if the output indicates success
+            if echo "$bundle_output" | grep -q "Bundle complete"; then
+                log_success "Dependencies installed successfully"
+                return 0
+            else
+                # Bundle install succeeded but might have warnings
+                log_success "Dependencies installed (with warnings)"
+                return 0
             fi
+        fi
+        
+        retry_count=$((retry_count + 1))
+        log_warning "Bundle install failed (attempt $retry_count/$max_retries)"
+        log_info "Bundle output: $bundle_output"
+        
+        if [ $retry_count -lt $max_retries ]; then
+            log_info "Retrying in 5 seconds..."
+            sleep 5
         fi
     done
     
