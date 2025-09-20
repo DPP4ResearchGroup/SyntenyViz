@@ -1,1 +1,21 @@
-_site
+# dev aux
+node_modules
+paper/
+.vscode/
+.DS_Store
+
+prompts/
+dev_docs/
+readme_docs/
+secrets.txt
+
+# R aux
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Renviron
+.Rprofile
+.Rbuildignore
+.Rbuildignore
+
