@@ -2,7 +2,7 @@ version: ~> 1.0
 
 language: r
 r:
-  - release
+  - "4.5.1"
 r_bioc_packages:
   - BiocManager
   - GenomicRanges

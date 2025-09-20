@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        r-version: ['4.4', 'latest']
+        r-version: ['4.4.2', 'latest']
     env:
       # Use workspace-relative paths for R libraries to ensure they're user-writable
       R_LIBS_USER: ${{ github.workspace }}/Rlibs-${{ matrix.r-version }}
@@ -422,7 +422,7 @@ jobs:
           echo "   - Prevents 'lazy loading failed for package ggtree' errors"
           echo "   - ggplot2 4.0.0+ introduced breaking changes that cause compatibility issues"
           echo "   - Using BiocManager with version specification for unified package management"
-          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggplot2', version = '3.5.1', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggplot2', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
         else
           echo "🔧 R >= 4.5 DETECTED: Installing latest ggplot2 via BiocManager..."
           echo "   - Newer R versions have better dependency resolution"
@@ -569,7 +569,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        r-version: ['4.4', 'latest']
+        r-version: ['4.4.2', 'latest']
     env:
       R_LIBS_USER: ${{ github.workspace }}/Rlibs-${{ matrix.r-version }}
       R_LIBS_SITE: ${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}
@@ -794,7 +794,7 @@ jobs:
           echo "   - Prevents 'lazy loading failed for package ggtree' errors"
           echo "   - ggplot2 4.0.0+ introduced breaking changes that cause compatibility issues"
           echo "   - Using BiocManager with version specification for unified package management"
-          if ! run_r_command "Install ggplot2 3.5.1 via BiocManager" "BiocManager::install('ggplot2', version = '3.5.1', force=TRUE)"; then
+          if ! run_r_command "Install ggplot2 3.5.1 via BiocManager" "BiocManager::install('ggplot2', force=TRUE)"; then
             log_error "ggplot2 3.5.1 Installation" "Failed to install ggplot2 3.5.1 via BiocManager for R < 4.5 compatibility"
             exit 1
           fi

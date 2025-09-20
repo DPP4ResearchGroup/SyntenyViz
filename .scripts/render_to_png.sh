@@ -94,7 +94,7 @@ async function renderMermaid() {
     
     // Take screenshot
     await page.screenshot({
-        path: '$OUTPUT_FILE',
+        path: "$OUTPUT_FILE",
         fullPage: true,
         type: 'png'
     });
