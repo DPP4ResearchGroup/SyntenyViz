@@ -2,18 +2,23 @@ version: ~> 1.0
 
 language: r
 r:
-  - "4.5.1"
+  - "4.3"
+dist: focal
 r_bioc_packages:
   - BiocManager
   - GenomicRanges
   - Gviz
   - orthogene
 r_packages:
+  - tidyverse
+  - yaml
+  - httr2
+  - ragg
+  - xml2
+  - fs
+  - withr
   - knitr
   - rmarkdown
-  - dplyr
-  - stringr
-  - yaml
   - testthat
   - R.rsp
   - roxygen2

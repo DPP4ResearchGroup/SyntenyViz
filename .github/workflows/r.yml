@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        r-version: ['4.4.2', 'latest']
+        r-version: ['4.5', 'latest']
     env:
       # Use workspace-relative paths for R libraries to ensure they're user-writable
       R_LIBS_USER: ${{ github.workspace }}/Rlibs-${{ matrix.r-version }}
@@ -415,26 +415,10 @@ jobs:
         echo "   - scales, rlang, cli: Core ggplot2 ecosystem packages"
         R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install(c('Rcpp', 'RcppArmadillo', 'ape', 'dplyr', 'tidyr', 'scales', 'rlang', 'cli'), force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
         
-        # Apply R version-specific ggplot2 installation strategy using BiocManager exclusively
-        if [ "$(echo "$R_VERSION < 4.5" | bc -l)" -eq 1 ]; then
-          echo "🔧 R < 4.5 DETECTED: Installing compatible ggplot2 3.5.1 via BiocManager..."
-          echo "   - ggplot2 3.5.1 is the last stable version compatible with ggtree 3.14.0"
-          echo "   - Prevents 'lazy loading failed for package ggtree' errors"
-          echo "   - ggplot2 4.0.0+ introduced breaking changes that cause compatibility issues"
-          echo "   - Using BiocManager with version specification for unified package management"
-          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggplot2', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
-        else
-          echo "🔧 R >= 4.5 DETECTED: Installing latest ggplot2 via BiocManager..."
-          echo "   - Newer R versions have better dependency resolution"
-          echo "   - BiocManager handles version compatibility automatically"
-          echo "   - Modern approach with enhanced compatibility features"
-          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); BiocManager::install('ggplot2', force=TRUE, ask = FALSE, lib = '$R_LIBS_USER')"
-        fi
         
         # Install ggtree with comprehensive retry logic and dependency resolution
         echo "📦 Installing ggtree via BiocManager with enhanced retry logic..."
         echo "   - ggtree is a Bioconductor package for phylogenetic tree visualization"
-        echo "   - Requires proper ggplot2 version compatibility (handled above)"
         echo "   - Using retry logic to handle transient network/compilation issues"
         
         for attempt in 1 2 3; do
@@ -569,7 +553,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        r-version: ['4.4.2', 'latest']
+        r-version: ['4.5', 'latest']
     env:
       R_LIBS_USER: ${{ github.workspace }}/Rlibs-${{ matrix.r-version }}
       R_LIBS_SITE: ${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}
@@ -782,32 +766,7 @@ jobs:
           exit 1
         fi
         
-        # Check R version for ggplot2 compatibility strategy
-        echo "🔍 Checking R version for ggplot2 compatibility strategy..."
-        R_VERSION=$(R --version | head -1 | grep -o '[0-9]\+\.[0-9]\+' | head -1)
-        echo "📊 Detected R version: $R_VERSION"
         
-        # Apply R version-specific ggplot2 installation strategy using BiocManager exclusively
-        if [ "$(echo "$R_VERSION < 4.5" | bc -l)" -eq 1 ]; then
-          echo "🔧 R < 4.5 DETECTED: Installing compatible ggplot2 3.5.1 via BiocManager..."
-          echo "   - ggplot2 3.5.1 is the last stable version compatible with ggtree 3.14.0"
-          echo "   - Prevents 'lazy loading failed for package ggtree' errors"
-          echo "   - ggplot2 4.0.0+ introduced breaking changes that cause compatibility issues"
-          echo "   - Using BiocManager with version specification for unified package management"
-          if ! run_r_command "Install ggplot2 3.5.1 via BiocManager" "BiocManager::install('ggplot2', force=TRUE)"; then
-            log_error "ggplot2 3.5.1 Installation" "Failed to install ggplot2 3.5.1 via BiocManager for R < 4.5 compatibility"
-            exit 1
-          fi
-        else
-          echo "🔧 R >= 4.5 DETECTED: Installing latest ggplot2 via BiocManager..."
-          echo "   - Newer R versions have better dependency resolution"
-          echo "   - BiocManager handles version compatibility automatically"
-          echo "   - Modern approach with enhanced compatibility features"
-          if ! run_r_command "Install ggplot2 via BiocManager" "BiocManager::install('ggplot2', force=TRUE)"; then
-            log_error "ggplot2 Installation" "Failed to install ggplot2 via BiocManager"
-            exit 1
-          fi
-        fi
         
         # Install ggtree with retry logic and dependency resolution
         echo "🔧 Installing ggtree with retry logic..."

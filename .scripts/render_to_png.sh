@@ -55,7 +55,7 @@ if command -v mmdc &> /dev/null; then
     echo "mermaid-cli found, extracting and rendering..."
     
     # Extract mermaid code from markdown
-    sed -n '/```mermaid/,/```/p' "$INPUT_FILE" | sed '1d;$d' > temp_flowchart.mmd
+    sed -n '/```mermaid/,/```/p' "$INPUT_FILE" | sed "1d;\$d" > temp_flowchart.mmd
     
     # Render to PNG
     if mmdc -i temp_flowchart.mmd -o "$OUTPUT_FILE" -w 2000 -H 3000 -b white -s 2; then
