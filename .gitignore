@@ -1,21 +1,46 @@
-# dev aux
-node_modules
-paper/
+# Jekyll build artifacts
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+.jekyll-cache/
+.bundle/
+vendor/
+
+# Development files
+node_modules/
 .vscode/
 .DS_Store
+Thumbs.db
 
+# Project specific
+paper/
 prompts/
-dev_docs/
+dev-docs/
 readme_docs/
 secrets.txt
 
-# R aux
-.Rproj.user
+# R development files
+.Rproj.user/
 .Rhistory
 .RData
 .Ruserdata
 .Renviron
 .Rprofile
 .Rbuildignore
-.Rbuildignore
+
+# IDE and editor files
+*.swp
+*.swo
+*~
+.idea/
+*.iml
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
 

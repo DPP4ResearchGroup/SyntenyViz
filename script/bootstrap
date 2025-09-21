@@ -45,19 +45,19 @@ check_ruby_version() {
     fi
     
     RUBY_VERSION=$(ruby -v | cut -d' ' -f2 | cut -d'p' -f1)
-    PRIMARY_VERSION="3.3"
-    FALLBACK_VERSION="3.2"
+    PRIMARY_VERSION="${PRIMARY_RUBY_VERSION:-3.3}"
+    FALLBACK_VERSION=$(echo "${PRIMARY_VERSION}" | awk -F. '{print $1"."($2-1)}')
     MINIMUM_VERSION="3.1"
     
     if [ "$(printf '%s\n' "$MINIMUM_VERSION" "$RUBY_VERSION" | sort -V | head -n1)" != "$MINIMUM_VERSION" ]; then
         log_error "Ruby version $RUBY_VERSION detected. Minimum required: $MINIMUM_VERSION"
         exit 1
-    elif [ "$RUBY_VERSION" = "$PRIMARY_VERSION" ]; then
-        log_success "Ruby version $RUBY_VERSION is optimal (primary version)"
-    elif [ "$RUBY_VERSION" = "$FALLBACK_VERSION" ]; then
-        log_warning "Ruby version $RUBY_VERSION detected (fallback version). Primary: $PRIMARY_VERSION"
+    elif echo "$RUBY_VERSION" | grep -q "^${PRIMARY_VERSION}\."; then
+        log_success "Ruby version $RUBY_VERSION is optimal (primary version ${PRIMARY_VERSION}.x)"
+    elif echo "$RUBY_VERSION" | grep -q "^${FALLBACK_VERSION}\."; then
+        log_warning "Ruby version $RUBY_VERSION detected (fallback version ${FALLBACK_VERSION}.x). Primary: ${PRIMARY_VERSION}.x"
     else
-        log_warning "Ruby version $RUBY_VERSION detected. Primary: $PRIMARY_VERSION, Fallback: $FALLBACK_VERSION"
+        log_warning "Ruby version $RUBY_VERSION detected. Primary: ${PRIMARY_VERSION}.x, Fallback: ${FALLBACK_VERSION}.x"
     fi
 }
 

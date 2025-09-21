@@ -43,11 +43,22 @@ check_build_output() {
     if [ ! -d "_site" ]; then
         log_warning "_site directory not found. Checking for cached build..."
         
-        # Try to restore from cache
-        if [ -f "_site.tar.gz" ]; then
-            log_info "Restoring site from cache..."
+        # Try to restore from best available cache (prioritize higher Ruby versions)
+        local primary_version="${PRIMARY_RUBY_VERSION:-3.3}"
+        local fallback_version=$(echo "${primary_version}" | awk -F. '{print $1"."($2-1)}')
+        
+        if [ -f "_site-ruby-${primary_version}.tar.gz" ]; then
+            log_info "Restoring site from Ruby ${primary_version} cache..."
+            tar -xzf "_site-ruby-${primary_version}.tar.gz"
+            log_success "Site restored from Ruby ${primary_version} cache"
+        elif [ -f "_site-ruby-${fallback_version}.tar.gz" ]; then
+            log_info "Restoring site from Ruby ${fallback_version} cache..."
+            tar -xzf "_site-ruby-${fallback_version}.tar.gz"
+            log_success "Site restored from Ruby ${fallback_version} cache"
+        elif [ -f "_site.tar.gz" ]; then
+            log_info "Restoring site from generic cache..."
             tar -xzf _site.tar.gz
-            log_success "Site restored from cache"
+            log_success "Site restored from generic cache"
         else
             log_error "_site directory not found and no cached build available. Build may have failed."
             exit 1
@@ -108,8 +119,14 @@ deploy_to_gh_pages() {
     # Remove all files except .git
     find . -maxdepth 1 -not -name '.git' -not -name '.' -exec rm -rf {} + || true
     
-    # Copy the entire _site directory as a whole
-    cp -r /home/travis/build/DPP4ResearchGroup/SyntenyViz/_site .
+    # Copy the entire _site directory to site folder
+    cp -r /home/travis/build/DPP4ResearchGroup/SyntenyViz/_site ./site
+    
+    # Log the deployment structure
+    log_info "Deployment structure:"
+    ls -la . | head -10
+    log_info "Site contents:"
+    ls -la site/ | head -10
     
     # Add all files
     git add .
@@ -142,7 +159,7 @@ verify_deployment() {
     
     # Check if the site is accessible (optional)
     log_info "Deployment completed. GitHub Pages should be updated shortly."
-    log_info "Site URL: https://dpp4researchgroup.github.io/SyntenyViz/_site/"
+    log_info "Site URL: https://dpp4researchgroup.github.io/SyntenyViz/site/"
 }
 
 # Main execution

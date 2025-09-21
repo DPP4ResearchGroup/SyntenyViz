@@ -239,13 +239,22 @@ create_build_cache() {
     log_info "Creating build cache for deployment..."
     
     if [ -d "_site" ]; then
-        # Create compressed archive of the built site
+        # Get current Ruby version for version-specific cache
+        local ruby_version=$(ruby -v | cut -d' ' -f2 | cut -d'p' -f1)
+        local major_minor=$(echo "$ruby_version" | cut -d'.' -f1-2)
+        
+        # Create version-specific cache
+        local version_cache="_site-ruby-${major_minor}.tar.gz"
+        tar -czf "$version_cache" _site/
+        
+        # Also create generic cache for backward compatibility
         tar -czf _site.tar.gz _site/
         
-        # Verify the archive was created
-        if [ -f "_site.tar.gz" ]; then
-            local cache_size=$(du -sh _site.tar.gz | cut -f1)
-            log_success "Build cache created: _site.tar.gz (${cache_size})"
+        # Verify the archives were created
+        if [ -f "$version_cache" ] && [ -f "_site.tar.gz" ]; then
+            local version_size=$(du -sh "$version_cache" | cut -f1)
+            local generic_size=$(du -sh _site.tar.gz | cut -f1)
+            log_success "Build cache created: $version_cache (${version_size}) and _site.tar.gz (${generic_size})"
         else
             log_warning "Failed to create build cache"
         fi

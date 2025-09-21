@@ -4,25 +4,12 @@ os: linux
 dist: jammy
 
 language: ruby
+# Default Ruby version (can be overridden by environment variables)
 rvm:
-  - 3.3
+  - ${PRIMARY_RUBY_VERSION:-3.3}
 
-# Matrix configuration for fallback Ruby version
-matrix:
-  include:
-    - rvm: 3.3
-      env: RUBY_VERSION=3.3
-    - rvm: 3.2
-      env: RUBY_VERSION=3.2
-      allow_failure: true
-  exclude:
-    - rvm: 3.3
-      script: bundle exec rake
-    - rvm: 3.2
-      script: bundle exec rake
-
-# Fast finish - fail fast if primary job fails
-fast_finish: true
+# Jobs configuration for configurable Ruby versions
+# Matrix is handled within the jobs section below
 
 # Override default script to prevent bundle exec rake
 script: echo "Default script overridden - using jobs configuration"
@@ -47,9 +34,11 @@ cache:
     # Node.js dependencies (if any)
     - node_modules
     - ~/.npm
-    
-    # Build artifacts for deployment
+
+    # Build artifacts for deployment (version-specific)
     - _site.tar.gz
+    - _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz
+    - _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz
 
     # Build artifacts
     - _site/assets
@@ -59,8 +48,8 @@ cache:
     - tmp
     - .tmp
 
-  # Cache key strategy optimized for single Ruby version
-  key: "travis-cache-ruby-3.3-${{ hashFiles('Gemfile.lock') }}"
+  # Cache key strategy optimized for configurable Ruby versions
+  key: "travis-cache-ruby-${PRIMARY_RUBY_VERSION:-3.3}-${FALLBACK_RUBY_VERSION:-3.2}"
 
   # Cache timeout (in seconds) - 7 days
   timeout: 604800
@@ -79,50 +68,75 @@ branches:
 
 # Build stages for better organization
 stages:
-  - test
-  - deploy
+  - name: test
+  - name: deploy
+    if: branch = gh-pages
 
 jobs:
   include:
     - stage: test
-      name: "Build and Test (Ruby 3.3)"
-      rvm: 3.3
-      env: RUBY_VERSION=3.3
+      name: "Build and Test (Ruby ${PRIMARY_RUBY_VERSION:-3.3})"
+      rvm: ${PRIMARY_RUBY_VERSION:-3.3}
+      env: RUBY_VERSION=${PRIMARY_RUBY_VERSION:-3.3}
       script:
         - script/bootstrap
         - script/cibuild
       after_success:
-        - echo "Primary build completed successfully with Ruby 3.3"
+        - echo "Primary build completed successfully with Ruby ${PRIMARY_RUBY_VERSION:-3.3}"
         - ls -la _site/ || echo "No _site directory found"
-        # Cache the built site for deployment
+        # Cache the built site for deployment (version-specific)
+        - tar -czf _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz _site/
         - tar -czf _site.tar.gz _site/
-        - echo "Built site cached for deployment"
+        - echo "Built site cached for deployment (Ruby ${PRIMARY_RUBY_VERSION:-3.3})"
     - stage: test
-      name: "Fallback Test (Ruby 3.2)"
-      rvm: 3.2
-      env: RUBY_VERSION=3.2
-      allow_failure: true
+      name: "Fallback Test (Ruby ${FALLBACK_RUBY_VERSION:-3.2})"
+      rvm: ${FALLBACK_RUBY_VERSION:-3.2}
+      env: RUBY_VERSION=${FALLBACK_RUBY_VERSION:-3.2}
       script:
         - script/bootstrap
         - script/cibuild
       after_success:
-        - echo "Fallback build completed successfully with Ruby 3.2"
+        - echo "Fallback build completed successfully with Ruby ${FALLBACK_RUBY_VERSION:-3.2}"
+        - ls -la _site/ || echo "No _site directory found"
+        # Cache the built site for deployment (version-specific)
+        - tar -czf _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz _site/
+        - echo "Built site cached for deployment (Ruby ${FALLBACK_RUBY_VERSION:-3.2})"
+      # Allow fallback to fail without blocking deployment
+      allow_failure: true
     - stage: deploy
       name: "Deploy to GitHub Pages"
-      rvm: 3.3
+      rvm: ${PRIMARY_RUBY_VERSION:-3.3}
+      env: RUBY_VERSION=${PRIMARY_RUBY_VERSION:-3.3}
       script:
-        # Restore cached site or build if not available
-        - if [ -f _site.tar.gz ]; then tar -xzf _site.tar.gz && echo "Restored cached site"; else echo "No cached site, building fresh..." && script/bootstrap && script/cibuild; fi
+        # Restore best available cached site (prioritize higher Ruby versions)
+        # This will use the cache from whichever test job succeeded
+        - |
+          if [ -f _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz ]; then
+            tar -xzf _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz
+            echo "✅ Restored Ruby ${PRIMARY_RUBY_VERSION:-3.3} cached site (primary build succeeded)"
+          elif [ -f _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz ]; then
+            tar -xzf _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz
+            echo "✅ Restored Ruby ${FALLBACK_RUBY_VERSION:-3.2} cached site (fallback build succeeded)"
+          elif [ -f _site.tar.gz ]; then
+            tar -xzf _site.tar.gz
+            echo "✅ Restored generic cached site"
+          else
+            echo "❌ No cached site found, building fresh..."
+            script/bootstrap && script/cibuild
+          fi
         - script/deploy
-      if: branch = gh-pages
+      # Deploy stage will run after test stage completes
+      # Will deploy if primary test succeeds OR if fallback test succeeds (with allow_failure)
 
 # Environment variables
 env:
   global:
-    # Primary Ruby version
+    # Configurable Ruby versions (customize these to change the Ruby version matrix)
+    # Examples: 3.4, 3.3, 3.2, 3.1, 3.0, 2.7
+    # Note: FALLBACK_RUBY_VERSION is automatically calculated as PRIMARY_RUBY_VERSION - 1
     - PRIMARY_RUBY_VERSION=3.3
     - FALLBACK_RUBY_VERSION=3.2
-    
+
     # GitHub deployment credentials
     - GITHUB_TOKEN=robqbot_Token
     - GIT_USER_NAME=robqbot_Name
@@ -206,6 +220,11 @@ addons:
 
 # Before install - modern Ruby and Bundler setup
 before_install:
+  # Calculate fallback Ruby version dynamically
+  - |
+    export FALLBACK_RUBY_VERSION=$(echo ${PRIMARY_RUBY_VERSION:-3.3} | awk -F. '{print $1"."($2-1)}')
+  - echo "Calculated fallback Ruby version=$FALLBACK_RUBY_VERSION"
+
   # System information
   - echo "System information"
   - echo "OS=$(lsb_release -a 2>/dev/null || echo 'Ubuntu Jammy')"
@@ -220,7 +239,12 @@ before_install:
   - echo "Primary Ruby version=$PRIMARY_RUBY_VERSION"
   - echo "Fallback Ruby version=$FALLBACK_RUBY_VERSION"
   - echo "Current Ruby version=$RUBY_VERSION"
-  - if [ "$RUBY_VERSION" = "3.3" ]; then echo "✅ Primary Ruby"; else echo "⚠️  Fallback Ruby"; fi
+  - |
+    if echo "$RUBY_VERSION" | grep -q "ruby-${PRIMARY_RUBY_VERSION:-3.3}\."; then
+      echo "✅ Primary Ruby"
+    else
+      echo "⚠️  Fallback Ruby"
+    fi
 
   # Cache management
   - echo "Managing build cache..."
@@ -332,7 +356,12 @@ after_script:
   - ruby -e "puts GC.stat"
   - echo "Final memory usage"
   - ps aux | grep ruby
-  - if [ "$RUBY_VERSION" = "3.3" ]; then echo "✅ Build completed with primary Ruby 3.3!"; else echo "⚠️  Build completed with fallback Ruby $RUBY_VERSION!"; fi
+  - |
+    if echo "$RUBY_VERSION" | grep -q "ruby-${PRIMARY_RUBY_VERSION:-3.3}\."; then
+      echo "✅ Build completed with primary Ruby ${PRIMARY_RUBY_VERSION:-3.3}!"
+    else
+      echo "⚠️  Build completed with fallback Ruby $RUBY_VERSION!"
+    fi
 
 # Notifications (optional - uncomment and configure as needed)
 notifications:
@@ -342,21 +371,7 @@ notifications:
   # slack:
   #   secure: "your-slack-webhook-here"
 
-# Skip CI for documentation-only changes
-skip_commits:
-  message: /^docs?\(.*\):/
+# Skip CI for documentation-only changes (use GitHub Actions skip syntax instead)
+# [skip ci] or [ci skip] in commit message
 
-# Matrix configuration for different Ruby versions (optional)
-# matrix:
-#   include:
-#     - rvm: 3.0
-#       env: RUBY_VERSION=3.0
-#     - rvm: 3.1
-#       env: RUBY_VERSION=3.1
-
-# Allow failures for non-critical jobs (optional)
-# allow_failures:
-#   - rvm: 3.0
-
-# Fast finish - fail fast if any job fails
-# fast_finish: true
+# Configuration complete - all matrix and job settings are handled in the jobs section above
