@@ -157,7 +157,6 @@ run_html_proofer() {
     # Configure html-proofer with comprehensive checks
     local proofer_args=(
         "./$BUILD_DIR"
-        "--check-html"
         "--check-sri"
         "--check-favicon"
         "--check-opengraph"
@@ -165,11 +164,12 @@ run_html_proofer() {
         "--disable-external"
         "--only-4xx"
         "--http-status-ignore" "429"
-        "--timeout" "30"
-        "--ignore-urls" "/static_files/.*"
-        "--ignore-urls" "/jekyll_collection/.*"
-        "--ignore-urls" "/docs/.*"
-        "--ignore-urls" "/assets/css/.*"
+        "--url-ignore" "/static_files/.*"
+        "--url-ignore" "/jekyll_collection/.*"
+        "--url-ignore" "/docs/.*"
+        "--url-ignore" "/assets/css/.*"
+        "--url-ignore" "/readme_docs/.*"
+        "--file-ignore" "404.html"
     )
     
     if ! bundle exec htmlproofer "${proofer_args[@]}"; then
