@@ -234,6 +234,26 @@ generate_report() {
     log_success "Build report generated: $report_file"
 }
 
+# Create build cache for deployment
+create_build_cache() {
+    log_info "Creating build cache for deployment..."
+    
+    if [ -d "_site" ]; then
+        # Create compressed archive of the built site
+        tar -czf _site.tar.gz _site/
+        
+        # Verify the archive was created
+        if [ -f "_site.tar.gz" ]; then
+            local cache_size=$(du -sh _site.tar.gz | cut -f1)
+            log_success "Build cache created: _site.tar.gz (${cache_size})"
+        else
+            log_warning "Failed to create build cache"
+        fi
+    else
+        log_warning "No _site directory found to cache"
+    fi
+}
+
 # Main execution
 main() {
     log_info "Starting CI build process..."
@@ -248,6 +268,9 @@ main() {
     run_rubocop
     build_gem
     generate_report
+    
+    # Create build cache for deployment
+    create_build_cache
     
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))

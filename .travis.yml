@@ -47,6 +47,9 @@ cache:
     # Node.js dependencies (if any)
     - node_modules
     - ~/.npm
+    
+    # Build artifacts for deployment
+    - _site.tar.gz
 
     # Build artifacts
     - _site/assets
@@ -91,6 +94,9 @@ jobs:
       after_success:
         - echo "Primary build completed successfully with Ruby 3.3"
         - ls -la _site/ || echo "No _site directory found"
+        # Cache the built site for deployment
+        - tar -czf _site.tar.gz _site/
+        - echo "Built site cached for deployment"
     - stage: test
       name: "Fallback Test (Ruby 3.2)"
       rvm: 3.2
@@ -104,7 +110,10 @@ jobs:
     - stage: deploy
       name: "Deploy to GitHub Pages"
       rvm: 3.3
-      script: echo "Deploy stage - handled by GitHub Pages"
+      script:
+        # Restore cached site or build if not available
+        - if [ -f _site.tar.gz ]; then tar -xzf _site.tar.gz && echo "Restored cached site"; else echo "No cached site, building fresh..." && script/bootstrap && script/cibuild; fi
+        - script/deploy
       if: branch = gh-pages
 
 # Environment variables
@@ -113,6 +122,11 @@ env:
     # Primary Ruby version
     - PRIMARY_RUBY_VERSION=3.3
     - FALLBACK_RUBY_VERSION=3.2
+    
+    # GitHub deployment credentials
+    - GITHUB_TOKEN=robqbot_Token
+    - GIT_USER_NAME=robqbot_Name
+    - GIT_USER_EMAIL=robqbot_Email
 
     # Modern Ruby optimizations (optimized for Ruby 3.3)
     - RUBYOPT=-W0  # Suppress Ruby warnings
