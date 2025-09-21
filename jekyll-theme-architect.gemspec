@@ -18,6 +18,14 @@ Gem::Specification.new do |s|
 
   s.platform = Gem::Platform::RUBY
   s.required_ruby_version = '>= 2.6.0'
-  s.add_runtime_dependency 'jekyll', '~> 4.0'
+  s.add_runtime_dependency 'jekyll', '~> 3.9'
   s.add_runtime_dependency 'jekyll-seo-tag', '~> 2.6'
+  s.add_runtime_dependency 'jekyll-remote-theme', '~> 0.4'
+  s.add_runtime_dependency 'jekyll-sitemap', '~> 1.4'
+  s.add_runtime_dependency 'jekyll-feed', '~> 0.12'
+  s.add_runtime_dependency 'kramdown-parser-gfm', '~> 1.1'
+  
+  # Development dependencies for CI/CD
+  s.add_development_dependency 'html-proofer', '~> 3.19'
+  s.add_development_dependency 'w3c_validators', '~> 1.3'
 end

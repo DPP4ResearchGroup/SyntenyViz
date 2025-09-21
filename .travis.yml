@@ -48,18 +48,13 @@ cache:
     - tmp
     - .tmp
 
-  # Cache key strategy optimized for configurable Ruby versions
-  key: "travis-cache-ruby-${PRIMARY_RUBY_VERSION:-3.3}-${FALLBACK_RUBY_VERSION:-3.2}"
-
-  # Cache timeout (in seconds) - 7 days
-  timeout: 604800
-
-  # Cache invalidation strategy
+  # Cache key strategy: file-based invalidation only
   # Cache will be invalidated when:
-  # - Branch changes
   # - Gemfile.lock changes
   # - _config.yml changes
   # - Primary Ruby version changes (3.3)
+  # - NOT branch-based (stable across branches)
+  key: "cache-ruby-${PRIMARY_RUBY_VERSION:-3.3}-${FALLBACK_RUBY_VERSION:-3.2}"
 
 # Only build on gh-pages branch
 branches:
