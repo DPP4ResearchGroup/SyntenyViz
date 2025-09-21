@@ -32,7 +32,7 @@ github:
 
 # Site variables
 github:
-  pdf_url: https://github.com/DPP4ResearchGroup/SyntenyViz/raw/gh-pages/jekyll_collection/SyntenyViz_workflow.pdf
+  pdf_url: https://github.com/DPP4ResearchGroup/SyntenyViz/raw/gh-pages/static_files/SyntenyViz_workflow.pdf
   tar_url: https://github.com/DPP4ResearchGroup/SyntenyViz/archive/v0.0.0.9000-prerelease.tar.gz
 
 # Collections

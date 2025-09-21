@@ -47,7 +47,7 @@ check_ruby_version() {
     RUBY_VERSION=$(ruby -v | cut -d' ' -f2 | cut -d'p' -f1)
     PRIMARY_VERSION="${PRIMARY_RUBY_VERSION:-3.3}"
     FALLBACK_VERSION=$(echo "${PRIMARY_VERSION}" | awk -F. '{print $1"."($2-1)}')
-    MINIMUM_VERSION="3.1"
+    MINIMUM_VERSION="2.6"
     
     if [ "$(printf '%s\n' "$MINIMUM_VERSION" "$RUBY_VERSION" | sort -V | head -n1)" != "$MINIMUM_VERSION" ]; then
         log_error "Ruby version $RUBY_VERSION detected. Minimum required: $MINIMUM_VERSION"
@@ -84,9 +84,16 @@ install_dependencies() {
     
     # Configure bundle to use vendor/bundle path (consistent with Travis CI)
     log_info "Configuring bundle path..."
+    
+    # Clear any existing local bundle configuration to avoid conflicts
+    if [ -f ".bundle/config" ]; then
+        log_info "Clearing existing bundle configuration..."
+        rm -f .bundle/config
+    fi
+    
     bundle config --local path vendor/bundle
     bundle config --local cache_all true
-    bundle config --local without development:test
+    bundle config --local without test
     bundle config --local jobs 4
     bundle config --local retry 3
     bundle config --local force_ruby_platform true

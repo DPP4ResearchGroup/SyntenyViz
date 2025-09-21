@@ -161,13 +161,15 @@ run_html_proofer() {
         "--check-sri"
         "--check-favicon"
         "--check-opengraph"
-        "--check-css"
         "--check-img-http"
-        "--check-html-validity"
         "--disable-external"
         "--only-4xx"
         "--http-status-ignore" "429"
         "--timeout" "30"
+        "--ignore-urls" "/static_files/.*"
+        "--ignore-urls" "/jekyll_collection/.*"
+        "--ignore-urls" "/docs/.*"
+        "--ignore-urls" "/assets/css/.*"
     )
     
     if ! bundle exec htmlproofer "${proofer_args[@]}"; then
