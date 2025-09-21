@@ -36,9 +36,10 @@ cache:
     - ~/.npm
 
     # Build artifacts for deployment (version-specific)
-    - _site.tar.gz
-    - _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz
-    - _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz
+    # Note: These are created during the build process, not cached beforehand
+    # - _site.tar.gz
+    # - _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz
+    # - _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz
 
     # Build artifacts
     - _site/assets
@@ -80,6 +81,7 @@ jobs:
         - echo "Primary build completed successfully with Ruby ${PRIMARY_RUBY_VERSION:-3.3}"
         - ls -la _site/ || echo "No _site directory found"
         # Cache the built site for deployment (version-specific)
+        - rm -f _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz _site.tar.gz
         - tar -czf _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz _site/
         - tar -czf _site.tar.gz _site/
         - echo "Built site cached for deployment (Ruby ${PRIMARY_RUBY_VERSION:-3.3})"
@@ -94,6 +96,7 @@ jobs:
         - echo "Fallback build completed successfully with Ruby ${FALLBACK_RUBY_VERSION:-3.2}"
         - ls -la _site/ || echo "No _site directory found"
         # Cache the built site for deployment (version-specific)
+        - rm -f _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz
         - tar -czf _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz _site/
         - echo "Built site cached for deployment (Ruby ${FALLBACK_RUBY_VERSION:-3.2})"
       # Allow fallback to fail without blocking deployment
@@ -132,10 +135,12 @@ env:
     - PRIMARY_RUBY_VERSION=3.3
     - FALLBACK_RUBY_VERSION=3.2
 
-    # GitHub deployment credentials
-    - GITHUB_TOKEN=robqbot_Token
-    - GIT_USER_NAME=robqbot_Name
-    - GIT_USER_EMAIL=robqbot_Email
+    # GitHub deployment credentials (using existing secure variables from Travis CI)
+    # Note: These should reference the actual secure variable names stored in Travis CI
+    # The secure variables should be named: robqbot_token, robqbot_Name, robqbot_Email
+    - GITHUB_TOKEN=${robqbot_Token}
+    - GIT_USER_NAME=${robqbot_Name}
+    - GIT_USER_EMAIL=${robqbot_Email}
 
     # Modern Ruby optimizations (optimized for Ruby 3.3)
     - RUBYOPT=-W0  # Suppress Ruby warnings
