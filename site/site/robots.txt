@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://dpp4researchgroup.github.io/SyntenyViz/sitemap.xml
+
+# Disallow certain paths
+Disallow: /_site/
+Disallow: /vendor/
+Disallow: /node_modules/
+Disallow: /.git/
+Disallow: /.jekyll-cache/
+Disallow: /.sass-cache/
+Disallow: /Gemfile
+Disallow: /Gemfile.lock
+Disallow: /secrets.txt
