@@ -123,19 +123,6 @@ jobs:
       rvm: ${PRIMARY_RUBY_VERSION:-3.3}
       env: RUBY_VERSION=${PRIMARY_RUBY_VERSION:-3.3}
       script:
-        # Check if the last commit was made by Travis CI to prevent infinite deployment loops
-        - |
-          echo "Checking if last commit was made by Travis CI..."
-          LAST_COMMIT_AUTHOR=$(git log -1 --pretty=format:"%an")
-          echo "Last commit author: $LAST_COMMIT_AUTHOR"
-          if [[ "$LAST_COMMIT_AUTHOR" == *"travis"* ]] || [[ "$LAST_COMMIT_AUTHOR" == *"Travis"* ]] || [[ "$LAST_COMMIT_AUTHOR" == *"TRAVIS"* ]] || [[ "$LAST_COMMIT_AUTHOR" == *"robqbot"* ]] || [[ "$LAST_COMMIT_AUTHOR" == *"robqbot via travis"* ]]; then
-            echo "❌ Last commit was made by Travis CI (robqbot). Skipping deployment to prevent infinite loop."
-            echo "Last commit details:"
-            git log -1 --pretty=format:"Author: %an <%ae>%nDate: %ad%nMessage: %s"
-            exit 0
-          else
-            echo "✅ Last commit was made by a user. Proceeding with deployment."
-          fi
         # Restore best available cached site (prioritize higher Ruby versions)
         # This will use the cache from whichever test job succeeded
         - |
@@ -155,7 +142,7 @@ jobs:
         - script/deploy
       # Deploy stage will run after test stage completes
       # Will deploy if primary test succeeds OR if fallback test succeeds (with allow_failure)
-      # Will NOT deploy if the last commit was made by Travis CI
+      # Will NOT run if the last commit was made by robqbot (checked at workflow level)
 
 # Environment variables
 env:
@@ -251,6 +238,21 @@ addons:
 
 # Before install - modern Ruby and Bundler setup
 before_install:
+  # Check if the last commit was made by robqbot to prevent unnecessary builds
+  - |
+    echo "Checking if last commit was made by robqbot..."
+    LAST_COMMIT_AUTHOR=$(git log -1 --pretty=format:"%an")
+    echo "Last commit author: $LAST_COMMIT_AUTHOR"
+    if [[ "$LAST_COMMIT_AUTHOR" == *"robqbot"* ]] || [[ "$LAST_COMMIT_AUTHOR" == *"robqbot via travis"* ]]; then
+      echo "❌ Last commit was made by robqbot. Skipping entire workflow to prevent unnecessary builds."
+      echo "Last commit details:"
+      git log -1 --pretty=format:"Author: %an <%ae>%nDate: %ad%nMessage: %s"
+      echo "Exiting build process..."
+      exit 0
+    else
+      echo "✅ Last commit was made by a user. Proceeding with build workflow."
+    fi
+
   # Calculate fallback Ruby version dynamically
   - |
     export FALLBACK_RUBY_VERSION=$(echo ${PRIMARY_RUBY_VERSION:-3.3} | awk -F. '{print $1"."($2-1)}')
