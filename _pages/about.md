@@ -1,4 +1,5 @@
 ---
+layout: default
 title: About SyntenyViz
 description: Learn more about the SyntenyViz R package for synteny visualization
 permalink: /about/
@@ -32,4 +33,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For questions, bug reports, or feature requests, please:
 - Open an issue on [GitHub](https://github.com/DPP4ResearchGroup/SyntenyViz/issues)
-- Contact us at [opensource+jekyll-theme-architect@github.com](mailto:opensource+jekyll-theme-architect@github.com)
+- Contact us at [opensource+jekyll-theme-midnight@github.com](mailto:opensource+jekyll-theme-midnight@github.com)

@@ -2,7 +2,7 @@
 title: SyntenyViz
 description: A synteny visualization R package for comparative genomics
 author: DPP4ResearchGroup
-email: opensource+jekyll-theme-architect@github.com
+email: opensource+jekyll-theme-midnight@github.com
 url: "https://dpp4researchgroup.github.io"
 baseurl: "/SyntenyViz"
 
@@ -14,8 +14,9 @@ timezone: UTC
 encoding: utf-8
 
 # Theme and plugins
-theme: minima
+remote_theme: pages-themes/midnight
 plugins:
+  - jekyll-remote-theme
   - jekyll-seo-tag
   - jekyll-sitemap
   - jekyll-feed

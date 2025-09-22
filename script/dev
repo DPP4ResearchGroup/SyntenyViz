@@ -205,7 +205,7 @@ clean_site() {
     fi
     
     # Clean gem builds
-    rm -f jekyll-theme-architect-*.gem
+    rm -f jekyll-theme-midnight-*.gem
     
     log_success "Clean completed"
 }
