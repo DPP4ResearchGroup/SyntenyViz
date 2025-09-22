@@ -1,5 +1,4 @@
 ---
-layout: default
 title: About SyntenyViz
 description: Learn more about the SyntenyViz R package for synteny visualization
 permalink: /about/

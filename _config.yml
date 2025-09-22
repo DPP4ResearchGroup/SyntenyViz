@@ -14,9 +14,8 @@ timezone: UTC
 encoding: utf-8
 
 # Theme and plugins
-remote_theme: pages-themes/architect
+theme: minima
 plugins:
-  - jekyll-remote-theme
   - jekyll-seo-tag
   - jekyll-sitemap
   - jekyll-feed
