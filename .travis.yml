@@ -45,6 +45,11 @@ cache:
     - _site/assets
     - assets/css/main.css
 
+    # Gem lock files for faster builds
+    - Gemfile.lock.ruby-3.3
+    - Gemfile.lock.ruby-3.2
+    - Gemfile.lock.ruby-*
+
     # Temporary files
     - tmp
     - .tmp
@@ -80,6 +85,12 @@ jobs:
       after_success:
         - echo "Primary build completed successfully with Ruby ${PRIMARY_RUBY_VERSION:-3.3}"
         - ls -la _site/ || echo "No _site directory found"
+        # Create and maintain gem lock for faster builds
+        - echo "Creating gem lock for Ruby ${PRIMARY_RUBY_VERSION:-3.3}..."
+        - bundle lock --add-platform ruby
+        - bundle lock --add-platform x86_64-linux
+        - cp Gemfile.lock "Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}"
+        - echo "Gem lock created: Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}"
         # Cache the built site for deployment (version-specific)
         - rm -f _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz _site.tar.gz
         - tar -czf _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz _site/
@@ -95,6 +106,12 @@ jobs:
       after_success:
         - echo "Fallback build completed successfully with Ruby ${FALLBACK_RUBY_VERSION:-3.2}"
         - ls -la _site/ || echo "No _site directory found"
+        # Create and maintain gem lock for faster builds
+        - echo "Creating gem lock for Ruby ${FALLBACK_RUBY_VERSION:-3.2}..."
+        - bundle lock --add-platform ruby
+        - bundle lock --add-platform x86_64-linux
+        - cp Gemfile.lock "Gemfile.lock.ruby-${FALLBACK_RUBY_VERSION:-3.2}"
+        - echo "Gem lock created: Gemfile.lock.ruby-${FALLBACK_RUBY_VERSION:-3.2}"
         # Cache the built site for deployment (version-specific)
         - rm -f _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz
         - tar -czf _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz _site/
@@ -280,6 +297,25 @@ before_install:
 
 # Install dependencies with modern practices
 install:
+  # Restore gem lock for faster builds (if available)
+  - |
+    echo "Checking for cached gem locks..."
+    if [ -f "Gemfile.lock.ruby-${RUBY_VERSION:-3.3}" ]; then
+      echo "✅ Found cached gem lock for Ruby ${RUBY_VERSION:-3.3}"
+      cp "Gemfile.lock.ruby-${RUBY_VERSION:-3.3}" Gemfile.lock
+      echo "Restored gem lock for faster build"
+    elif [ -f "Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}" ]; then
+      echo "✅ Found cached gem lock for primary Ruby ${PRIMARY_RUBY_VERSION:-3.3}"
+      cp "Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}" Gemfile.lock
+      echo "Restored primary gem lock for faster build"
+    elif [ -f "Gemfile.lock.ruby-${FALLBACK_RUBY_VERSION:-3.2}" ]; then
+      echo "✅ Found cached gem lock for fallback Ruby ${FALLBACK_RUBY_VERSION:-3.2}"
+      cp "Gemfile.lock.ruby-${FALLBACK_RUBY_VERSION:-3.2}" Gemfile.lock
+      echo "Restored fallback gem lock for faster build"
+    else
+      echo "❌ No cached gem lock found, will create new one"
+    fi
+
   - script/bootstrap
 
   # Modern Bundler configuration

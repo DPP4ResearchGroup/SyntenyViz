@@ -115,28 +115,16 @@ deploy_to_gh_pages() {
     
     cd gh-pages-repo
     
-    # Preserve existing files and update the main site directory
-    # Create a timestamped backup of the current site (if it exists)
-    if [ -d "./site" ]; then
-        BUILD_TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-        BACKUP_DIR="site_backup_${BUILD_TIMESTAMP}"
-        log_info "Backing up current site to ${BACKUP_DIR}"
-        cp -r ./site "./${BACKUP_DIR}"
-    fi
-    
-    # Update the main site directory with the new build (GitHub Pages uses this)
-    rm -rf ./site || true
-    cp -r /home/travis/build/DPP4ResearchGroup/SyntenyViz/_site ./site
+    # Deploy to docs folder with complete overwrite
+    log_info "Deploying to docs folder with complete overwrite..."
+    rm -rf ./docs || true
+    cp -r /home/travis/build/DPP4ResearchGroup/SyntenyViz/_site ./docs
     
     # Log the deployment structure
     log_info "Deployment structure:"
     ls -la . | head -10
-    log_info "Main site contents (GitHub Pages deployment):"
-    ls -la site/ | head -10
-    if [ -n "${BACKUP_DIR:-}" ]; then
-        log_info "Backup directory: ${BACKUP_DIR}"
-        ls -la "${BACKUP_DIR}/" | head -5
-    fi
+    log_info "Docs folder contents (complete overwrite):"
+    ls -la docs/ | head -10
     
     # Add all files
     git add .
@@ -148,11 +136,7 @@ deploy_to_gh_pages() {
     fi
     
     # Commit the changes
-    if [ -n "${BACKUP_DIR:-}" ]; then
-        git commit -m "Deploy Jekyll site (backup: ${BACKUP_DIR}) from commit $(cd /home/travis/build/DPP4ResearchGroup/SyntenyViz && git rev-parse HEAD)"
-    else
-        git commit -m "Deploy Jekyll site from commit $(cd /home/travis/build/DPP4ResearchGroup/SyntenyViz && git rev-parse HEAD)"
-    fi
+    git commit -m "Deploy Jekyll site to docs/ folder from commit $(cd /home/travis/build/DPP4ResearchGroup/SyntenyViz && git rev-parse HEAD)"
     
     # Push to gh-pages branch using PAT
     git push "$REPO_URL_WITH_TOKEN" gh-pages:gh-pages
@@ -173,7 +157,7 @@ verify_deployment() {
     
     # Check if the site is accessible (optional)
     log_info "Deployment completed. GitHub Pages should be updated shortly."
-    log_info "Site URL: https://dpp4researchgroup.github.io/SyntenyViz/site/"
+    log_info "Site URL: https://dpp4researchgroup.github.io/SyntenyViz/docs/"
 }
 
 # Main execution
