@@ -1,0 +1,195 @@
+#!/bin/bash
+# Bootstrap script for Jekyll site setup
+# Ensures all dependencies are properly installed and configured
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+}
+
+# Check if we're in the right directory
+check_project_root() {
+    if [ ! -f "Gemfile" ] || [ ! -f "_config.yml" ]; then
+        log_error "This script must be run from the Jekyll project root directory"
+        exit 1
+    fi
+    log_info "Project root directory confirmed"
+}
+
+# Check Ruby version
+check_ruby_version() {
+    if ! command -v ruby >/dev/null 2>&1; then
+        log_error "Ruby is not installed or not in PATH"
+        exit 1
+    fi
+    
+    RUBY_VERSION=$(ruby -v | cut -d' ' -f2 | cut -d'p' -f1)
+    PRIMARY_VERSION="${PRIMARY_RUBY_VERSION:-3.3}"
+    FALLBACK_VERSION=$(echo "${PRIMARY_VERSION}" | awk -F. '{print $1"."($2-1)}')
+    MINIMUM_VERSION="2.6"
+    
+    if [ "$(printf '%s\n' "$MINIMUM_VERSION" "$RUBY_VERSION" | sort -V | head -n1)" != "$MINIMUM_VERSION" ]; then
+        log_error "Ruby version $RUBY_VERSION detected. Minimum required: $MINIMUM_VERSION"
+        exit 1
+    elif echo "$RUBY_VERSION" | grep -q "^${PRIMARY_VERSION}\."; then
+        log_success "Ruby version $RUBY_VERSION is optimal (primary version ${PRIMARY_VERSION}.x)"
+    elif echo "$RUBY_VERSION" | grep -q "^${FALLBACK_VERSION}\."; then
+        log_warning "Ruby version $RUBY_VERSION detected (fallback version ${FALLBACK_VERSION}.x). Primary: ${PRIMARY_VERSION}.x"
+    else
+        log_warning "Ruby version $RUBY_VERSION detected. Primary: ${PRIMARY_VERSION}.x, Fallback: ${FALLBACK_VERSION}.x"
+    fi
+}
+
+# Install or update Bundler
+install_bundler() {
+    log_info "Installing/updating Bundler..."
+    
+    if command -v bundler >/dev/null 2>&1; then
+        CURRENT_BUNDLER=$(bundler -v | cut -d' ' -f3)
+        log_info "Current Bundler version: $CURRENT_BUNDLER"
+        
+        # Update to latest version
+        gem install bundler --no-document --version ">= 2.4.0"
+        log_success "Bundler updated to latest version"
+    else
+        gem install bundler --no-document --version ">= 2.4.0"
+        log_success "Bundler installed"
+    fi
+}
+
+# Install dependencies
+install_dependencies() {
+    log_info "Installing project dependencies..."
+    
+    # Configure bundle to use vendor/bundle path (consistent with Travis CI)
+    log_info "Configuring bundle path..."
+    
+    # Clear any existing local bundle configuration to avoid conflicts
+    if [ -f ".bundle/config" ]; then
+        log_info "Clearing existing bundle configuration..."
+        rm -f .bundle/config
+    fi
+    
+    bundle config --local path vendor/bundle
+    bundle config --local cache_all true
+    bundle config --local without test
+    bundle config --local jobs 4
+    bundle config --local retry 3
+    bundle config --local force_ruby_platform true
+    bundle config --local clean false
+    
+    # Show bundle configuration for debugging
+    log_info "Bundle configuration:"
+    bundle config list
+    
+    if [ ! -f "Gemfile.lock" ]; then
+        log_warning "Gemfile.lock not found. This may be a fresh installation."
+        log_info "Generating Gemfile.lock for the first time..."
+    fi
+    
+    # Install dependencies with retry logic
+    local retry_count=0
+    local max_retries=3
+    
+    while [ $retry_count -lt $max_retries ]; do
+        # Use different bundle install strategy based on lockfile presence
+        local bundle_output
+        local bundle_exit_code
+        
+        if [ -f "Gemfile.lock" ]; then
+            # Lockfile exists, use standard install
+            bundle_output=$(bundle install --retry=3 2>&1)
+            bundle_exit_code=$?
+        else
+            # No lockfile, generate it first
+            bundle_output=$(bundle install --retry=3 2>&1)
+            bundle_exit_code=$?
+        fi
+        
+        # Check if bundle install actually succeeded
+        if [ $bundle_exit_code -eq 0 ]; then
+            # Check if the output indicates success
+            if echo "$bundle_output" | grep -q "Bundle complete"; then
+                log_success "Dependencies installed successfully"
+                return 0
+            else
+                # Bundle install succeeded but might have warnings
+                log_success "Dependencies installed (with warnings)"
+                return 0
+            fi
+        fi
+        
+        retry_count=$((retry_count + 1))
+        log_warning "Bundle install failed (attempt $retry_count/$max_retries)"
+        log_info "Bundle output: $bundle_output"
+        
+        if [ $retry_count -lt $max_retries ]; then
+            log_info "Retrying in 5 seconds..."
+            sleep 5
+        fi
+    done
+    
+    log_error "Failed to install dependencies after $max_retries attempts"
+    exit 1
+}
+
+# Verify installation
+verify_installation() {
+    log_info "Verifying installation..."
+    
+    if ! bundle exec jekyll --version >/dev/null 2>&1; then
+        log_error "Jekyll installation verification failed"
+        exit 1
+    fi
+    
+    JEKYLL_VERSION=$(bundle exec jekyll --version | cut -d' ' -f2)
+    log_success "Jekyll $JEKYLL_VERSION is ready"
+    
+    # Check for required gems
+    local required_gems=("html-proofer" "rubocop" "w3c_validators")
+    for gem in "${required_gems[@]}"; do
+        if bundle exec gem list "$gem" >/dev/null 2>&1; then
+            log_success "$gem is available"
+        else
+            log_warning "$gem is not available (may be needed for CI/CD)"
+        fi
+    done
+}
+
+# Main execution
+main() {
+    log_info "Starting Jekyll bootstrap process..."
+    
+    check_project_root
+    check_ruby_version
+    install_bundler
+    install_dependencies
+    verify_installation
+    
+    log_success "Bootstrap completed successfully!"
+    log_info "You can now run: bundle exec jekyll serve"
+}
+
+# Run main function
+main "$@"

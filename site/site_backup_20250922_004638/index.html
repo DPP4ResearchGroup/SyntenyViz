@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/SyntenyViz/assets/css/style.css" as="style">
+    <link rel="preload" href="/SyntenyViz/assets/css/print.css" as="style" media="print">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/SyntenyViz/assets/css/style.css" media="screen" type="text/css">
+    <link rel="stylesheet" href="/SyntenyViz/assets/css/print.css" media="print" type="text/css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/SyntenyViz/assets/images/favicon.png">
+    <link rel="apple-touch-icon" href="/SyntenyViz/assets/images/favicon.png">
+    
+    <!-- SEO and social meta tags -->
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>SyntenyViz | A synteny visualization R package for comparative genomics</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="SyntenyViz" />
+<meta name="author" content="DPP4ResearchGroup" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A synteny visualization R package for comparative genomics" />
+<meta property="og:description" content="A synteny visualization R package for comparative genomics" />
+<link rel="canonical" href="https://dpp4researchgroup.github.io/SyntenyViz/" />
+<meta property="og:url" content="https://dpp4researchgroup.github.io/SyntenyViz/" />
+<meta property="og:site_name" content="SyntenyViz" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="SyntenyViz" />
+<meta name="twitter:site" content="@dpp4researchgroup" />
+<meta name="twitter:creator" content="@DPP4ResearchGroup" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","author":{"@type":"Person","name":"DPP4ResearchGroup"},"description":"A synteny visualization R package for comparative genomics","headline":"SyntenyViz","name":"SyntenyViz","url":"https://dpp4researchgroup.github.io/SyntenyViz/"}</script>
+<!-- End Jekyll SEO tag -->
+
+    
+    <!-- Structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "SyntenyViz",
+      "description": "A synteny visualization R package for comparative genomics",
+      "url": "https://dpp4researchgroup.github.io/SyntenyViz",
+      "author": {
+        "@type": "Organization",
+        "name": "DPP4ResearchGroup"
+      },
+      "applicationCategory": "Bioinformatics",
+      "operatingSystem": "R"
+    }
+    </script>
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    
+    <header role="banner" class="hero-header">
+      <div class="hero-background">
+        <img src="/SyntenyViz/assets/images/SynViz.png" alt="SyntenyViz - Comparative Genomics Visualization" class="hero-image">
+        <div class="hero-overlay"></div>
+      </div>
+      <div class="inner hero-content">
+        <a href="https://dpp4researchgroup.github.io/SyntenyViz/" aria-label="Home">
+          <h1 class="hero-title">SyntenyViz</h1>
+        </a>
+        <h2 class="hero-subtitle">A synteny visualization R package for comparative genomics</h2>
+        
+        
+      </div>
+    </header>
+
+    <main id="content-wrapper" role="main">
+      <div class="inner clearfix">
+        <section id="main-content" role="main" aria-label="Main content">
+          <h2 id="what-is-syntenyviz">What is SyntenyViz</h2>
+<p>SyntenyViz is a R package to visualise synteny across various biological species.</p>
+
+<h2 id="motivation">Motivation</h2>
+<p>Visualising the synteny across species not only enables intuitive examination and facilitates reconstruction effort of ancestral genomes, but also allow more direct interrogation of gene regulations and gene structures within a gene cluster.</p>
+
+<h2 id="installation">Installation</h2>
+<h3 id="install-from-rstudio">Install from RStudio</h3>
+<ul>
+  <li>Install and load <code class="language-plaintext highlighter-rouge">devtools</code>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>install.packages("devtools")
+library(devtools)
+</code></pre></div>    </div>
+  </li>
+  <li>Install and load <code class="language-plaintext highlighter-rouge">SyntenyViz</code> from <code class="language-plaintext highlighter-rouge">GitHub</code>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>install_github("DPP4ResearchGroup/SyntenyViz")
+library(SyntenyViz)
+</code></pre></div>    </div>
+    <p>To allow build vignettes, <code class="language-plaintext highlighter-rouge">build_vignettes = TRUE</code> options can be used as</p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>install_github("DPP4ResearchGroup/SyntenyViz", build_vignettes = TRUE)
+library(SyntenyViz)
+</code></pre></div>    </div>
+    <p>Developing version can be accessed via <code class="language-plaintext highlighter-rouge">develop</code> as</p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>install_github("DPP4ResearchGroup/SyntenyViz", ref = "develop")
+library(SyntenyViz)
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<h2 id="quick-start-for-the-inpatients">Quick Start for the Inpatients</h2>
+<p>Quick and minimum steps to get start a synteney conservation analysis with SyntenyViz</p>
+
+<ul>
+  <li>Define an investigation range
+We need to firstly define an investigation range to cover the target range in gene coordinate. We will use a mouse dipeptidyl dipeptidase 4 gene (DPP4-mm) in this example, where DPP4-mm locates at chromosome number 2 between 62,330,073-62,412,231 bp.
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># orgm is a handle for organism
+orgmName &lt;- "Mmusculus"
+# mycoords.list is the investigation range handler
+mycoords &lt;- "2:6.0e7:6.5e7"
+</code></pre></div>    </div>
+  </li>
+  <li>Convert <code class="language-plaintext highlighter-rouge">mycoords.list</code> into a GRange object
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mycoords.gr &lt;- SyntenyViz::coordFormat (mycoords.list = mycoords)
+</code></pre></div>    </div>
+    <p>It is always a good habit to double check the input, so</p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mycoords.gr
+</code></pre></div>    </div>
+  </li>
+  <li>Construct a single synteny graph
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>synvizPlot(mycoords.gr, orgmName)
+</code></pre></div>    </div>
+    <p><img src="assets/images/Hsplot.png" alt="Synteny around DPP4 gene in Humans" /></p>
+  </li>
+  <li>Construct a multi synteny graph</li>
+</ul>
+
+<p>Pick a few of targets</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>orgm.1 &lt;- "Hsapiens"
+mycoords.list.1 &lt;- "2:15.95e7:16.45e7"
+orgm.2 &lt;- "Mmusculus"
+mycoords.list.2 &lt;- "2:6.0e7:6.5e7"
+orgm.3 &lt;- "Rnorvegicus"
+mycoords.list.3 &lt;- "3:4.6e7:5.1e7"
+</code></pre></div></div>
+<p>Then construct a multiple synteny query</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>orgmsList &lt;- orgmsCollection.init (orgmsList)
+orgmsList &lt;- orgmsAdd (orgm.1, orgmTxDB, mycoords.list.1, orgmsList)
+orgmsList &lt;- orgmsAdd (orgm.2, orgmTxDB, mycoords.list.2, orgmsList)
+orgmsList &lt;- orgmsAdd (orgm.3, orgmTxDB, mycoords.list.3, orgmsList)
+</code></pre></div></div>
+<p>Now, construct a comparative multi-synteny graph</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>multiplot &lt;- multisynvizPlots(orgmsList)
+</code></pre></div></div>
+<p><img src="assets/images/Msplot.png" alt="Synteny Conservation around DPP4 gene between various Organisms" /></p>
+
+<h2 id="examples">Examples</h2>
+<p><code class="language-plaintext highlighter-rouge">SyntenyViz</code> also includes training material, which can be accessed via vignettes from <code class="language-plaintext highlighter-rouge">RStudio</code></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>install_github("DPP4ResearchGroup/SyntenyViz", build_vignettes = TRUE)
+browseVignettes("SyntenyViz")
+</code></pre></div></div>
+<p>OR a <code class="language-plaintext highlighter-rouge">PDF</code> can be accessed from <code class="language-plaintext highlighter-rouge">SyntenyViz</code> <a href="https://dpp4researchgroup.github.io/SyntenyViz/">homepage</a>.</p>
+
+<h2 id="contribution">Contribution</h2>
+<ol>
+  <li>Fork to your contributing account</li>
+  <li>Create your feature branch (<code class="language-plaintext highlighter-rouge">git checkout -b my-new-feature</code>)</li>
+  <li>Commit your changes (<code class="language-plaintext highlighter-rouge">git commit -am 'Added some feature'</code>)</li>
+  <li>Push to the feature branch (<code class="language-plaintext highlighter-rouge">git push origin my-new-feature</code>)</li>
+  <li>Create a new PR</li>
+</ol>
+
+<h2 id="issue-tracking">Issue Tracking</h2>
+<p>Issues and bugs can be raised and tracked through <a href="https://github.com/DPP4ResearchGroup/SyntenyViz/issues">GitHub issue tracker for SyntenyViz</a>.</p>
+
+<h2 id="unit-testing">Unit Testing</h2>
+<p><code class="language-plaintext highlighter-rouge">Travis</code> CI testing <a href="https://github.com/DPP4ResearchGroup/SyntenyViz">travis status</a> implements <code class="language-plaintext highlighter-rouge">R CMD check</code>.
+The function integrity is checked by <code class="language-plaintext highlighter-rouge">R</code> native <code class="language-plaintext highlighter-rouge">testthat</code>, which can also be invoked by utility function <code class="language-plaintext highlighter-rouge">devtools::test()</code> from RStudio.</p>
+
+        </section>
+
+        <aside id="sidebar" role="complementary" aria-label="Sidebar">
+          
+            <nav aria-label="Download links">
+              <a href="https://github.com/DPP4ResearchGroup/SyntenyViz/raw/gh-pages/static_files/SyntenyViz_workflow.pdf" class="button" download aria-label="Download vignettes PDF">
+                <small>Download</small>
+                vignettes PDF
+              </a>
+              <a href="https://github.com/DPP4ResearchGroup/SyntenyViz/archive/v0.0.0.9000-prerelease.tar.gz" class="button" download aria-label="Download tar.gz file">
+                <small>Download</small>
+                .tar.gz file
+              </a>
+            </nav>
+          
+
+          
+
+          <p>This page was generated by <a href="https://pages.github.com" aria-label="Learn about GitHub Pages">GitHub Pages</a>.</p>
+        </aside>
+      </div>
+    </main>
+
+    
+      <!-- Google Analytics 4 (GA4) -->
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-BB6PSVP76C" crossorigin="anonymous"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-BB6PSVP76C', {
+          'anonymize_ip': true,
+          'cookie_flags': 'SameSite=Strict;Secure'
+        });
+      </script>
+    
+  </body>
+</html>
