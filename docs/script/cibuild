@@ -171,13 +171,13 @@ run_rubocop() {
 
 # Build gem (if gemspec exists)
 build_gem() {
-    if [ -f "jekyll-theme-architect.gemspec" ]; then
+    if [ -f "jekyll-theme-midnight.gemspec" ]; then
         log_info "Building gem..."
         
         # Clean previous gem builds
-        rm -f jekyll-theme-architect-*.gem
+        rm -f jekyll-theme-midnight-*.gem
         
-        if ! gem build jekyll-theme-architect.gemspec; then
+        if ! gem build jekyll-theme-midnight.gemspec; then
             log_error "Gem build failed"
             exit 1
         fi
@@ -185,7 +185,7 @@ build_gem() {
         log_success "Gem built successfully"
         
         # List built gem
-        ls -la jekyll-theme-architect-*.gem
+        ls -la jekyll-theme-midnight-*.gem
     else
         log_info "No gemspec found, skipping gem build"
     fi
