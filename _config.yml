@@ -23,23 +23,12 @@ plugins:
 
 # SEO and social
 show_downloads: true
-google_analytics: G-BB6PSVP76C   # Replace with your GA4 measurement ID
+google_analytics: G-BB6PSVP76C
 twitter:
   username: dpp4researchgroup
 github:
   username: DPP4ResearchGroup
   repository: SyntenyViz
-
-# Site variables
-github:
-  pdf_url: https://github.com/DPP4ResearchGroup/SyntenyViz/raw/gh-pages/static_files/SyntenyViz_workflow.pdf
-  tar_url: https://github.com/DPP4ResearchGroup/SyntenyViz/archive/v0.0.0.9000-prerelease.tar.gz
-
-# Collections
-collections:
-  docs:
-    output: true
-    permalink: /:collection/:name/
 
 # Exclude files from processing
 exclude:
@@ -59,24 +48,3 @@ exclude:
   - .travis.yml
   - .gitignore
   - secrets.txt
-
-# Include files that are normally excluded
-include:
-  - _pages
-  - _posts
-  - _drafts
-
-# Default front matter
-defaults:
-  - scope:
-      path: ""
-      type: "pages"
-    values:
-      layout: "default"
-      author: "DPP4ResearchGroup"
-  - scope:
-      path: ""
-      type: "posts"
-    values:
-      layout: "post"
-      author: "DPP4ResearchGroup"
