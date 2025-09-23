@@ -49,8 +49,22 @@ jobs:
 
     - name: Install system dependencies
       run: |
-        # Source the centralized monitoring script
-        source .scripts/monitor_resources.sh
+        # Consolidated metrics monitoring function
+        monitor_resources() {
+          local step="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE MONITOR - $step"
+          echo "⏰ Time: $timestamp"
+          echo "=========================================="
+          echo "🖥️  System: $(hostname) | $(uname -r)"
+          echo "⏱️  Uptime: $(uptime | cut -d',' -f1)"
+          echo "🔧 CPU: $(nproc) cores | Load: $(cat /proc/loadavg | cut -d' ' -f1-3)"
+          echo "💾 Memory: $(free -h | grep '^Mem:' | awk '{printf "%s used / %s total (%.1f%%)", $3, $2, ($3/$2)*100}')"
+          echo "💿 Disk: $(df -h / | tail -1 | awk '{printf "%s used / %s total (%s)", $3, $2, $5}')"
+          echo "⚡ Processes: $(ps aux | wc -l) total | $(pgrep -c R || echo 0) R processes"
+          echo "=========================================="
+        }
         
         monitor_resources "SYSTEM-DEPS-START"
         echo "🚀 Installing system dependencies..."
@@ -78,34 +92,25 @@ jobs:
       run: |
         set -euxo pipefail
         
-        # Source the centralized monitoring script
-        source .scripts/monitor_resources.sh
-        
-        # Network connectivity check
-        check_network() {
-          echo "🌐 Checking network connectivity..."
-          if curl -s --connect-timeout 10 https://cloud.r-project.org > /dev/null; then
-            echo "✅ CRAN mirror accessible"
-          else
-            echo "❌ WARNING: CRAN mirror not accessible"
-            return 1
-          fi
-          
-          if curl -s --connect-timeout 10 https://bioconductor.org > /dev/null; then
-            echo "✅ Bioconductor accessible"
-          else
-            echo "❌ WARNING: Bioconductor not accessible"
-            return 1
-          fi
+        # Consolidated metrics monitoring function
+        monitor_resources() {
+          local step="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE MONITOR - $step"
+          echo "⏰ Time: $timestamp"
+          echo "=========================================="
+          echo "🖥️  System: $(hostname) | $(uname -r)"
+          echo "⏱️  Uptime: $(uptime | cut -d',' -f1)"
+          echo "🔧 CPU: $(nproc) cores | Load: $(cat /proc/loadavg | cut -d' ' -f1-3)"
+          echo "💾 Memory: $(free -h | grep '^Mem:' | awk '{printf "%s used / %s total (%.1f%%)", $3, $2, ($3/$2)*100}')"
+          echo "💿 Disk: $(df -h / | tail -1 | awk '{printf "%s used / %s total (%s)", $3, $2, $5}')"
+          echo "⚡ Processes: $(ps aux | wc -l) total | $(pgrep -c R || echo 0) R processes"
+          echo "=========================================="
         }
         
         monitor_resources "R-DEPS-START"
         echo "🚀 Setting up R dependencies for R ${{ matrix.r-version }}..."
-        
-        # Check network connectivity first
-        if ! check_network; then
-          echo "❌ Network connectivity issues detected. Trying alternative mirrors..."
-        fi
         
         # Set up user-writable R library paths
         mkdir -p "$R_LIBS_USER"
@@ -125,73 +130,24 @@ jobs:
           exit 1
         fi
         
-        # Enhanced function to check if package is available with detailed logging
+        # Function to check if package is available
         check_package() {
           local pkg="$1"
-          local result
-          result=$(R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); if (requireNamespace('$pkg', quietly = TRUE)) { cat('AVAILABLE') } else { cat('NOT_AVAILABLE') }" 2>&1)
-          local exit_code=$?
-          
-          if [ $exit_code -eq 0 ] && [[ "$result" == *"AVAILABLE"* ]]; then
-            echo "✅ $pkg: Available"
-            return 0
-          else
-            echo "❌ $pkg: Not available (result: $result, exit: $exit_code)"
-            return 1
-          fi
-        }
-        
-        # Enhanced package installation with retry logic
-        install_package_with_retry() {
-          local pkg="$1"
-          local pkg_type="$2"  # "cran" or "bioc"
-          local max_attempts=3
-          local attempt=1
-          
-          while [ $attempt -le $max_attempts ]; do
-            echo "📦 Installing $pkg (attempt $attempt/$max_attempts)..."
-            
-            if [ "$pkg_type" = "cran" ]; then
-              if R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); install.packages('$pkg', repos = c('https://cloud.r-project.org', 'https://cran.rstudio.com'), lib = '$R_LIBS_USER', dependencies = TRUE)" 2>&1; then
-                echo "✅ Successfully installed $pkg"
-                return 0
-              fi
-            else
-              if R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); BiocManager::install('$pkg', ask = FALSE, lib = '$R_LIBS_USER', dependencies = TRUE)" 2>&1; then
-                echo "✅ Successfully installed $pkg"
-                return 0
-              fi
-            fi
-            
-            echo "⚠️  Attempt $attempt failed for $pkg"
-            attempt=$((attempt + 1))
-            
-            if [ $attempt -le $max_attempts ]; then
-              echo "⏳ Waiting 30 seconds before retry..."
-              sleep 30
-            fi
-          done
-          
-          echo "❌ Failed to install $pkg after $max_attempts attempts"
-          return 1
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); if (requireNamespace('$pkg', quietly = TRUE)) { cat('$pkg: AVAILABLE\n'); quit(status = 0) } else { cat('$pkg: NOT_AVAILABLE\n'); quit(status = 1) }" 2>/dev/null
+          return $?
         }
         
         # Install CRAN packages first
         echo "📦 Installing CRAN packages..."
         monitor_resources "CRAN-PACKAGES-START"
         cran_packages=("devtools" "knitr" "rmarkdown" "testthat" "usethis" "yaml" "stringr" "dplyr")
-        failed_cran_packages=()
         
         for pkg in "${cran_packages[@]}"; do
           if check_package "$pkg"; then
             echo "✅ $pkg is already available"
           else
-            if install_package_with_retry "$pkg" "cran"; then
-              echo "✅ $pkg installed successfully"
-            else
-              echo "❌ Failed to install $pkg"
-              failed_cran_packages+=("$pkg")
-            fi
+            echo "📦 Installing $pkg..."
+            R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); install.packages('$pkg', repos = 'https://cloud.r-project.org', lib = '$R_LIBS_USER')"
           fi
         done
         monitor_resources "CRAN-PACKAGES-END"
@@ -201,50 +157,23 @@ jobs:
         if check_package "BiocManager"; then
           echo "✅ BiocManager is already available"
         else
-          if install_package_with_retry "BiocManager" "cran"; then
-            echo "✅ BiocManager installed successfully"
-          else
-            echo "❌ Failed to install BiocManager"
-            failed_cran_packages+=("BiocManager")
-          fi
+          R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); install.packages('BiocManager', repos = 'https://cloud.r-project.org', lib = '$R_LIBS_USER')"
         fi
         
         # Install Bioconductor packages
         echo "📦 Installing Bioconductor packages..."
         monitor_resources "BIOC-PACKAGES-START"
         bioc_packages=("GenomicRanges" "Gviz" "ggtree" "orthogene")
-        failed_bioc_packages=()
         
         for pkg in "${bioc_packages[@]}"; do
           if check_package "$pkg"; then
             echo "✅ $pkg is already available"
           else
-            if install_package_with_retry "$pkg" "bioc"; then
-              echo "✅ $pkg installed successfully"
-            else
-              echo "❌ Failed to install $pkg"
-              failed_bioc_packages+=("$pkg")
-            fi
+            echo "📦 Installing Bioconductor package: $pkg"
+            R -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); BiocManager::install('$pkg', ask = FALSE, lib = '$R_LIBS_USER')"
           fi
         done
         monitor_resources "BIOC-PACKAGES-END"
-        
-        # Retry failed installations
-        all_failed_packages=("${failed_cran_packages[@]}" "${failed_bioc_packages[@]}")
-        if [ ${#all_failed_packages[@]} -gt 0 ]; then
-          echo "🔄 Retrying failed installations: ${all_failed_packages[*]}"
-          monitor_resources "RETRY-PACKAGES-START"
-          
-          for pkg in "${all_failed_packages[@]}"; do
-            echo "🔄 Final retry for $pkg..."
-            if [[ " ${cran_packages[*]} BiocManager " == *" $pkg "* ]]; then
-              R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); install.packages('$pkg', repos = c('https://cloud.r-project.org', 'https://cran.rstudio.com', 'https://cran.microsoft.com'), dependencies=TRUE, lib = '$R_LIBS_USER')" || echo "Failed final retry for $pkg"
-            else
-              R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); BiocManager::install('$pkg', ask=FALSE, lib = '$R_LIBS_USER', dependencies=TRUE)" || echo "Failed final retry for $pkg"
-            fi
-          done
-          monitor_resources "RETRY-PACKAGES-END"
-        fi
         
         # Final verification
         echo "🔍 Final verification of all required packages..."
@@ -261,9 +190,7 @@ jobs:
         done
         
         if [ ${#missing_packages[@]} -gt 0 ]; then
-          echo "❌ ERROR: The following packages are still missing after retries: ${missing_packages[*]}"
-          echo "📊 Detailed R session info:"
-          R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); cat('Library paths:\n'); print(.libPaths()); cat('\nInstalled packages:\n'); print(installed.packages()[,c('Package','Version')])"
+          echo "❌ ERROR: The following packages are still missing: ${missing_packages[*]}"
           exit 1
         fi
         
@@ -303,8 +230,22 @@ jobs:
 
     - name: Set up R and system dependencies
       run: |
-        # Source the centralized monitoring script
-        source .scripts/monitor_resources.sh
+        # Consolidated metrics monitoring function
+        monitor_resources() {
+          local step="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE MONITOR - $step"
+          echo "⏰ Time: $timestamp"
+          echo "=========================================="
+          echo "🖥️  System: $(hostname) | $(uname -r)"
+          echo "⏱️  Uptime: $(uptime | cut -d',' -f1)"
+          echo "🔧 CPU: $(nproc) cores | Load: $(cat /proc/loadavg | cut -d' ' -f1-3)"
+          echo "💾 Memory: $(free -h | grep '^Mem:' | awk '{printf "%s used / %s total (%.1f%%)", $3, $2, ($3/$2)*100}')"
+          echo "💿 Disk: $(df -h / | tail -1 | awk '{printf "%s used / %s total (%s)", $3, $2, $5}')"
+          echo "⚡ Processes: $(ps aux | wc -l) total | $(pgrep -c R || echo 0) R processes"
+          echo "=========================================="
+        }
         
         monitor_resources "BUILD-SETUP-START"
         # Install system dependencies first
@@ -337,8 +278,22 @@ jobs:
       run: |
         set -euxo pipefail
         
-        # Source the centralized monitoring script
-        source .scripts/monitor_resources.sh
+        # Consolidated metrics monitoring function
+        monitor_resources() {
+          local step="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE MONITOR - $step"
+          echo "⏰ Time: $timestamp"
+          echo "=========================================="
+          echo "🖥️  System: $(hostname) | $(uname -r)"
+          echo "⏱️  Uptime: $(uptime | cut -d',' -f1)"
+          echo "🔧 CPU: $(nproc) cores | Load: $(cat /proc/loadavg | cut -d' ' -f1-3)"
+          echo "💾 Memory: $(free -h | grep '^Mem:' | awk '{printf "%s used / %s total (%.1f%%)", $3, $2, ($3/$2)*100}')"
+          echo "💿 Disk: $(df -h / | tail -1 | awk '{printf "%s used / %s total (%s)", $3, $2, $5}')"
+          echo "⚡ Processes: $(ps aux | wc -l) total | $(pgrep -c R || echo 0) R processes"
+          echo "=========================================="
+        }
         
         monitor_resources "BUILD-START"
         echo "🚀 Building and testing SyntenyViz package..."
@@ -487,8 +442,22 @@ jobs:
       run: |
         set -euxo pipefail
         
-        # Source the centralized monitoring script
-        source .scripts/monitor_resources.sh
+        # Consolidated metrics monitoring function
+        monitor_resources() {
+          local step="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE MONITOR - $step"
+          echo "⏰ Time: $timestamp"
+          echo "=========================================="
+          echo "🖥️  System: $(hostname) | $(uname -r)"
+          echo "⏱️  Uptime: $(uptime | cut -d',' -f1)"
+          echo "🔧 CPU: $(nproc) cores | Load: $(cat /proc/loadavg | cut -d' ' -f1-3)"
+          echo "💾 Memory: $(free -h | grep '^Mem:' | awk '{printf "%s used / %s total (%.1f%%)", $3, $2, ($3/$2)*100}')"
+          echo "💿 Disk: $(df -h / | tail -1 | awk '{printf "%s used / %s total (%s)", $3, $2, $5}')"
+          echo "⚡ Processes: $(ps aux | wc -l) total | $(pgrep -c R || echo 0) R processes"
+          echo "=========================================="
+        }
         
         monitor_resources "DEPLOY-SETUP-START"
         echo "🚀 Setting up R environment and installing package..."
@@ -563,8 +532,22 @@ jobs:
       run: |
         set -euxo pipefail
         
-        # Source the centralized monitoring script
-        source .scripts/monitor_resources.sh
+        # Consolidated metrics monitoring function
+        monitor_resources() {
+          local step="$1"
+          local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "=========================================="
+          echo "📊 RESOURCE MONITOR - $step"
+          echo "⏰ Time: $timestamp"
+          echo "=========================================="
+          echo "🖥️  System: $(hostname) | $(uname -r)"
+          echo "⏱️  Uptime: $(uptime | cut -d',' -f1)"
+          echo "🔧 CPU: $(nproc) cores | Load: $(cat /proc/loadavg | cut -d' ' -f1-3)"
+          echo "💾 Memory: $(free -h | grep '^Mem:' | awk '{printf "%s used / %s total (%.1f%%)", $3, $2, ($3/$2)*100}')"
+          echo "💿 Disk: $(df -h / | tail -1 | awk '{printf "%s used / %s total (%s)", $3, $2, $5}')"
+          echo "⚡ Processes: $(ps aux | wc -l) total | $(pgrep -c R || echo 0) R processes"
+          echo "=========================================="
+        }
         
         monitor_resources "DEPLOY-START"
         echo "📚 Deploying documentation to gh-pages..."

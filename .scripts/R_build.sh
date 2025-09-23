@@ -6,8 +6,8 @@ packageName=SyntenyViz
 # Include R CMD build and R CMD check
 R_build_docs() {
   echo "Building documentation..."
-  Rscript -e 'devtools::document()'
-  Rscript -e 'devtools::build_vignettes()'
+  Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); devtools::document()"
+  Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); devtools::build_vignettes()"
 }
 
 R_build_pkgs() {
