@@ -1,6 +1,6 @@
 Package: SyntenyViz
 Title: Visualize the synteny of a gene structure across species
-Version: 0.9.0
+Version: np.0.9.0rc
 Authors@R: person(given = "Robert", family = "QIAO", email = "robert.qiao@flinders.edu.au",
                   comment = c(ORCID = "0000-0003-4569-6921"),
                   role = c("aut", "cre"))

@@ -1,5 +1,6 @@
 #' Install required dependencies for SyntenyViz
 #'
+#' @name install_dependencies
 #' @importFrom BiocManager install
 #' @export
 #'

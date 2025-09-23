@@ -1,10 +1,9 @@
-#' Package SyntenyViz
+#' SyntenyViz: Tools for Synteny Visualization and Analysis
 #'
-#' Package This R package provides tools for synteny visualization and analysis,
+#' This R package provides tools for synteny visualization and analysis,
 #' including ortholog identification, coordinate retrieval, and synteny block visualization.
 #'
-#' @docType package
-#' @name SyntenyViz
+#' @name _PACKAGE
 #' @import dplyr
 #' @import GenomicRanges
 #' @import Gviz
