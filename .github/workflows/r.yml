@@ -996,7 +996,7 @@ jobs:
       env:
         robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
         robqbot_NAME: "robqbot"
-        robqbot_TOKEN: ${{ secrets.ROBQBOT_DPP4_TOKEN }}
+        robqbot_TOKEN: ${{ secrets.ROBQBOT_TOKEN }}
       run: |
         set -euxo pipefail
         

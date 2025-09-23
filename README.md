@@ -1,22 +1,5 @@
 # `SyntenyViz` - a R package for Synteny Visulisation
 
-- [SyntenyViz](#syntenyviz)
-  - [Summary](#summary)
-  - [Release Status](#release-status)
-
-- [Operation Manuals](#operation-manuals)
-  - [Installation & Quick Start](#installation--quick-start)
-  - [Orthologs Matching](#ortholog-analysis-in-syntenyviz)
-  - [More Examples](#working-examples-and-vignettes)
-
-- [Troubleshooting](#troubleshooting)
-  - [Common Issues](#common-issues-in-syntenyviz)
-
-- [Maintenance](#maintenance)
-  - [CI/Unit Testing](#ciunit-testing)
-  - [Issue Tracking](#issue-tracking)
-  - [To Contribute](#to-contribute)
-
 ## SyntenyViz
 
 ![Header Image](paper/SynViz.png)
