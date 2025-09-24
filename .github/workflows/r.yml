@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        r-version: ['4.5', 'latest']
+        r-version: ['4.5']
     env:
       R_LIBS_USER: ${{ github.workspace }}/Rlibs-${{ matrix.r-version }}
       R_LIBS_SITE: ${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}
