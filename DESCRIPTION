@@ -1,6 +1,6 @@
 Package: SyntenyViz
 Title: Visualise the synteny of a gene structure across species
-Version: 0.9.1-rc1
+Version: 0.9.1
 Author: Robert QIAO <robert.qiao@flinders.edu.au> [aut, cre] (<https://orcid.org/0000-0003-4569-6921>)
 Maintainer: Robert QIAO <robert.qiao@flinders.edu.au>
 Authors@R: person(given = "Robert", family = "QIAO", email = "robert.qiao@flinders.edu.au",
@@ -24,12 +24,12 @@ Imports:
     grid (>= 3.6),
     yaml (>= 2.2.1),
     rlist,
-    S4Vectors
+    S4Vectors,
+    R.rsp
 Suggests:
     testthat,
     usethis,
     knitr,
-    R.rsp,
     rmarkdown
 VignetteBuilder: knitr, R.rsp
 URL: https://github.com/DPP4ResearchGroup/SyntenyViz
