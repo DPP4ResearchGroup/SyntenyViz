@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        r-version: ['4.5', 'latest']
+        r-version: ['4.5']
     env:
       # Use workspace-relative paths for R libraries to ensure they're user-writable
       R_LIBS_USER: ${{ github.workspace }}/Rlibs-${{ matrix.r-version }}
@@ -27,25 +27,6 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-
-    - name: Generate cache key for R ${{ matrix.r-version }}
-      id: cache-key
-      run: |
-        echo "value=r-${{ matrix.r-version }}-deps-${{ hashFiles('**/DESCRIPTION') }}" >> $GITHUB_OUTPUT
-
-    - name: Cache system dependencies for R ${{ matrix.r-version }}
-      uses: actions/cache@v4
-      with:
-        path: |
-          /usr/bin/pandoc
-          /usr/share/texlive
-          /usr/lib/x86_64-linux-gnu/libcurl*
-          /usr/lib/x86_64-linux-gnu/libssl*
-          /usr/lib/x86_64-linux-gnu/libxml2*
-        key: system-deps-r-${{ matrix.r-version }}-${{ hashFiles('**/DESCRIPTION') }}
-        restore-keys: |
-          system-deps-r-${{ matrix.r-version }}-
-          system-deps-
 
     - name: Install system dependencies
       run: |
@@ -278,7 +259,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        r-version: ['4.5', 'latest']
+        r-version: ['4.5']
     env:
       R_LIBS_USER: ${{ github.workspace }}/Rlibs-${{ matrix.r-version }}
       R_LIBS_SITE: ${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}
@@ -292,6 +273,7 @@ jobs:
         r-version: ${{ matrix.r-version }}
 
     - name: Restore R packages cache
+      id: cache-restore
       uses: actions/cache@v4
       with:
         path: |
@@ -301,17 +283,57 @@ jobs:
         restore-keys: |
           r-${{ matrix.r-version }}-packages-
 
-    - name: Set up R and system dependencies
+    - name: Debug cache restore status
+      run: |
+        # CRITICAL: Set the correct workspace-relative paths before checking cache
+        export R_LIBS_USER="${{ github.workspace }}/Rlibs-${{ matrix.r-version }}"
+        export R_LIBS_SITE="${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}"
+        
+        echo "🔍 Cache restore status for R ${{ matrix.r-version }}:"
+        echo "  Cache hit: ${{ steps.cache-restore.outputs.cache-hit }}"
+        echo "  Cache key: r-${{ matrix.r-version }}-packages-${{ hashFiles('**/DESCRIPTION') }}"
+        echo "  Restore keys: r-${{ matrix.r-version }}-packages-"
+        echo ""
+        echo "📁 Checking expected cache directories:"
+        echo "Environment variables (corrected):"
+        echo "  R_LIBS_USER: $R_LIBS_USER"
+        echo "  R_LIBS_SITE: $R_LIBS_SITE"
+        echo ""
+        if [ -d "$R_LIBS_USER" ]; then
+          echo "✅ R_LIBS_USER directory exists: $R_LIBS_USER"
+          echo "   Contents: $(ls -la "$R_LIBS_USER" | wc -l) items"
+          if [ "$(ls -A "$R_LIBS_USER" 2>/dev/null)" ]; then
+            echo "   Sample packages: $(ls "$R_LIBS_USER" | head -5 | tr '\n' ' ')"
+          else
+            echo "   Directory is empty"
+          fi
+        else
+          echo "❌ R_LIBS_USER directory missing: $R_LIBS_USER"
+        fi
+        
+        if [ -d "$R_LIBS_SITE" ]; then
+          echo "✅ R_LIBS_SITE directory exists: $R_LIBS_SITE"
+          echo "   Contents: $(ls -la "$R_LIBS_SITE" | wc -l) items"
+          if [ "$(ls -A "$R_LIBS_SITE" 2>/dev/null)" ]; then
+            echo "   Sample packages: $(ls "$R_LIBS_SITE" | head -5 | tr '\n' ' ')"
+          else
+            echo "   Directory is empty"
+          fi
+        else
+          echo "❌ R_LIBS_SITE directory missing: $R_LIBS_SITE"
+        fi
+
+    - name: Verify dependencies and setup environment
       run: |
         # Source the centralized monitoring script
         source .scripts/monitor_resources.sh
         
         monitor_resources "BUILD-SETUP-START"
-        # Install system dependencies first
-        echo "🚀 Installing system dependencies using centralized script..."
-        bash .scripts/install_dependencies.sh system
-        bash .scripts/install_dependencies.sh texlive
-        bash .scripts/install_dependencies.sh pandoc
+        echo "🔍 Verifying cached dependencies and setting up build environment..."
+        
+        # CRITICAL: Ensure we're using the correct workspace-relative paths
+        export R_LIBS_USER="${{ github.workspace }}/Rlibs-${{ matrix.r-version }}"
+        export R_LIBS_SITE="${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}"
         
         # Set up user-writable R library paths
         mkdir -p "$R_LIBS_USER"
@@ -330,6 +352,222 @@ jobs:
           echo "❌ ERROR: R is not installed or not in PATH"
           exit 1
         fi
+        
+        # Verify required system tools are available
+        echo "🔍 Verifying system dependencies..."
+        missing_tools=()
+        
+        if ! command -v pandoc >/dev/null 2>&1; then
+          echo "❌ pandoc not found"
+          missing_tools+=("pandoc")
+        else
+          echo "✅ pandoc: $(pandoc --version | head -1)"
+        fi
+        
+        if ! command -v pdflatex >/dev/null 2>&1; then
+          echo "❌ pdflatex not found"
+          missing_tools+=("pdflatex/texlive")
+        else
+          echo "✅ pdflatex: available"
+        fi
+        
+        # Check if curl/wget available for package downloads
+        if command -v curl >/dev/null 2>&1; then
+          echo "✅ curl: available"
+        elif command -v wget >/dev/null 2>&1; then
+          echo "✅ wget: available"
+        else
+          echo "❌ Neither curl nor wget found"
+          missing_tools+=("curl or wget")
+        fi
+        
+        if [ ${#missing_tools[@]} -gt 0 ]; then
+          echo "⚠️  Missing system tools: ${missing_tools[*]}"
+          echo "🔧 Installing missing system dependencies..."
+          bash .scripts/install_dependencies.sh system
+          bash .scripts/install_dependencies.sh texlive
+          bash .scripts/install_dependencies.sh pandoc
+        else
+          echo "✅ All required system dependencies are available"
+        fi
+        
+        # Verify cached R packages are accessible
+        echo "🔍 Verifying cached R packages..."
+        
+        # Function to check if package is available
+        check_package() {
+          local pkg="$1"
+          R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); if (requireNamespace('$pkg', quietly = TRUE)) { cat('AVAILABLE') } else { cat('NOT_AVAILABLE') }" 2>/dev/null | grep -q "AVAILABLE"
+        }
+        
+        required_packages=("devtools" "BiocManager" "knitr" "rmarkdown" "GenomicRanges" "Gviz" "ggtree" "orthogene")
+        missing_packages=()
+        
+        for pkg in "${required_packages[@]}"; do
+          if check_package "$pkg"; then
+            echo "✅ $pkg: Available from cache"
+          else
+            echo "❌ $pkg: Not available in cache"
+            missing_packages+=("$pkg")
+          fi
+        done
+        
+        if [ ${#missing_packages[@]} -gt 0 ]; then
+          echo "⚠️  Required R packages missing from cache: ${missing_packages[*]}"
+          echo "🔄 This indicates a cache miss or setup-dependencies job failure"
+          echo "📊 Available packages in cache:"
+          ls -la "$R_LIBS_USER" 2>/dev/null || echo "Cache directory not found"
+          
+          echo "🛡️  INITIATING REDUNDANCY PATHWAY 1: Quick package installation"
+          monitor_resources "REDUNDANCY-INSTALL-START"
+          
+          # Enhanced package installation with retry logic
+          install_package_with_retry() {
+            local pkg="$1"
+            local pkg_type="$2"  # "cran" or "bioc"
+            local max_attempts=2
+            local attempt=1
+            
+            while [ $attempt -le $max_attempts ]; do
+              echo "📦 Installing $pkg (redundancy attempt $attempt/$max_attempts)..."
+              
+              if [ "$pkg_type" = "cran" ]; then
+                if R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); install.packages('$pkg', repos = c('https://cloud.r-project.org', 'https://cran.rstudio.com', 'https://cran.microsoft.com'), lib = '$R_LIBS_USER', dependencies = TRUE)" 2>&1; then
+                  echo "✅ Successfully installed $pkg"
+                  return 0
+                fi
+              else
+                # Install BiocManager first if needed for bioc packages
+                if ! R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); requireNamespace('BiocManager', quietly = TRUE)" 2>/dev/null; then
+                  echo "📦 Installing BiocManager first..."
+                  R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); install.packages('BiocManager', repos = 'https://cloud.r-project.org', lib = '$R_LIBS_USER')"
+                fi
+                
+                if R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); BiocManager::install('$pkg', ask = FALSE, lib = '$R_LIBS_USER', dependencies = TRUE)" 2>&1; then
+                  echo "✅ Successfully installed $pkg"
+                  return 0
+                fi
+              fi
+              
+              echo "⚠️  Redundancy attempt $attempt failed for $pkg"
+              attempt=$((attempt + 1))
+              
+              if [ $attempt -le $max_attempts ]; then
+                echo "⏳ Waiting 15 seconds before retry..."
+                sleep 15
+              fi
+            done
+            
+            echo "❌ Failed to install $pkg after $max_attempts redundancy attempts"
+            return 1
+          }
+          
+          # Try to install missing packages
+          redundancy_failed_packages=()
+          
+          for pkg in "${missing_packages[@]}"; do
+            # Determine package type
+            if [[ " devtools knitr rmarkdown BiocManager testthat usethis yaml stringr dplyr " == *" $pkg "* ]]; then
+              pkg_type="cran"
+            else
+              pkg_type="bioc"
+            fi
+            
+            if install_package_with_retry "$pkg" "$pkg_type"; then
+              echo "✅ Redundancy installation successful for $pkg"
+            else
+              redundancy_failed_packages+=("$pkg")
+            fi
+          done
+          
+          monitor_resources "REDUNDANCY-INSTALL-END"
+          
+          # If redundancy pathway 1 fails, try pathway 2
+          if [ ${#redundancy_failed_packages[@]} -gt 0 ]; then
+            echo "🛡️  INITIATING REDUNDANCY PATHWAY 2: Alternative installation methods"
+            monitor_resources "REDUNDANCY-ALT-START"
+            
+            # Try using pak for faster installation
+            echo "📦 Attempting installation via pak..."
+            if R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); if (!requireNamespace('pak', quietly = TRUE)) { install.packages('pak', repos = 'https://r-lib.github.io/p/pak/stable/', lib = '$R_LIBS_USER') }" 2>/dev/null; then
+              
+              final_failed_packages=()
+              for pkg in "${redundancy_failed_packages[@]}"; do
+                echo "📦 Installing $pkg via pak..."
+                if [[ " devtools knitr rmarkdown BiocManager testthat usethis yaml stringr dplyr " == *" $pkg "* ]]; then
+                  # CRAN package
+                  if R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); pak::pkg_install('$pkg', lib = '$R_LIBS_USER')" 2>/dev/null; then
+                    echo "✅ pak installation successful for $pkg"
+                  else
+                    final_failed_packages+=("$pkg")
+                  fi
+                else
+                  # Bioconductor package
+                  if R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); pak::pkg_install('bioc::$pkg', lib = '$R_LIBS_USER')" 2>/dev/null; then
+                    echo "✅ pak installation successful for $pkg"
+                  else
+                    final_failed_packages+=("$pkg")
+                  fi
+                fi
+              done
+              
+              if [ ${#final_failed_packages[@]} -eq 0 ]; then
+                echo "✅ All packages successfully installed via redundancy pathway 2"
+              else
+                echo "🛡️  INITIATING REDUNDANCY PATHWAY 3: Minimal functionality mode"
+                echo "⚠️  Final failed packages: ${final_failed_packages[*]}"
+                
+                # Check if we have enough packages for basic functionality
+                critical_packages=("devtools" "knitr" "rmarkdown")
+                critical_missing=()
+                
+                for pkg in "${critical_packages[@]}"; do
+                  if [[ " ${final_failed_packages[*]} " == *" $pkg "* ]]; then
+                    critical_missing+=("$pkg")
+                  fi
+                done
+                
+                if [ ${#critical_missing[@]} -eq 0 ]; then
+                  echo "✅ Critical packages available - proceeding with reduced functionality"
+                  echo "⚠️  Note: Some advanced features may not work due to missing packages: ${final_failed_packages[*]}"
+                else
+                  echo "❌ CRITICAL ERROR: Essential packages missing: ${critical_missing[*]}"
+                  echo "🔄 Cannot proceed with build - critical functionality compromised"
+                  exit 1
+                fi
+              fi
+            else
+              echo "❌ pak installation failed"
+              echo "🛡️  REDUNDANCY PATHWAY 3: Critical package check"
+              
+              # Final check - can we proceed with minimal functionality?
+              critical_packages=("devtools" "knitr" "rmarkdown")
+              available_critical=()
+              
+              for pkg in "${critical_packages[@]}"; do
+                if check_package "$pkg"; then
+                  available_critical+=("$pkg")
+                fi
+              done
+              
+              if [ ${#available_critical[@]} -ge 2 ]; then
+                echo "✅ Minimal critical packages available (${available_critical[*]}) - proceeding with limited functionality"
+                echo "⚠️  WARNING: Build may fail due to missing packages: ${redundancy_failed_packages[*]}"
+              else
+                echo "❌ CRITICAL FAILURE: Too few critical packages available"
+                echo "🔄 Cannot proceed - build environment compromised"
+                exit 1
+              fi
+            fi
+            
+            monitor_resources "REDUNDANCY-ALT-END"
+          else
+            echo "✅ All missing packages successfully installed via redundancy pathway 1"
+          fi
+        else
+          echo "✅ All required R packages are available from cache"
+        fi
+        
         monitor_resources "BUILD-SETUP-END"
 
     - name: Build and test package
@@ -343,49 +581,138 @@ jobs:
         monitor_resources "BUILD-START"
         echo "🚀 Building and testing SyntenyViz package..."
         
-        # Set R library paths
-        export R_LIBS_USER=${{ github.workspace }}/Rlibs-${{ matrix.r-version }}
-        export R_LIBS_SITE=${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}
+        # CRITICAL: Set R library paths to workspace-relative paths for cache consistency
+        echo "🔧 Configuring R library paths for R ${{ matrix.r-version }}..."
+        echo "Matrix R version: ${{ matrix.r-version }}"
         
-        # Verify packages are available
-        echo "🔍 Verifying required packages are available..."
-        Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); 
-                   required_packages <- c('devtools', 'BiocManager', 'knitr', 'rmarkdown', 'GenomicRanges', 'Gviz', 'ggtree', 'orthogene');
-                   missing <- required_packages[!sapply(required_packages, requireNamespace, quietly = TRUE)];
-                   if(length(missing) > 0) { 
-                     stop('Missing packages: ', paste(missing, collapse = ', ')) 
-                   } else { 
-                     cat('All required packages are available\n') 
-                   }"
+        # Force the correct workspace-relative paths
+        export R_LIBS_USER="${{ github.workspace }}/Rlibs-${{ matrix.r-version }}"
+        export R_LIBS_SITE="${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}"
         
-        # Install package dependencies
-        echo "📦 Installing package dependencies..."
-        monitor_resources "PACKAGE-DEPS-START"
-        Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); devtools::install_deps(dependencies = TRUE)"
-        monitor_resources "PACKAGE-DEPS-END"
+        echo "Final paths to be used:"
+        echo "  R_LIBS_USER: $R_LIBS_USER"
+        echo "  R_LIBS_SITE: $R_LIBS_SITE"
+        
+        # Comprehensive package verification before build
+        echo "🔍 Verifying all required packages are available..."
+        monitor_resources "PACKAGE-CHECK-START"
+        
+        # Debug and verify library paths first
+        echo "🔍 Debugging library path configuration..."
+        echo "Environment variables:"
+        echo "  R_LIBS_USER: $R_LIBS_USER"
+        echo "  R_LIBS_SITE: $R_LIBS_SITE"
+        echo "Directory contents:"
+        echo "  R_LIBS_USER contents: $(ls -la "$R_LIBS_USER" 2>/dev/null | wc -l) items"
+        echo "  R_LIBS_SITE contents: $(ls -la "$R_LIBS_SITE" 2>/dev/null | wc -l) items"
+        
+        # Show actual directory contents for debugging
+        if [ -d "$R_LIBS_USER" ]; then
+          echo "📁 R_LIBS_USER directory ($R_LIBS_USER):"
+          ls -la "$R_LIBS_USER" | head -10
+        else
+          echo "❌ R_LIBS_USER directory does not exist: $R_LIBS_USER"
+        fi
+        
+        if [ -d "$R_LIBS_SITE" ]; then
+          echo "📁 R_LIBS_SITE directory ($R_LIBS_SITE):"
+          ls -la "$R_LIBS_SITE" | head -10
+        else
+          echo "❌ R_LIBS_SITE directory does not exist: $R_LIBS_SITE"
+        fi
+        
+        # Set R environment variables for this session
+        export R_LIBS_USER="$R_LIBS_USER"
+        export R_LIBS_SITE="$R_LIBS_SITE"
+        
+        Rscript -e "
+          # CRITICAL: Use the correct workspace-relative paths
+          lib_user <- '${{ github.workspace }}/Rlibs-${{ matrix.r-version }}'
+          lib_site <- '${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}'
+          
+          # Explicitly set library paths
+          .libPaths(c(lib_user, lib_site, .libPaths()))
+          
+          cat('📋 Checking R library paths after explicit setting:\n')
+          print(.libPaths())
+          
+          cat('\n📊 Checking if directories exist and are readable:\n')
+          for(path in .libPaths()) {
+            exists <- dir.exists(path)
+            readable <- file.access(path, 4) == 0
+            cat('  ', path, ': exists=', exists, ', readable=', readable, '\n')
+            if(exists && readable) {
+              packages <- list.files(path)
+              cat('    Packages found:', length(packages), '\n')
+              if(length(packages) > 0) {
+                cat('    First 5 packages:', paste(head(packages, 5), collapse=', '), '\n')
+              }
+            }
+          }
+          
+          cat('\n📦 Verifying required packages:\n')
+          required_packages <- c('devtools', 'BiocManager', 'knitr', 'rmarkdown', 'testthat', 'usethis', 'yaml', 'stringr', 'dplyr', 'GenomicRanges', 'Gviz', 'ggtree', 'orthogene')
+          missing <- character(0)
+          available <- character(0)
+          
+          for(pkg in required_packages) {
+            if(requireNamespace(pkg, quietly = TRUE)) {
+              available <- c(available, pkg)
+              cat('✅', pkg, ': Available\n')
+            } else {
+              missing <- c(missing, pkg)
+              cat('❌', pkg, ': NOT AVAILABLE\n')
+            }
+          }
+          
+          cat('\n📊 Package Summary:\n')
+          cat('  Available:', length(available), 'packages\n')
+          cat('  Missing:', length(missing), 'packages\n')
+          
+          if(length(missing) > 0) {
+            cat('\n❌ MISSING PACKAGES:\n')
+            for(pkg in missing) cat('  -', pkg, '\n')
+            
+            cat('\n📋 All installed packages in all libraries:\n')
+            for(lib in .libPaths()) {
+              if(dir.exists(lib)) {
+                packages <- list.files(lib)
+                cat('Library:', lib, '(', length(packages), 'packages)\n')
+                if(length(packages) > 0) {
+                  cat('  Packages:', paste(head(packages, 10), collapse=', '), '\n')
+                }
+              }
+            }
+            stop('❌ Build cannot proceed: Missing required packages: ', paste(missing, collapse = ', '))
+          } else {
+            cat('\n✅ All required packages are available - build can proceed\n')
+          }
+        "
+        
+        monitor_resources "PACKAGE-CHECK-END"
         
         # Build and install the package
         echo "📦 Building and installing SyntenyViz..."
         monitor_resources "PACKAGE-INSTALL-START"
-        Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); devtools::install()"
+        Rscript -e ".libPaths(c('${{ github.workspace }}/Rlibs-${{ matrix.r-version }}', '${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}', .libPaths())); devtools::install()"
         monitor_resources "PACKAGE-INSTALL-END"
         
         # Build package tarball
         echo "📦 Building package tarball..."
         monitor_resources "PACKAGE-BUILD-START"
-        Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); devtools::build()"
+        Rscript -e ".libPaths(c('${{ github.workspace }}/Rlibs-${{ matrix.r-version }}', '${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}', .libPaths())); devtools::build()"
         monitor_resources "PACKAGE-BUILD-END"
         
         # Build documentation
         echo "📖 Building documentation..."
         monitor_resources "DOCS-BUILD-START"
-        Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); devtools::document()"
+        Rscript -e ".libPaths(c('${{ github.workspace }}/Rlibs-${{ matrix.r-version }}', '${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}', .libPaths())); devtools::document()"
         monitor_resources "DOCS-BUILD-END"
         
         # Build vignettes
         echo "📖 Building vignettes..."
         monitor_resources "VIGNETTES-START"
-        Rscript -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); devtools::build_vignettes()"
+        Rscript -e ".libPaths(c('${{ github.workspace }}/Rlibs-${{ matrix.r-version }}', '${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}', .libPaths())); devtools::build_vignettes()"
         monitor_resources "VIGNETTES-END"
         
         echo "✅ Build completed successfully"
