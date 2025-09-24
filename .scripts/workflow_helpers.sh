@@ -8,13 +8,16 @@ set -euo pipefail
 # Simple resource monitoring (reduced verbosity)
 monitor_step() {
   local step="$1"
-  local timestamp=$(date '+%H:%M:%S')
+  local timestamp
+  timestamp=$(date '+%H:%M:%S')
   echo "🔄 [$timestamp] $step"
   
   # Basic system info (only when requested)
   if [ "${VERBOSE_MONITORING:-false}" = "true" ]; then
-    local mem_percent=$(free | grep '^Mem:' | awk '{printf "%.0f", ($3/$2)*100}' 2>/dev/null || echo "N/A")
-    local disk_percent=$(df -h / | tail -1 | awk '{print $5}' 2>/dev/null || echo "N/A")
+    local mem_percent
+    local disk_percent
+    mem_percent=$(free | grep '^Mem:' | awk '{printf "%.0f", ($3/$2)*100}' 2>/dev/null || echo "N/A")
+    disk_percent=$(df -h / | tail -1 | awk '{print $5}' 2>/dev/null || echo "N/A")
     echo "   💾 Memory: ${mem_percent}% | 💿 Disk: ${disk_percent}"
   fi
 }
@@ -136,7 +139,8 @@ build_package() {
   monitor_step "Building SyntenyViz package"
   
   # Set library paths for all R commands
-  local r_cmd_prefix=".libPaths(c('${R_LIBS_USER:-$HOME/Rlibs}', '${R_LIBS_SITE:-$HOME/Rlibs-site}', .libPaths()))"
+  local r_cmd_prefix
+  r_cmd_prefix=".libPaths(c('${R_LIBS_USER:-$HOME/Rlibs}', '${R_LIBS_SITE:-$HOME/Rlibs-site}', .libPaths()))"
   
   # Install package
   echo "📦 Installing package..."

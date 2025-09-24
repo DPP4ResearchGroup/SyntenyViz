@@ -6,7 +6,8 @@
 
 monitor_resources() {
   local step="$1"
-  local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+  local timestamp
+  timestamp=$(date '+%Y-%m-%d %H:%M:%S')
   
   echo "=========================================="
   echo "📊 RESOURCE MONITOR - $step"
