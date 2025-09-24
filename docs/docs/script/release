@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-GEMSPEC_FILE="jekyll-theme-architect.gemspec"
+GEMSPEC_FILE="jekyll-theme-midnight.gemspec"
 RELEASE_BRANCH="master"
 DRY_RUN=false
 
@@ -156,10 +156,10 @@ build_gem() {
     log_info "Building gem..."
     
     local version=$(get_version)
-    local gem_file="jekyll-theme-architect-${version}.gem"
+    local gem_file="jekyll-theme-midnight-${version}.gem"
     
     # Clean previous gem builds
-    rm -f jekyll-theme-architect-*.gem
+    rm -f jekyll-theme-midnight-*.gem
     
     if [ "$DRY_RUN" = true ]; then
         log_info "[DRY RUN] Would build gem: $gem_file"
@@ -207,7 +207,7 @@ check_version_exists() {
 # Push gem to RubyGems
 push_gem() {
     local version=$(get_version)
-    local gem_file="jekyll-theme-architect-${version}.gem"
+    local gem_file="jekyll-theme-midnight-${version}.gem"
     
     log_info "Pushing gem to RubyGems..."
     
@@ -291,7 +291,7 @@ generate_release_notes() {
         echo "Add this line to your application's Gemfile:"
         echo ""
         echo "\`\`\`ruby"
-        echo "gem 'jekyll-theme-architect', '~> $version'"
+        echo "gem 'jekyll-theme-midnight', '~> $version'"
         echo "\`\`\`"
         echo ""
         echo "And then execute:"
@@ -332,7 +332,7 @@ main() {
     else
         log_success "Release completed successfully in ${duration}s!"
         log_success "Released version: $version"
-        log_info "Gem: jekyll-theme-architect-${version}.gem"
+        log_info "Gem: jekyll-theme-midnight-${version}.gem"
         log_info "Tag: v${version}"
     fi
 }
