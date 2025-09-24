@@ -168,7 +168,7 @@ gh_doc_commit () {
   git fetch origin-SynViz "${SOURCE_BRANCH}:${SOURCE_BRANCH}" --quiet
   git checkout -f "${SOURCE_BRANCH}" -- "${jekyllFolder}" 
   git add "${jekyllFolder}"
-  git commit -m "[skip ci] Jekyll @robqbot GitHub Actions build: ${GITHUB_RUN_NUMBER}"  
+  git commit -m "vignettes @robqbot GitHub Actions build: ${GITHUB_RUN_NUMBER}"  
 }
 
 gh_doc_publish () {

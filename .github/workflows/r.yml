@@ -115,7 +115,7 @@ jobs:
           --token "$robqbot_TOKEN" \
           --email "$robqbot_EMAIL" \
           --name "$robqbot_NAME" \
-          --jekyll-folder "docs" \
+          --jekyll-folder "static_files" \
           --source-branch "develop"
 
     - name: Comment on PR
