@@ -249,6 +249,14 @@ jobs:
         fi
         
         echo "✅ All required packages installed successfully"
+        
+        # Debug: Verify packages are actually in the cache directories
+        echo "🔍 Final verification of cache directories:"
+        echo "  R_LIBS_USER contents: $(ls -la "$R_LIBS_USER" 2>/dev/null | wc -l) items"
+        echo "  R_LIBS_SITE contents: $(ls -la "$R_LIBS_SITE" 2>/dev/null | wc -l) items"
+        echo "  Sample packages in R_LIBS_USER: $(ls "$R_LIBS_USER" 2>/dev/null | head -5 | tr '\n' ' ')"
+        echo "  Sample packages in R_LIBS_SITE: $(ls "$R_LIBS_SITE" 2>/dev/null | head -5 | tr '\n' ' ')"
+        
         monitor_resources "R-DEPS-END"
 
   build:
@@ -293,6 +301,9 @@ jobs:
         echo "  Cache hit: ${{ steps.cache-restore.outputs.cache-hit }}"
         echo "  Cache key: r-${{ matrix.r-version }}-packages-${{ hashFiles('**/DESCRIPTION') }}"
         echo "  Restore keys: r-${{ matrix.r-version }}-packages-"
+        echo "  DESCRIPTION file hash: ${{ hashFiles('**/DESCRIPTION') }}"
+        echo "  Workspace: ${{ github.workspace }}"
+        echo "  Matrix R version: ${{ matrix.r-version }}"
         echo ""
         echo "📁 Checking expected cache directories:"
         echo "Environment variables (corrected):"
@@ -394,10 +405,11 @@ jobs:
         # Verify cached R packages are accessible
         echo "🔍 Verifying cached R packages..."
         
-        # Function to check if package is available
+        # Function to check if package is available in cache directories only
         check_package() {
           local pkg="$1"
-          R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE', .libPaths())); if (requireNamespace('$pkg', quietly = TRUE)) { cat('AVAILABLE') } else { cat('NOT_AVAILABLE') }" 2>/dev/null | grep -q "AVAILABLE"
+          # Check only in the cache directories, not system libraries
+          R --slave -e ".libPaths(c('$R_LIBS_USER', '$R_LIBS_SITE')); if (requireNamespace('$pkg', quietly = TRUE)) { cat('AVAILABLE') } else { cat('NOT_AVAILABLE') }" 2>/dev/null | grep -q "AVAILABLE"
         }
         
         required_packages=("devtools" "BiocManager" "knitr" "rmarkdown" "GenomicRanges" "Gviz" "ggtree" "orthogene")
@@ -626,11 +638,16 @@ jobs:
         export R_LIBS_SITE="$R_LIBS_SITE"
         
         Rscript -e "
-          # CRITICAL: Use the correct workspace-relative paths
-          lib_user <- '${{ github.workspace }}/Rlibs-${{ matrix.r-version }}'
-          lib_site <- '${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}'
+          # CRITICAL: Use the same paths as the environment variables
+          lib_user <- Sys.getenv('R_LIBS_USER')
+          lib_site <- Sys.getenv('R_LIBS_SITE')
           
-          # Explicitly set library paths
+          # Debug: Show what paths we're using
+          cat('🔍 Environment paths from R:\n')
+          cat('  R_LIBS_USER:', lib_user, '\n')
+          cat('  R_LIBS_SITE:', lib_site, '\n')
+          
+          # Set library paths with cache directories first, then system libraries
           .libPaths(c(lib_user, lib_site, .libPaths()))
           
           cat('📋 Checking R library paths after explicit setting:\n')
