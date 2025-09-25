@@ -64,6 +64,28 @@ check_prerequisites() {
     log_success "Prerequisites check passed"
 }
 
+# Comprehensive pre-build cleaning
+clean_all() {
+    log_info "Performing comprehensive pre-build cleaning..."
+    
+    # Clean build directories
+    clean_build
+    
+    # Clean deployment directory
+    clean_deployment
+    
+    # Clean any temporary files
+    find . -name "*.tmp" -delete 2>/dev/null || true
+    find . -name "*.temp" -delete 2>/dev/null || true
+    find . -name ".DS_Store" -delete 2>/dev/null || true
+    find . -name "Thumbs.db" -delete 2>/dev/null || true
+    
+    # Clean any lock files that might cause issues
+    rm -f .bundle/config 2>/dev/null || true
+    
+    log_success "Comprehensive cleaning completed"
+}
+
 # Clean previous builds
 clean_build() {
     log_info "Cleaning previous builds..."
@@ -78,6 +100,17 @@ clean_build() {
         rm -rf ".jekyll-cache"
         log_info "Jekyll cache cleared"
     fi
+    
+    # Clean Sass cache
+    if [ -d ".sass-cache" ]; then
+        rm -rf ".sass-cache"
+        log_info "Sass cache cleared"
+    fi
+    
+    # Clean any build artifacts
+    rm -f *.tar.gz 2>/dev/null || true
+    rm -f build-report.txt 2>/dev/null || true
+    log_info "Build artifacts cleaned"
 }
 
 # Clean deployment directory
@@ -101,6 +134,20 @@ clean_deployment() {
     else
         log_info "No docs directory found, creating it..."
         mkdir -p docs
+    fi
+    
+    # Also clean any existing _site directory in docs
+    if [ -d "docs/_site" ]; then
+        rm -rf "docs/_site"
+        log_info "Cleaned docs/_site directory"
+    fi
+    
+    # Clean any build artifacts in docs
+    if [ -d "docs" ]; then
+        find docs -name "*.tar.gz" -delete 2>/dev/null || true
+        find docs -name "*.zip" -delete 2>/dev/null || true
+        find docs -name "build-report.txt" -delete 2>/dev/null || true
+        log_info "Cleaned build artifacts from docs/"
     fi
     
     # Verify docs directory is clean
@@ -291,8 +338,7 @@ main() {
     local start_time=$(date +%s)
     
     check_prerequisites
-    clean_build
-    clean_deployment
+    clean_all
     build_site
     validate_html
     run_html_proofer

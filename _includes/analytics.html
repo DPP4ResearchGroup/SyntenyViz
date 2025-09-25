@@ -1,0 +1,22 @@
+{% if site.google_analytics %}
+  <!-- Google Analytics 4 (GA4) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ site.google_analytics }}" crossorigin="anonymous"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '{{ site.google_analytics }}', {
+      'anonymize_ip': true,
+      'cookie_flags': 'SameSite=Strict;Secure'
+    });
+    
+    {% if site.analytics_debug %}
+    console.log('Google Analytics initialized with ID: {{ site.google_analytics }}');
+    {% endif %}
+  </script>
+{% elsif site.analytics_debug %}
+  <!-- Analytics Debug: Not in production environment or no GA ID configured -->
+  <script>
+    console.log('Analytics Debug: Environment={{ jekyll.environment }}, GA ID={{ site.google_analytics }}');
+  </script>
+{% endif %}

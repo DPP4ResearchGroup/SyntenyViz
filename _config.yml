@@ -6,6 +6,17 @@ email: opensource+jekyll-theme-midnight@github.com
 url: "https://dpp4researchgroup.github.io"
 baseurl: "/SyntenyViz"
 
+# Project maintainer information
+maintained: true
+maintainer: DPP4ResearchGroup
+maintainer_url: "https://github.com/DPP4ResearchGroup"
+
+# Project metadata
+version: "0.0.0.9000"
+license: "MIT"
+repository: "DPP4ResearchGroup/SyntenyViz"
+homepage: "https://dpp4researchgroup.github.io/SyntenyViz/"
+
 # Build settings
 markdown: kramdown
 highlighter: rouge
@@ -16,23 +27,8 @@ encoding: utf-8
 # Include directories for Jekyll build
 include:
   - _includes
-  - _layouts
   - _sass
   - assets
-
-# Jekyll build configuration
-keep_files:
-  - _includes
-  - _layouts
-  - _sass
-  - assets
-
-# Collections for custom content
-collections:
-  includes:
-    output: false
-  layouts:
-    output: false
 
 # Theme and plugins
 remote_theme: pages-themes/midnight
@@ -47,6 +43,14 @@ safe: false
 lsi: false
 incremental: false
 
+# SEO and Analytics
+seo:
+  type: "WebSite"
+  name: "SyntenyViz"
+  description: "A synteny visualization R package for comparative genomics"
+  url: "https://dpp4researchgroup.github.io/SyntenyViz/"
+  image: "https://dpp4researchgroup.github.io/SyntenyViz/assets/images/SynViz.png"
+
 # SEO and social
 show_downloads: true
 
@@ -57,12 +61,17 @@ release_assets:
     pattern: "*.tar.gz"
   - name: "Source Code"
     pattern: "*.zip"
+# Google Analytics 4 (GA4) configuration
 google_analytics: G-BB6PSVP76C
+
+# Analytics debugging (set to false in production)
+analytics_debug: false
 twitter:
   username: robqiao
 github:
   username: DPP4ResearchGroup
   repository: SyntenyViz
+  repository_url: "https://github.com/DPP4ResearchGroup/SyntenyViz"
   latest_release: true
 
 # Exclude files from processing
