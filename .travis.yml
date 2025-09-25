@@ -1,493 +1,124 @@
 ---
-# Modern Travis CI configuration for Jekyll site
+# Simplified Travis CI configuration for Jekyll site
 os: linux
 dist: jammy
-
 language: ruby
-# Default Ruby version (can be overridden by environment variables)
-rvm:
-  - ${PRIMARY_RUBY_VERSION:-3.3}
-
-# Jobs configuration for configurable Ruby versions
-# Matrix is handled within the jobs section below
-
-# Override default script to prevent bundle exec rake
-script: echo "Default script overridden - using jobs configuration"
-
-# Comprehensive caching for faster builds
-cache:
-  bundler: true
-  directories:
-    # Ruby dependencies
-    - vendor/bundle
-    - ~/.bundle/cache
-
-    # Jekyll build cache
-    - .jekyll-cache
-    - .sass-cache
-
-    # System dependencies and tools
-    - ~/.rvm
-    - ~/.gem
-    - ~/.ruby-version
-
-    # Node.js dependencies (if any)
-    - node_modules
-    - ~/.npm
-
-    # Build artifacts for deployment (version-specific)
-    # Note: These are created during the build process, not cached beforehand
-    # - _site.tar.gz
-    # - _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz
-    # - _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz
-
-    # Build artifacts
-    - _site/assets
-    - assets/css/main.css
-
-    # Gem lock files for faster builds (prioritize existing lockfiles)
-    - Gemfile.lock                    # Repository lockfile (highest priority)
-    - Gemfile.lock.ruby-3.3           # Primary Ruby version lockfile
-    - Gemfile.lock.ruby-3.2           # Fallback Ruby version lockfile
-    - Gemfile.lock.ruby-*             # Any Ruby version lockfiles
-    - Gemfile.lock.updated-*          # Updated lockfiles from previous builds
-
-    # Temporary files
-    - tmp
-    - .tmp
-
-  # Cache key strategy: file-based invalidation only
-  # Cache will be invalidated when:
-  # - Gemfile.lock changes
-  # - _config.yml changes
-  # - Primary Ruby version changes (3.3)
-  # - NOT branch-based (stable across branches)
-  key: "cache-ruby-${PRIMARY_RUBY_VERSION:-3.3}-${FALLBACK_RUBY_VERSION:-3.2}-gemlock"
+rvm: 3.3
 
 # Only build on gh-pages branch
 branches:
   only:
     - gh-pages
 
-# Build stages for better organization
-stages:
-  - name: test
-  - name: deploy
-    if: branch = gh-pages
-
-jobs:
-  include:
-    - stage: test
-      name: "Build and Test (Ruby ${PRIMARY_RUBY_VERSION:-3.3})"
-      rvm: ${PRIMARY_RUBY_VERSION:-3.3}
-      env: RUBY_VERSION=${PRIMARY_RUBY_VERSION:-3.3}
-      script:
-        - script/bootstrap
-        - script/cibuild
-      after_success:
-        - echo "Primary build completed successfully with Ruby ${PRIMARY_RUBY_VERSION:-3.3}"
-        - ls -la _site/ || echo "No _site directory found"
-        # Create and maintain gem lock for faster builds
-        - echo "Creating gem lock for Ruby ${PRIMARY_RUBY_VERSION:-3.3}..."
-        - bundle lock --add-platform ruby
-        - bundle lock --add-platform x86_64-linux
-        - cp Gemfile.lock "Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}"
-        - echo "Gem lock created: Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}"
-        # Generate comprehensive gem lock for deployment
-        - echo "Generating comprehensive Gemfile.lock for deployment..."
-        - bundle lock --update
-        - echo "Updated Gemfile.lock with latest compatible versions"
-        # Cache the updated Gemfile.lock for future builds
-        - cp Gemfile.lock "Gemfile.lock.updated-$(date +%Y%m%d-%H%M%S)"
-        - echo "Cached updated Gemfile.lock for future builds"
-        # Also preserve the main Gemfile.lock for repository
-        - echo "Preserving Gemfile.lock for repository use"
-        - git add Gemfile.lock 2>/dev/null || echo "Gemfile.lock not in git (expected)"
-        # Cache the built site for deployment (version-specific)
-        - rm -f _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz _site.tar.gz
-        - tar -czf _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz _site/
-        - tar -czf _site.tar.gz _site/
-        - echo "Built site cached for deployment (Ruby ${PRIMARY_RUBY_VERSION:-3.3})"
-    - stage: test
-      name: "Fallback Test (Ruby ${FALLBACK_RUBY_VERSION:-3.2})"
-      rvm: ${FALLBACK_RUBY_VERSION:-3.2}
-      env: RUBY_VERSION=${FALLBACK_RUBY_VERSION:-3.2}
-      script:
-        - script/bootstrap
-        - script/cibuild
-      after_success:
-        - echo "Fallback build completed successfully with Ruby ${FALLBACK_RUBY_VERSION:-3.2}"
-        - ls -la _site/ || echo "No _site directory found"
-        # Create and maintain gem lock for faster builds
-        - echo "Creating gem lock for Ruby ${FALLBACK_RUBY_VERSION:-3.2}..."
-        - bundle lock --add-platform ruby
-        - bundle lock --add-platform x86_64-linux
-        - cp Gemfile.lock "Gemfile.lock.ruby-${FALLBACK_RUBY_VERSION:-3.2}"
-        - echo "Gem lock created: Gemfile.lock.ruby-${FALLBACK_RUBY_VERSION:-3.2}"
-        # Generate comprehensive gem lock for deployment
-        - echo "Generating comprehensive Gemfile.lock for deployment..."
-        - bundle lock --update
-        - echo "Updated Gemfile.lock with latest compatible versions"
-        # Cache the updated Gemfile.lock for future builds
-        - cp Gemfile.lock "Gemfile.lock.updated-$(date +%Y%m%d-%H%M%S)"
-        - echo "Cached updated Gemfile.lock for future builds"
-        # Cache the built site for deployment (version-specific)
-        - rm -f _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz
-        - tar -czf _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz _site/
-        - echo "Built site cached for deployment (Ruby ${FALLBACK_RUBY_VERSION:-3.2})"
-      # Allow fallback to fail without blocking deployment
-      allow_failure: true
-    - stage: deploy
-      name: "Deploy to GitHub Pages"
-      rvm: ${PRIMARY_RUBY_VERSION:-3.3}
-      env: RUBY_VERSION=${PRIMARY_RUBY_VERSION:-3.3}
-      script:
-        # Restore best available cached site (prioritize higher Ruby versions)
-        # This will use the cache from whichever test job succeeded
-        - |
-          if [ -f _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz ]; then
-            tar -xzf _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz
-            echo "✅ Restored Ruby ${PRIMARY_RUBY_VERSION:-3.3} cached site (primary build succeeded)"
-          elif [ -f _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz ]; then
-            tar -xzf _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz
-            echo "✅ Restored Ruby ${FALLBACK_RUBY_VERSION:-3.2} cached site (fallback build succeeded)"
-          elif [ -f _site.tar.gz ]; then
-            tar -xzf _site.tar.gz
-            echo "✅ Restored generic cached site"
-          else
-            echo "❌ No cached site found, building fresh..."
-            script/bootstrap && script/cibuild
-          fi
-        - script/deploy
-      # Deploy stage will run after test stage completes
-      # Will deploy if primary test succeeds OR if fallback test succeeds (with allow_failure)
-      # Will NOT run if the last commit was made by robqbot (checked at workflow level)
+# Simplified caching
+cache:
+  bundler: true
+  directories:
+    - vendor/bundle
+    - .sass-cache
+    - _site.tar.gz
 
 # Environment variables
 env:
   global:
-    # Configurable Ruby versions (customize these to change the Ruby version matrix)
-    # Examples: 3.4, 3.3, 3.2, 3.1, 3.0, 2.7
-    # Note: FALLBACK_RUBY_VERSION is automatically calculated as PRIMARY_RUBY_VERSION - 1
-    - PRIMARY_RUBY_VERSION=3.3
-    - FALLBACK_RUBY_VERSION=3.2
-
-    # GitHub deployment credentials (using existing secure variables from Travis CI)
-    # Note: These should reference the actual secure variable names stored in Travis CI
-    # The secure variables should be named: robqbot_token, robqbot_Name, robqbot_Email
-    - GITHUB_TOKEN=${robqbot_Token}
-    - GIT_USER_NAME=${robqbot_Name}
-    - GIT_USER_EMAIL=${robqbot_Email}
-
-    # Modern Ruby optimizations (optimized for Ruby 3.3)
-    - RUBYOPT=-W0  # Suppress Ruby warnings
-    - RUBY_GC_HEAP_INIT_SLOTS=1000000
-    - RUBY_GC_HEAP_FREE_SLOTS=2000000
-    - RUBY_GC_HEAP_GROWTH_FACTOR=1.25
-    - RUBY_GC_HEAP_GROWTH_MAX_SLOTS=10000000
-    - RUBY_GC_MALLOC_LIMIT=16000000
-    - RUBY_GC_MALLOC_LIMIT_MAX=32000000
-    - RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR=1.4
-    - RUBY_GC_OLDMALLOC_LIMIT=16000000
-    - RUBY_GC_OLDMALLOC_LIMIT_MAX=32000000
-    - RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR=1.2
-
-    # Jekyll and build environment
     - JEKYLL_ENV=production
-    - W3C_VALIDATOR_TIMEOUT=30
-    - BUNDLE_GEMFILE=Gemfile
-
-    # Modern Bundler optimization
-    - BUNDLE_CACHE_ALL=true
     - BUNDLE_PATH=vendor/bundle
     - BUNDLE_WITHOUT=test
-    - BUNDLE_JOBS=4
-    - BUNDLE_RETRY=3
-    - BUNDLE_FORCE_RUBY_PLATFORM=true
-    - BUNDLE_DEPLOYMENT=false
-    - BUNDLE_CLEAN=false
+    # Secure environment variables (configured in Travis CI settings)
+    - secure: "robqbot_Name"
+    - secure: "robqbot_Email" 
+    - secure: "robqbot_Token"
 
-    # Locale and encoding
-    - LANG=en_US.UTF-8
-    - LC_ALL=en_US.UTF-8
-    - LC_CTYPE=en_US.UTF-8
+# Build stages
+stages:
+  - test
+  - deploy
 
-    # Modern build tools
-    - RAILS_ENV=production
-    - NODE_ENV=production
+jobs:
+  include:
+    - stage: test
+      name: "Build and Test"
+      script:
+        - script/bootstrap
+        - script/cibuild
+      after_success:
+        - echo "Creating build cache for deployment..."
+        - rm -f _site.tar.gz 2>/dev/null || true
+        - rm -rf _site.tar.gz 2>/dev/null || true
+        - tar -czf _site.tar.gz _site/
+        - echo "Build cache created: _site.tar.gz"
+    - stage: deploy
+      name: "Deploy to GitHub Pages"
+      script:
+        - echo "Checking deployment environment..."
+        - |
+          if [ -z "${robqbot_Name:-}" ]; then
+            echo "❌ robqbot_Name not set. Please configure secure environment variables in Travis CI settings."
+            exit 1
+          fi
+        - |
+          if [ -z "${robqbot_Email:-}" ]; then
+            echo "❌ robqbot_Email not set. Please configure secure environment variables in Travis CI settings."
+            exit 1
+          fi
+        - |
+          if [ -z "${robqbot_Token:-}" ]; then
+            echo "❌ robqbot_Token not set. Please configure secure environment variables in Travis CI settings."
+            exit 1
+          fi
+        - echo "✅ All required environment variables are set"
+        - script/bootstrap
+        - script/cibuild
+        - script/deploy
 
-# Addons for modern system dependencies
-addons:
-  apt:
-    packages:
-      # Modern build tools
-      - build-essential
-      - git
-      - curl
-      - wget
-
-      # Ruby and Jekyll dependencies
-      - libcurl4-openssl-dev
-      - libssl-dev
-      - zlib1g-dev
-      - libffi-dev
-      - libreadline-dev
-      - libyaml-dev
-      - libxml2-dev
-      - libxslt1-dev
-      - libgdbm-dev
-      - libncurses5-dev
-      - libtool
-      - libffi-dev
-      - pkg-config
-
-      # Modern web tools
-      - nodejs
-      - npm
-      - yarn
-
-      # Image processing (for Jekyll plugins)
-      - imagemagick
-      - libmagickwand-dev
-
-      # Compression tools
-      - gzip
-      - bzip2
-      - xz-utils
-
-# Before install - modern Ruby and Bundler setup
+# Cache validation and cleanup to prevent corruption
 before_install:
-  # Check if the last commit was made by robqbot to prevent unnecessary builds
   - |
-    echo "Checking if last commit was made by robqbot..."
-    LAST_COMMIT_AUTHOR=$(git log -1 --pretty=format:"%an")
-    echo "Last commit author: $LAST_COMMIT_AUTHOR"
-    if [[ "$LAST_COMMIT_AUTHOR" == *"robqbot"* ]] || [[ "$LAST_COMMIT_AUTHOR" == *"robqbot via travis"* ]]; then
-      echo "❌ Last commit was made by robqbot. Skipping entire workflow to prevent unnecessary builds."
-      echo "Last commit details:"
-      git log -1 --pretty=format:"Author: %an <%ae>%nDate: %ad%nMessage: %s"
-      echo "Exiting build process..."
-      exit 0
-    else
-      echo "✅ Last commit was made by a user. Proceeding with build workflow."
+    echo "Validating cache integrity..."
+    # Check for corrupted cache entries that could cause issues
+    if [ -d "Gemfile.lock" ]; then
+      echo "❌ CRITICAL: Gemfile.lock is a directory in cache!"
+      echo "This will cause EISDIR errors. Removing immediately..."
+      rm -rf Gemfile.lock
+      echo "Removed corrupted Gemfile.lock directory from cache"
     fi
-
-  # Calculate fallback Ruby version dynamically
-  - |
-    export FALLBACK_RUBY_VERSION=$(echo ${PRIMARY_RUBY_VERSION:-3.3} | awk -F. '{print $1"."($2-1)}')
-  - echo "Calculated fallback Ruby version=$FALLBACK_RUBY_VERSION"
-
-  # System information
-  - echo "System information"
-  - echo "OS=$(lsb_release -a 2>/dev/null || echo 'Ubuntu Jammy')"
-  - echo "Ruby version=$(ruby --version)"
-  - echo "Ruby platform=$(ruby -e 'puts RUBY_PLATFORM')"
-  - echo "Gem version=$(gem --version)"
-  - echo "Node version=$(node --version 2>/dev/null || echo 'Not installed')"
-  - echo "NPM version=$(npm --version 2>/dev/null || echo 'Not installed')"
-
-  # Ruby version context
-  - echo "Build context"
-  - echo "Primary Ruby version=$PRIMARY_RUBY_VERSION"
-  - echo "Fallback Ruby version=$FALLBACK_RUBY_VERSION"
-  - echo "Current Ruby version=$RUBY_VERSION"
-  - |
-    if echo "$RUBY_VERSION" | grep -q "ruby-${PRIMARY_RUBY_VERSION:-3.3}\."; then
-      echo "✅ Primary Ruby"
-    else
-      echo "⚠️  Fallback Ruby"
+    # Check for _site.tar.gz directory issue
+    if [ -d "_site.tar.gz" ]; then
+      echo "❌ CRITICAL: _site.tar.gz is a directory in cache!"
+      echo "This will cause tar errors. Removing immediately..."
+      rm -rf _site.tar.gz
+      echo "Removed corrupted _site.tar.gz directory from cache"
     fi
+    # Clean up any empty or corrupted cache directories
+    find . -name "*.lock" -type d -delete 2>/dev/null || true
+    find . -name "Gemfile.lock*" -size 0 -delete 2>/dev/null || true
+    find . -name "*.tar.gz" -type d -delete 2>/dev/null || true
+    echo "Cache validation completed"
 
-  # Cache management
-  - echo "Managing build cache..."
-  - echo "Cache directories"
-  - ls -la ~/.bundle/ 2>/dev/null || echo "No bundle cache found"
-  - ls -la .jekyll-cache/ 2>/dev/null || echo "No Jekyll cache found"
-
-  # Install/update modern bundler
-  - gem install bundler --no-document --version ">= 2.4.0"
-  - bundle --version
-
-  # Restore cached gems if available
-  - if [ -d ~/.bundle/cache ]; then echo "Found cached bundle cache"; fi
-  - if [ -d vendor/bundle ]; then echo "Found cached vendor bundle"; fi
-
-  # Modern Ruby optimizations
-  - echo "Ruby GC settings"
-  - ruby -e "puts GC.stat"
-
-# Install dependencies with modern practices
+# Install dependencies
 install:
-  # Restore gem lock for faster builds (if available)
-  - |
-    echo "Checking for cached gem locks..."
-    
-    # Check if Gemfile.lock already exists in the repository
-    if [ -f "Gemfile.lock" ]; then
-      echo "✅ Found existing Gemfile.lock in repository"
-      echo "Using existing Gemfile.lock for faster build"
-      # Verify the lockfile is valid
-      if bundle check --gemfile=Gemfile 2>/dev/null; then
-        echo "✅ Existing Gemfile.lock is valid and compatible"
-      else
-        echo "⚠️  Existing Gemfile.lock may be outdated, but will try to use it"
-      fi
-    # Check for version-specific cached lockfiles
-    elif [ -f "Gemfile.lock.ruby-${RUBY_VERSION:-3.3}" ]; then
-      echo "✅ Found cached gem lock for Ruby ${RUBY_VERSION:-3.3}"
-      cp "Gemfile.lock.ruby-${RUBY_VERSION:-3.3}" Gemfile.lock
-      echo "Restored version-specific gem lock for faster build"
-    elif [ -f "Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}" ]; then
-      echo "✅ Found cached gem lock for primary Ruby ${PRIMARY_RUBY_VERSION:-3.3}"
-      cp "Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}" Gemfile.lock
-      echo "Restored primary gem lock for faster build"
-    elif [ -f "Gemfile.lock.ruby-${FALLBACK_RUBY_VERSION:-3.2}" ]; then
-      echo "✅ Found cached gem lock for fallback Ruby ${FALLBACK_RUBY_VERSION:-3.2}"
-      cp "Gemfile.lock.ruby-${FALLBACK_RUBY_VERSION:-3.2}" Gemfile.lock
-      echo "Restored fallback gem lock for faster build"
-    elif [ -f "Gemfile.lock.updated-$(date +%Y%m%d)*" ]; then
-      echo "✅ Found updated gem lock from today"
-      cp Gemfile.lock.updated-$(date +%Y%m%d)* Gemfile.lock 2>/dev/null || true
-      echo "Restored today's updated gem lock for faster build"
-    else
-      echo "❌ No cached gem lock found, will create new one"
-    fi
-    
-    # Verify we have a valid lockfile
-    if [ -f "Gemfile.lock" ]; then
-      echo "✅ Gemfile.lock is available for build"
-      echo "Lockfile info:"
-      head -5 Gemfile.lock
-      echo "Lockfile size: $(wc -l < Gemfile.lock) lines"
-    else
-      echo "❌ No Gemfile.lock available, will generate during bootstrap"
-    fi
+  - script/bootstrap
 
-  # Use existing Gemfile.lock if available and valid
-  - |
-    if [ -f "Gemfile.lock" ]; then
-      echo "Using existing Gemfile.lock for faster build..."
-      echo "Lockfile details:"
-      echo "- Size: $(wc -l < Gemfile.lock) lines"
-      echo "- Last modified: $(stat -c %y Gemfile.lock 2>/dev/null || stat -f %Sm Gemfile.lock 2>/dev/null || echo 'Unknown')"
-      echo "- Ruby version in lockfile: $(grep 'RUBY VERSION' Gemfile.lock | head -1 || echo 'Not specified')"
-      
-      # Check if lockfile is valid
-      if bundle check --gemfile=Gemfile 2>/dev/null; then
-        echo "✅ Existing Gemfile.lock is valid, skipping bootstrap generation"
-        echo "Proceeding directly to bundle install..."
-      else
-        echo "⚠️  Existing Gemfile.lock may be outdated, will update during bootstrap..."
-      fi
-    else
-      echo "No existing Gemfile.lock found, will generate during bootstrap..."
-    fi
-
-  # Modern Bundler configuration
-  - echo "Configuring modern Bundler..."
-  - rm -f .bundle/config
-  - bundle config --local path vendor/bundle
-  - bundle config --local cache_all true
-  - bundle config --local without test
-  - bundle config --local jobs 4
-  - bundle config --local retry 3
-  - bundle config --local force_ruby_platform true
-  - bundle config --local clean false
-
-  # Verify modern configuration
-  - echo "Bundler configuration"
-  - bundle config list
-  - echo "Installed gems"
-  - bundle list | head -10
-
-  # Modern gem verification
-  - echo "Gem platform information"
-  - bundle exec gem env
-  - echo "Jekyll version"
-  - bundle exec jekyll --version
-
-# Before script - modern setup and verification
+# Before script
 before_script:
-  - echo "Starting modern CI build process..."
+  - echo "Starting CI build process..."
   - echo "Ruby version=$(ruby --version)"
-  - echo "Ruby platform=$(ruby -e 'puts RUBY_PLATFORM')"
   - echo "Bundler version=$(bundle --version)"
-  - echo "Jekyll version=$(bundle exec jekyll --version)"
-  - echo "Node version=$(node --version 2>/dev/null || echo 'Not available')"
 
-  # Modern Ruby performance info
-  - echo "Ruby performance settings"
-  - ruby -e 'puts GC.stat'
-  - echo "Memory usage"
-  - ps aux | grep ruby
-
-  # Cache status reporting
-  - echo "Cache status"
-  - echo "Bundle cache=$(du -sh ~/.bundle/ 2>/dev/null || echo 'Not found')"
-  - echo "Vendor bundle=$(du -sh vendor/bundle/ 2>/dev/null || echo 'Not found')"
-  - echo "Jekyll cache=$(du -sh .jekyll-cache/ 2>/dev/null || echo 'Not found')"
-  - echo "Sass cache=$(du -sh .sass-cache/ 2>/dev/null || echo 'Not found')"
-
-  # Cache hit/miss analysis
-  - if [ -d vendor/bundle ]; then echo "✅ Bundle hit"; else echo "❌ Bundle miss"; fi
-  - if [ -d .jekyll-cache ]; then echo "✅ Jekyll hit"; else echo "❌ Jekyll miss"; fi
-
-  # Modern build environment verification
-  - echo "Build environment"
-  - echo "JEKYLL_ENV=$JEKYLL_ENV"
-  - echo "BUNDLE_PATH=$BUNDLE_PATH"
-  - echo "BUNDLE_JOBS=$BUNDLE_JOBS"
-
-# After script - cleanup and reporting
+# After script cleanup
 after_script:
   - echo "CI build process completed"
-  - echo "Build artifacts"
-  - ls -la _site/ 2>/dev/null || echo "No _site directory"
-  - echo "Gem files"
-  - ls -la *.gem 2>/dev/null || echo "No gem files"
+  - echo "Cleaning up cache to prevent corruption..."
+  - find . -name "*.lock" -type d -delete 2>/dev/null || true
+  - find . -name "Gemfile.lock*" -size 0 -delete 2>/dev/null || true
+  - find . -name "*.tar.gz" -type d -delete 2>/dev/null || true
+  - rm -rf .bundle/config 2>/dev/null || true
+  - rm -rf vendor/bundle/.bundle 2>/dev/null || true
+  - rm -rf .jekyll-cache 2>/dev/null || true
+  - echo "Cache cleanup completed"
 
-  # Cache optimization and cleanup
-  - echo "Optimizing cache for next build..."
-  - echo "Cache size before cleanup"
-  - du -sh ~/.bundle/ 2>/dev/null || echo "No bundle cache"
-  - du -sh .jekyll-cache/ 2>/dev/null || echo "No Jekyll cache"
-  - du -sh vendor/bundle/ 2>/dev/null || echo "No vendor bundle"
-
-  # Clean up unnecessary files to reduce cache size
-  - find ~/.bundle/ -name "*.gem" -delete 2>/dev/null || true
-  - find vendor/bundle/ -name "*.gem" -delete 2>/dev/null || true
-  - rm -rf _site/ 2>/dev/null || true
-
-  - echo "Cache size after cleanup"
-  - du -sh ~/.bundle/ 2>/dev/null || echo "No bundle cache"
-  - du -sh .jekyll-cache/ 2>/dev/null || echo "No Jekyll cache"
-  - du -sh vendor/bundle/ 2>/dev/null || echo "No vendor bundle"
-
-  # Modern performance summary
-  - echo "Build performance summary"
-  - echo "Ruby version used=$RUBY_VERSION"
-  - echo "Total cache size=$(du -sh ~/.bundle/ .jekyll-cache/ vendor/bundle/ 2>/dev/null | wc -l) files"
-  - echo "Cache efficiency=$(find ~/.bundle/ .jekyll-cache/ vendor/bundle/ -type f 2>/dev/null | wc -l) files"
-  - echo "Final Ruby GC stats"
-  - ruby -e "puts GC.stat"
-  - echo "Final memory usage"
-  - ps aux | grep ruby
-  - |
-    if echo "$RUBY_VERSION" | grep -q "ruby-${PRIMARY_RUBY_VERSION:-3.3}\."; then
-      echo "✅ Build completed with primary Ruby ${PRIMARY_RUBY_VERSION:-3.3}!"
-    else
-      echo "⚠️  Build completed with fallback Ruby $RUBY_VERSION!"
-    fi
-
-# Notifications (optional - uncomment and configure as needed)
+# Notifications
 notifications:
   email:
     on_success: never
     on_failure: change
-  # slack:
-  #   secure: "SLACK_WEBHOOK_URL"
-
-# Skip CI for documentation-only changes (use GitHub Actions skip syntax instead)
-# [skip ci] or [ci skip] in commit message
-
-# Configuration complete - all matrix and job settings are handled in the jobs section above

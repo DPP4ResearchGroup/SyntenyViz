@@ -80,9 +80,9 @@ check_build_output() {
 configure_git() {
     log_info "Configuring Git for deployment..."
     
-    # Set Git user information from environment variables
-    git config --global user.name "${GIT_USER_NAME}"
-    git config --global user.email "${GIT_USER_EMAIL}"
+    # Set Git user information from Travis CI secure environment variables
+    git config --global user.name "${robqbot_Name}"
+    git config --global user.email "${robqbot_Email}"
     
     log_success "Git configured for deployment"
 }
@@ -94,7 +94,7 @@ deploy_to_gh_pages() {
     # Get the repository URL and convert to PAT-authenticated URL
     REPO_URL=$(git config --get remote.origin.url)
     # Convert https://github.com/user/repo.git to https://token@github.com/user/repo.git
-    REPO_URL_WITH_TOKEN=$(echo "$REPO_URL" | sed "s|https://github.com/|https://${GITHUB_TOKEN}@github.com/|")
+    REPO_URL_WITH_TOKEN=$(echo "$REPO_URL" | sed "s|https://github.com/|https://${robqbot_Token}@github.com/|")
     log_info "Repository URL: $REPO_URL"
     log_info "Using PAT-authenticated URL for Git operations"
     

@@ -52,6 +52,15 @@ check_project_root() {
     log_debug "Directory contents:"
     find . -maxdepth 1 -type f -o -type d | head -10 | while read -r line; do log_debug "  $line"; done
     
+    # Critical check: Is Gemfile.lock a directory? (This causes EISDIR errors)
+    if [ -d "Gemfile.lock" ]; then
+        log_error "CRITICAL: Gemfile.lock is a directory instead of a file!"
+        log_error "This will cause 'Is a directory @ io_fread' errors in Bundler"
+        log_info "Removing the directory immediately..."
+        rm -rf Gemfile.lock
+        log_warning "Removed Gemfile.lock directory - will generate new lockfile"
+    fi
+    
     if [ ! -f "Gemfile" ] || [ ! -f "_config.yml" ]; then
         log_error "This script must be run from the Jekyll project root directory"
         log_debug "Missing files:"
@@ -179,43 +188,69 @@ install_dependencies() {
     fi
     
     # Check if Gemfile.lock exists and is valid
-    if [ -f "Gemfile.lock" ]; then
-        log_success "Found existing Gemfile.lock"
-        log_info "Lockfile details:"
-        log_info "- Size: $(wc -l < Gemfile.lock) lines"
-        log_info "- Last modified: $(stat -c %y Gemfile.lock 2>/dev/null || stat -f %Sm Gemfile.lock 2>/dev/null || echo 'Unknown')"
-        log_info "- Ruby version in lockfile: $(grep 'RUBY VERSION' Gemfile.lock | head -1 || echo 'Not specified')"
-        
-        log_debug "Analyzing existing Gemfile.lock:"
-        log_debug "  - File size: $(stat -c %s Gemfile.lock 2>/dev/null || stat -f %z Gemfile.lock 2>/dev/null || echo 'Unknown') bytes"
-        log_debug "  - Line count: $(wc -l < Gemfile.lock) lines"
-        log_debug "  - First 5 lines:"
-        head -5 Gemfile.lock | while read -r line; do log_debug "    $line"; done
-        log_debug "  - Last 5 lines:"
-        tail -5 Gemfile.lock | while read -r line; do log_debug "    $line"; done
-        
-        # Verify the lockfile is compatible with current Gemfile
-        log_debug "Checking lockfile compatibility with current Gemfile..."
-        if bundle check --gemfile=Gemfile 2>&1; then
-            log_success "Existing Gemfile.lock is valid and compatible"
-            log_info "Skipping lockfile generation, using existing file"
-            log_debug "Bundle check passed - lockfile is compatible"
-        else
-            log_warning "Existing Gemfile.lock may be outdated or incompatible"
-            log_info "Will attempt to update lockfile..."
-            log_debug "Bundle check failed - lockfile may be outdated"
+    if [ -e "Gemfile.lock" ]; then
+        # Critical check: Is Gemfile.lock a directory? (This causes EISDIR errors)
+        if [ -d "Gemfile.lock" ]; then
+            log_error "CRITICAL: Gemfile.lock is a directory instead of a file!"
+            log_error "This will cause 'Is a directory @ io_fread' errors in Bundler"
+            log_info "Removing the directory and will regenerate as a proper file..."
+            rm -rf Gemfile.lock
+            log_warning "Removed Gemfile.lock directory - will generate new lockfile"
+        elif [ -f "Gemfile.lock" ]; then
+            log_success "Found existing Gemfile.lock file"
+            log_info "Lockfile details:"
+            log_info "- Size: $(wc -l < Gemfile.lock) lines"
+            log_info "- Last modified: $(stat -c %y Gemfile.lock 2>/dev/null || stat -f %Sm Gemfile.lock 2>/dev/null || echo 'Unknown')"
+            log_info "- Ruby version in lockfile: $(grep 'RUBY VERSION' Gemfile.lock | head -1 || echo 'Not specified')"
             
-            # Try to update the existing lockfile
-            log_debug "Attempting to update existing lockfile..."
-            if bundle lock --update 2>&1; then
-                log_success "Updated existing Gemfile.lock"
-                log_debug "Lockfile update successful"
-            else
-                log_warning "Failed to update lockfile, will regenerate..."
-                log_debug "Lockfile update failed, removing and regenerating"
+            log_debug "Analyzing existing Gemfile.lock:"
+            log_debug "  - File size: $(stat -c %s Gemfile.lock 2>/dev/null || stat -f %z Gemfile.lock 2>/dev/null || echo 'Unknown') bytes"
+            log_debug "  - Line count: $(wc -l < Gemfile.lock) lines"
+            log_debug "  - File permissions: $(ls -la Gemfile.lock 2>/dev/null || echo 'Cannot read permissions')"
+            log_debug "  - File type: $(file Gemfile.lock 2>/dev/null || echo 'Cannot determine file type')"
+            log_debug "  - First 5 lines:"
+            head -5 Gemfile.lock | while read -r line; do log_debug "    $line"; done
+            log_debug "  - Last 5 lines:"
+            tail -5 Gemfile.lock | while read -r line; do log_debug "    $line"; done
+            
+            # Check if lockfile is readable and not corrupted
+            if [ ! -r "Gemfile.lock" ]; then
+                log_warning "Gemfile.lock exists but is not readable, removing..."
                 rm -f Gemfile.lock
-                # Fall through to generation logic below
+            elif [ ! -s "Gemfile.lock" ]; then
+                log_warning "Gemfile.lock exists but is empty, removing..."
+                rm -f Gemfile.lock
+            elif ! head -1 Gemfile.lock | grep -q "GEM"; then
+                log_warning "Gemfile.lock appears to be corrupted (missing GEM header), removing..."
+                rm -f Gemfile.lock
+            else
+                # Verify the lockfile is compatible with current Gemfile
+                log_debug "Checking lockfile compatibility with current Gemfile..."
+                if bundle check --gemfile=Gemfile 2>&1; then
+                    log_success "Existing Gemfile.lock is valid and compatible"
+                    log_info "Skipping lockfile generation, using existing file"
+                    log_debug "Bundle check passed - lockfile is compatible"
+                else
+                    log_warning "Existing Gemfile.lock may be outdated or incompatible"
+                    log_info "Will attempt to update lockfile..."
+                    log_debug "Bundle check failed - lockfile may be outdated"
+                    
+                    # Try to update the existing lockfile
+                    log_debug "Attempting to update existing lockfile..."
+                    if bundle lock --update 2>&1; then
+                        log_success "Updated existing Gemfile.lock"
+                        log_debug "Lockfile update successful"
+                    else
+                        log_warning "Failed to update lockfile, will regenerate..."
+                        log_debug "Lockfile update failed, removing and regenerating"
+                        rm -f Gemfile.lock
+                        # Fall through to generation logic below
+                    fi
+                fi
             fi
+        else
+            log_warning "Gemfile.lock exists but is neither a file nor directory (special file), removing..."
+            rm -f Gemfile.lock
         fi
     fi
     
@@ -305,12 +340,29 @@ EOF
         log_success "Gemfile.lock generated successfully"
     fi
     
+    # Pre-installation cleanup and permission fixes
+    log_debug "Performing pre-installation cleanup..."
+    
+    # Fix any permission issues with Gemfile.lock
+    if [ -f "Gemfile.lock" ]; then
+        log_debug "Checking Gemfile.lock permissions..."
+        if [ ! -r "Gemfile.lock" ]; then
+            log_warning "Gemfile.lock is not readable, fixing permissions..."
+            chmod 644 Gemfile.lock 2>/dev/null || log_warning "Could not fix Gemfile.lock permissions"
+        fi
+    fi
+    
+    # Clean up any corrupted bundle state
+    log_debug "Cleaning up bundle state..."
+    rm -rf .bundle/config 2>/dev/null || true
+    rm -rf vendor/bundle/.bundle 2>/dev/null || true
+    
     # Install dependencies with retry logic
     local retry_count=0
     local max_retries=3
     
     # Check if we can skip bundle install if lockfile is valid and gems are already installed
-    if [ -f "Gemfile.lock" ] && bundle check --gemfile=Gemfile 2>/dev/null; then
+    if [ -f "Gemfile.lock" ] && [ -r "Gemfile.lock" ] && bundle check --gemfile=Gemfile 2>/dev/null; then
         log_success "Dependencies are already installed and up to date"
         log_info "Skipping bundle install, using existing installation"
         return 0
@@ -321,14 +373,16 @@ EOF
         local bundle_output
         local bundle_exit_code
         
-        if [ -f "Gemfile.lock" ]; then
-            # Lockfile exists, use standard install
+        if [ -f "Gemfile.lock" ] && [ -r "Gemfile.lock" ]; then
+            # Lockfile exists and is readable, use standard install
             log_info "Installing dependencies with existing lockfile..."
+            log_debug "Lockfile permissions: $(ls -la Gemfile.lock 2>/dev/null || echo 'Cannot read')"
             bundle_output=$(bundle install --retry=3 2>&1)
             bundle_exit_code=$?
         else
-            # No lockfile, generate it first
+            # No lockfile or unreadable, generate it first
             log_info "Installing dependencies without lockfile..."
+            log_debug "Lockfile status: $(ls -la Gemfile.lock 2>/dev/null || echo 'File not found')"
             bundle_output=$(bundle install --retry=3 2>&1)
             bundle_exit_code=$?
         fi
