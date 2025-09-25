@@ -1,2 +1,45 @@
-{% include analytics.html %}
-{% include download_links.html %}
+<!DOCTYPE html>
+<html lang="{{ site.lang | default: "en-US" }}">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{{ page.title | escape }}{% if page.title %} | {% endif %}{{ site.title | escape }}</title>
+    <meta name="description" content="{{ page.description | default: site.description | strip_html | normalize_whitespace | truncate: 160 | escape }}">
+
+    <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
+    {% include analytics.html %}
+    {% include download_links.html %}
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1><a href="{{ '/' | relative_url }}">{{ site.title | escape }}</a></h1>
+        <p>{{ site.description | escape }}</p>
+      </header>
+
+      <nav>
+        <ul>
+          <li><a href="{{ site.github.repository_url }}">View on GitHub</a></li>
+          {% if site.github.is_project_page %}
+            <li><a href="{{ site.github.owner_url }}">Owner Profile</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+
+      <main>
+        {{ content }}
+      </main>
+
+      <footer>
+        <p>
+          Project maintained by <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a>
+        </p>
+        <p>
+          <small>Hosted on GitHub Pages by <a href="https://github.com/DPP4ResearchGroup">DPP4ResearchGroup</a></small>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

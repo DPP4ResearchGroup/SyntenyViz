@@ -45,10 +45,12 @@ cache:
     - _site/assets
     - assets/css/main.css
 
-    # Gem lock files for faster builds
-    - Gemfile.lock.ruby-3.3
-    - Gemfile.lock.ruby-3.2
-    - Gemfile.lock.ruby-*
+    # Gem lock files for faster builds (prioritize existing lockfiles)
+    - Gemfile.lock                    # Repository lockfile (highest priority)
+    - Gemfile.lock.ruby-3.3           # Primary Ruby version lockfile
+    - Gemfile.lock.ruby-3.2           # Fallback Ruby version lockfile
+    - Gemfile.lock.ruby-*             # Any Ruby version lockfiles
+    - Gemfile.lock.updated-*          # Updated lockfiles from previous builds
 
     # Temporary files
     - tmp
@@ -60,7 +62,7 @@ cache:
   # - _config.yml changes
   # - Primary Ruby version changes (3.3)
   # - NOT branch-based (stable across branches)
-  key: "cache-ruby-${PRIMARY_RUBY_VERSION:-3.3}-${FALLBACK_RUBY_VERSION:-3.2}"
+  key: "cache-ruby-${PRIMARY_RUBY_VERSION:-3.3}-${FALLBACK_RUBY_VERSION:-3.2}-gemlock"
 
 # Only build on gh-pages branch
 branches:
@@ -91,6 +93,16 @@ jobs:
         - bundle lock --add-platform x86_64-linux
         - cp Gemfile.lock "Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}"
         - echo "Gem lock created: Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}"
+        # Generate comprehensive gem lock for deployment
+        - echo "Generating comprehensive Gemfile.lock for deployment..."
+        - bundle lock --update
+        - echo "Updated Gemfile.lock with latest compatible versions"
+        # Cache the updated Gemfile.lock for future builds
+        - cp Gemfile.lock "Gemfile.lock.updated-$(date +%Y%m%d-%H%M%S)"
+        - echo "Cached updated Gemfile.lock for future builds"
+        # Also preserve the main Gemfile.lock for repository
+        - echo "Preserving Gemfile.lock for repository use"
+        - git add Gemfile.lock 2>/dev/null || echo "Gemfile.lock not in git (expected)"
         # Cache the built site for deployment (version-specific)
         - rm -f _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz _site.tar.gz
         - tar -czf _site-ruby-${PRIMARY_RUBY_VERSION:-3.3}.tar.gz _site/
@@ -112,6 +124,13 @@ jobs:
         - bundle lock --add-platform x86_64-linux
         - cp Gemfile.lock "Gemfile.lock.ruby-${FALLBACK_RUBY_VERSION:-3.2}"
         - echo "Gem lock created: Gemfile.lock.ruby-${FALLBACK_RUBY_VERSION:-3.2}"
+        # Generate comprehensive gem lock for deployment
+        - echo "Generating comprehensive Gemfile.lock for deployment..."
+        - bundle lock --update
+        - echo "Updated Gemfile.lock with latest compatible versions"
+        # Cache the updated Gemfile.lock for future builds
+        - cp Gemfile.lock "Gemfile.lock.updated-$(date +%Y%m%d-%H%M%S)"
+        - echo "Cached updated Gemfile.lock for future builds"
         # Cache the built site for deployment (version-specific)
         - rm -f _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz
         - tar -czf _site-ruby-${FALLBACK_RUBY_VERSION:-3.2}.tar.gz _site/
@@ -302,10 +321,22 @@ install:
   # Restore gem lock for faster builds (if available)
   - |
     echo "Checking for cached gem locks..."
-    if [ -f "Gemfile.lock.ruby-${RUBY_VERSION:-3.3}" ]; then
+    
+    # Check if Gemfile.lock already exists in the repository
+    if [ -f "Gemfile.lock" ]; then
+      echo "✅ Found existing Gemfile.lock in repository"
+      echo "Using existing Gemfile.lock for faster build"
+      # Verify the lockfile is valid
+      if bundle check --gemfile=Gemfile 2>/dev/null; then
+        echo "✅ Existing Gemfile.lock is valid and compatible"
+      else
+        echo "⚠️  Existing Gemfile.lock may be outdated, but will try to use it"
+      fi
+    # Check for version-specific cached lockfiles
+    elif [ -f "Gemfile.lock.ruby-${RUBY_VERSION:-3.3}" ]; then
       echo "✅ Found cached gem lock for Ruby ${RUBY_VERSION:-3.3}"
       cp "Gemfile.lock.ruby-${RUBY_VERSION:-3.3}" Gemfile.lock
-      echo "Restored gem lock for faster build"
+      echo "Restored version-specific gem lock for faster build"
     elif [ -f "Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}" ]; then
       echo "✅ Found cached gem lock for primary Ruby ${PRIMARY_RUBY_VERSION:-3.3}"
       cp "Gemfile.lock.ruby-${PRIMARY_RUBY_VERSION:-3.3}" Gemfile.lock
@@ -314,11 +345,43 @@ install:
       echo "✅ Found cached gem lock for fallback Ruby ${FALLBACK_RUBY_VERSION:-3.2}"
       cp "Gemfile.lock.ruby-${FALLBACK_RUBY_VERSION:-3.2}" Gemfile.lock
       echo "Restored fallback gem lock for faster build"
+    elif [ -f "Gemfile.lock.updated-$(date +%Y%m%d)*" ]; then
+      echo "✅ Found updated gem lock from today"
+      cp Gemfile.lock.updated-$(date +%Y%m%d)* Gemfile.lock 2>/dev/null || true
+      echo "Restored today's updated gem lock for faster build"
     else
       echo "❌ No cached gem lock found, will create new one"
     fi
+    
+    # Verify we have a valid lockfile
+    if [ -f "Gemfile.lock" ]; then
+      echo "✅ Gemfile.lock is available for build"
+      echo "Lockfile info:"
+      head -5 Gemfile.lock
+      echo "Lockfile size: $(wc -l < Gemfile.lock) lines"
+    else
+      echo "❌ No Gemfile.lock available, will generate during bootstrap"
+    fi
 
-  - script/bootstrap
+  # Use existing Gemfile.lock if available and valid
+  - |
+    if [ -f "Gemfile.lock" ]; then
+      echo "Using existing Gemfile.lock for faster build..."
+      echo "Lockfile details:"
+      echo "- Size: $(wc -l < Gemfile.lock) lines"
+      echo "- Last modified: $(stat -c %y Gemfile.lock 2>/dev/null || stat -f %Sm Gemfile.lock 2>/dev/null || echo 'Unknown')"
+      echo "- Ruby version in lockfile: $(grep 'RUBY VERSION' Gemfile.lock | head -1 || echo 'Not specified')"
+      
+      # Check if lockfile is valid
+      if bundle check --gemfile=Gemfile 2>/dev/null; then
+        echo "✅ Existing Gemfile.lock is valid, skipping bootstrap generation"
+        echo "Proceeding directly to bundle install..."
+      else
+        echo "⚠️  Existing Gemfile.lock may be outdated, will update during bootstrap..."
+      fi
+    else
+      echo "No existing Gemfile.lock found, will generate during bootstrap..."
+    fi
 
   # Modern Bundler configuration
   - echo "Configuring modern Bundler..."

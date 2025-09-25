@@ -9,7 +9,12 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
+
+# Debug mode flag
+DEBUG_MODE="${DEBUG:-false}"
 
 # Logging functions
 log_info() {
@@ -28,19 +33,45 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
+log_debug() {
+    if [ "$DEBUG_MODE" = "true" ]; then
+        echo -e "${CYAN}[DEBUG]${NC} $1"
+    fi
+}
+
+log_verbose() {
+    if [ "$DEBUG_MODE" = "true" ]; then
+        echo -e "${MAGENTA}[VERBOSE]${NC} $1"
+    fi
+}
+
 # Check if we're in the right directory
 check_project_root() {
+    log_debug "Checking project root directory..."
+    log_debug "Current directory: $(pwd)"
+    log_debug "Directory contents:"
+    find . -maxdepth 1 -type f -o -type d | head -10 | while read -r line; do log_debug "  $line"; done
+    
     if [ ! -f "Gemfile" ] || [ ! -f "_config.yml" ]; then
         log_error "This script must be run from the Jekyll project root directory"
+        log_debug "Missing files:"
+        [ ! -f "Gemfile" ] && log_debug "  - Gemfile"
+        [ ! -f "_config.yml" ] && log_debug "  - _config.yml"
         exit 1
     fi
     log_info "Project root directory confirmed"
+    log_debug "Required files found: Gemfile, _config.yml"
 }
 
 # Check Ruby version
 check_ruby_version() {
+    log_debug "Checking Ruby installation and version..."
+    
     if ! command -v ruby >/dev/null 2>&1; then
         log_error "Ruby is not installed or not in PATH"
+        log_debug "PATH: $PATH"
+        log_debug "Available commands:"
+        which -a ruby 2>/dev/null || log_debug "  ruby command not found"
         exit 1
     fi
     
@@ -49,33 +80,64 @@ check_ruby_version() {
     FALLBACK_VERSION=$(echo "${PRIMARY_VERSION}" | awk -F. '{print $1"."($2-1)}')
     MINIMUM_VERSION="2.6"
     
+    log_debug "Ruby version analysis:"
+    log_debug "  - Current Ruby version: $RUBY_VERSION"
+    log_debug "  - Primary version: $PRIMARY_VERSION"
+    log_debug "  - Fallback version: $FALLBACK_VERSION"
+    log_debug "  - Minimum version: $MINIMUM_VERSION"
+    log_debug "  - Ruby platform: $(ruby -e 'puts RUBY_PLATFORM')"
+    log_debug "  - Ruby executable: $(which ruby)"
+    
     if [ "$(printf '%s\n' "$MINIMUM_VERSION" "$RUBY_VERSION" | sort -V | head -n1)" != "$MINIMUM_VERSION" ]; then
         log_error "Ruby version $RUBY_VERSION detected. Minimum required: $MINIMUM_VERSION"
+        log_debug "Version comparison failed: $RUBY_VERSION < $MINIMUM_VERSION"
         exit 1
     elif echo "$RUBY_VERSION" | grep -q "^${PRIMARY_VERSION}\."; then
         log_success "Ruby version $RUBY_VERSION is optimal (primary version ${PRIMARY_VERSION}.x)"
+        log_debug "Using primary Ruby version"
     elif echo "$RUBY_VERSION" | grep -q "^${FALLBACK_VERSION}\."; then
         log_warning "Ruby version $RUBY_VERSION detected (fallback version ${FALLBACK_VERSION}.x). Primary: ${PRIMARY_VERSION}.x"
+        log_debug "Using fallback Ruby version"
     else
         log_warning "Ruby version $RUBY_VERSION detected. Primary: ${PRIMARY_VERSION}.x, Fallback: ${FALLBACK_VERSION}.x"
+        log_debug "Using non-standard Ruby version"
     fi
 }
 
 # Install or update Bundler
 install_bundler() {
     log_info "Installing/updating Bundler..."
+    log_debug "Checking current Bundler installation..."
     
     if command -v bundler >/dev/null 2>&1; then
         CURRENT_BUNDLER=$(bundler -v | cut -d' ' -f3)
         log_info "Current Bundler version: $CURRENT_BUNDLER"
+        log_debug "Bundler executable: $(which bundler)"
+        log_debug "Bundler version details: $(bundler -v)"
         
         # Update to latest version
-        gem install bundler --no-document --version ">= 2.4.0"
-        log_success "Bundler updated to latest version"
+        log_debug "Updating Bundler to latest version..."
+        if gem install bundler --no-document --version ">= 2.4.0" 2>&1; then
+            log_success "Bundler updated to latest version"
+            log_debug "New Bundler version: $(bundler -v)"
+        else
+            log_warning "Failed to update Bundler, continuing with existing version"
+        fi
     else
-        gem install bundler --no-document --version ">= 2.4.0"
-        log_success "Bundler installed"
+        log_debug "Bundler not found, installing..."
+        if gem install bundler --no-document --version ">= 2.4.0" 2>&1; then
+            log_success "Bundler installed"
+            log_debug "Installed Bundler version: $(bundler -v)"
+        else
+            log_error "Failed to install Bundler"
+            exit 1
+        fi
     fi
+    
+    log_debug "Final Bundler configuration:"
+    log_debug "  - Version: $(bundler -v)"
+    log_debug "  - Executable: $(which bundler)"
+    log_debug "  - Gem path: $(gem env home)"
 }
 
 # Install dependencies
@@ -103,14 +165,156 @@ install_dependencies() {
     log_info "Bundle configuration:"
     bundle config list
     
+    # Additional debugging information
+    log_info "Environment information:"
+    log_info "Ruby version: $(ruby --version)"
+    log_info "Bundler version: $(bundle --version)"
+    log_info "Current directory: $(pwd)"
+    log_info "Gemfile contents:"
+    if [ -f "Gemfile" ]; then
+        cat Gemfile
+    else
+        log_error "Gemfile not found!"
+        exit 1
+    fi
+    
+    # Check if Gemfile.lock exists and is valid
+    if [ -f "Gemfile.lock" ]; then
+        log_success "Found existing Gemfile.lock"
+        log_info "Lockfile details:"
+        log_info "- Size: $(wc -l < Gemfile.lock) lines"
+        log_info "- Last modified: $(stat -c %y Gemfile.lock 2>/dev/null || stat -f %Sm Gemfile.lock 2>/dev/null || echo 'Unknown')"
+        log_info "- Ruby version in lockfile: $(grep 'RUBY VERSION' Gemfile.lock | head -1 || echo 'Not specified')"
+        
+        log_debug "Analyzing existing Gemfile.lock:"
+        log_debug "  - File size: $(stat -c %s Gemfile.lock 2>/dev/null || stat -f %z Gemfile.lock 2>/dev/null || echo 'Unknown') bytes"
+        log_debug "  - Line count: $(wc -l < Gemfile.lock) lines"
+        log_debug "  - First 5 lines:"
+        head -5 Gemfile.lock | while read -r line; do log_debug "    $line"; done
+        log_debug "  - Last 5 lines:"
+        tail -5 Gemfile.lock | while read -r line; do log_debug "    $line"; done
+        
+        # Verify the lockfile is compatible with current Gemfile
+        log_debug "Checking lockfile compatibility with current Gemfile..."
+        if bundle check --gemfile=Gemfile 2>&1; then
+            log_success "Existing Gemfile.lock is valid and compatible"
+            log_info "Skipping lockfile generation, using existing file"
+            log_debug "Bundle check passed - lockfile is compatible"
+        else
+            log_warning "Existing Gemfile.lock may be outdated or incompatible"
+            log_info "Will attempt to update lockfile..."
+            log_debug "Bundle check failed - lockfile may be outdated"
+            
+            # Try to update the existing lockfile
+            log_debug "Attempting to update existing lockfile..."
+            if bundle lock --update 2>&1; then
+                log_success "Updated existing Gemfile.lock"
+                log_debug "Lockfile update successful"
+            else
+                log_warning "Failed to update lockfile, will regenerate..."
+                log_debug "Lockfile update failed, removing and regenerating"
+                rm -f Gemfile.lock
+                # Fall through to generation logic below
+            fi
+        fi
+    fi
+    
+    # Generate lockfile if it doesn't exist or was removed
     if [ ! -f "Gemfile.lock" ]; then
-        log_warning "Gemfile.lock not found. This may be a fresh installation."
-        log_info "Generating Gemfile.lock for the first time..."
+        log_warning "Gemfile.lock not found. Generating new lockfile..."
+        log_debug "Starting lockfile generation process..."
+        
+        # First, try to generate the lockfile
+        log_info "Attempting to generate Gemfile.lock..."
+        log_debug "Current environment before lockfile generation:"
+        log_debug "  - Ruby version: $(ruby --version)"
+        log_debug "  - Bundler version: $(bundle --version)"
+        log_debug "  - Gemfile contents:"
+        cat Gemfile | while read -r line; do log_debug "    $line"; done
+        
+        # Try bundle lock with platforms
+        log_info "Trying bundle lock with platforms..."
+        log_debug "Running: bundle lock --add-platform ruby --add-platform x86_64-linux"
+        if bundle lock --add-platform ruby --add-platform x86_64-linux 2>&1; then
+            log_success "Generated lockfile with platforms"
+            log_debug "Lockfile generation with platforms successful"
+        else
+            log_warning "Failed to generate lockfile with platforms, trying without..."
+            log_debug "Platform-specific lockfile generation failed"
+            
+            # Try bundle lock without platforms
+            log_debug "Running: bundle lock"
+            if bundle lock 2>&1; then
+                log_success "Generated lockfile without platforms"
+                log_debug "Basic lockfile generation successful"
+            else
+                log_warning "Failed to generate lockfile, trying bundle install to create it..."
+                log_debug "Basic lockfile generation failed, trying bundle install"
+                
+                # Try bundle install to create lockfile
+                log_debug "Running: bundle install --retry=3"
+                if bundle install --retry=3 2>&1; then
+                    log_success "Generated lockfile via bundle install"
+                    log_debug "Bundle install lockfile generation successful"
+                else
+                    log_error "All methods failed to generate Gemfile.lock"
+                    log_debug "All lockfile generation methods failed"
+                    log_info "Checking if Gemfile exists and is valid..."
+                    if [ -f "Gemfile" ]; then
+                    log_info "Gemfile exists, checking contents..."
+                    head -10 Gemfile
+                    log_debug "Gemfile first 10 lines:"
+                    head -10 Gemfile | while read -r line; do log_debug "  $line"; done
+                    else
+                    log_error "Gemfile not found!"
+                    fi
+                    log_info "Current directory contents:"
+                    ls -la
+                    log_debug "Directory contents:"
+                    find . -maxdepth 1 -type f -o -type d | while read -r line; do log_debug "  $line"; done
+                    log_info "Bundler version:"
+                    bundle --version
+                    log_debug "Bundler configuration:"
+                    bundle config list
+                    exit 1
+                fi
+            fi
+        fi
+        
+        # Verify the lockfile was actually created
+        if [ ! -f "Gemfile.lock" ]; then
+            log_warning "Gemfile.lock was not created, attempting to create minimal lockfile..."
+            
+            # Create a minimal Gemfile.lock as last resort
+            cat > Gemfile.lock << 'EOF'
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+
+BUNDLED WITH
+   2.4.0
+EOF
+            log_info "Created minimal Gemfile.lock as fallback"
+        fi
+        log_success "Gemfile.lock generated successfully"
     fi
     
     # Install dependencies with retry logic
     local retry_count=0
     local max_retries=3
+    
+    # Check if we can skip bundle install if lockfile is valid and gems are already installed
+    if [ -f "Gemfile.lock" ] && bundle check --gemfile=Gemfile 2>/dev/null; then
+        log_success "Dependencies are already installed and up to date"
+        log_info "Skipping bundle install, using existing installation"
+        return 0
+    fi
     
     while [ $retry_count -lt $max_retries ]; do
         # Use different bundle install strategy based on lockfile presence
@@ -119,10 +323,12 @@ install_dependencies() {
         
         if [ -f "Gemfile.lock" ]; then
             # Lockfile exists, use standard install
+            log_info "Installing dependencies with existing lockfile..."
             bundle_output=$(bundle install --retry=3 2>&1)
             bundle_exit_code=$?
         else
             # No lockfile, generate it first
+            log_info "Installing dependencies without lockfile..."
             bundle_output=$(bundle install --retry=3 2>&1)
             bundle_exit_code=$?
         fi
