@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="SyntenyViz Development Team" />
+
+<meta name="date" content="2025-09-25" />
+
+<title>Explanatory Note: calculateOrthologSimilarity Function</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+<style type="text/css">detaiks.chunk-details > summary.chunk-summary {
+text-align: right;
+}
+details.chunk-details[open] > summary.chunk-summary::after {
+content: "Hide";
+}
+details.chunk-details[open] > summary.chunk-summary > span.chunk-summary-text {
+display: none;
+}
+</style>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ background-color: #f8f8f8; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ef2929; } 
+code span.an { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.at { color: #204a87; } 
+code span.bn { color: #0000cf; } 
+code span.cf { color: #204a87; font-weight: bold; } 
+code span.ch { color: #4e9a06; } 
+code span.cn { color: #8f5902; } 
+code span.co { color: #8f5902; font-style: italic; } 
+code span.cv { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.do { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.dt { color: #204a87; } 
+code span.dv { color: #0000cf; } 
+code span.er { color: #a40000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #0000cf; } 
+code span.fu { color: #204a87; font-weight: bold; } 
+code span.im { } 
+code span.in { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.kw { color: #204a87; font-weight: bold; } 
+code span.op { color: #ce5c00; font-weight: bold; } 
+code span.ot { color: #8f5902; } 
+code span.pp { color: #8f5902; font-style: italic; } 
+code span.sc { color: #ce5c00; font-weight: bold; } 
+code span.ss { color: #4e9a06; } 
+code span.st { color: #4e9a06; } 
+code span.va { color: #000000; } 
+code span.vs { color: #4e9a06; } 
+code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Explanatory Note:
+calculateOrthologSimilarity Function</h1>
+<h4 class="author">SyntenyViz Development Team</h4>
+<h4 class="date">2025-09-25</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#explanatory-note-calculateorthologsimilarity-function" id="toc-explanatory-note-calculateorthologsimilarity-function">Explanatory
+Note: calculateOrthologSimilarity Function</a>
+<ul>
+<li><a href="#overview" id="toc-overview">Overview</a></li>
+<li><a href="#function-signature" id="toc-function-signature">Function
+Signature</a></li>
+<li><a href="#underlying-calculations-and-methodology" id="toc-underlying-calculations-and-methodology">Underlying Calculations
+and Methodology</a>
+<ul>
+<li><a href="#sequence-similarity-calculation" id="toc-sequence-similarity-calculation">1. Sequence Similarity
+Calculation</a></li>
+<li><a href="#functional-similarity-calculation" id="toc-functional-similarity-calculation">2. Functional Similarity
+Calculation</a></li>
+<li><a href="#evolutionary-similarity-calculation" id="toc-evolutionary-similarity-calculation">3. Evolutionary Similarity
+Calculation</a></li>
+<li><a href="#composite-similarity-score" id="toc-composite-similarity-score">4. Composite Similarity
+Score</a></li>
+</ul></li>
+<li><a href="#scientific-principles-and-assumptions" id="toc-scientific-principles-and-assumptions">Scientific Principles and
+Assumptions</a>
+<ul>
+<li><a href="#orthology-definition" id="toc-orthology-definition">1.
+Orthology Definition</a></li>
+<li><a href="#molecular-clock-assumption" id="toc-molecular-clock-assumption">2. Molecular Clock
+Assumption</a></li>
+<li><a href="#functional-conservation" id="toc-functional-conservation">3. Functional Conservation</a></li>
+</ul></li>
+<li><a href="#data-sources-and-validation" id="toc-data-sources-and-validation">Data Sources and Validation</a>
+<ul>
+<li><a href="#evolutionary-distances" id="toc-evolutionary-distances">1.
+Evolutionary Distances</a></li>
+<li><a href="#sequence-data" id="toc-sequence-data">2. Sequence
+Data</a></li>
+<li><a href="#functional-annotations" id="toc-functional-annotations">3.
+Functional Annotations</a></li>
+</ul></li>
+<li><a href="#limitations-and-considerations" id="toc-limitations-and-considerations">Limitations and
+Considerations</a>
+<ul>
+<li><a href="#algorithmic-limitations" id="toc-algorithmic-limitations">1. Algorithmic Limitations</a></li>
+<li><a href="#biological-limitations" id="toc-biological-limitations">2.
+Biological Limitations</a></li>
+<li><a href="#computational-limitations" id="toc-computational-limitations">3. Computational Limitations</a></li>
+</ul></li>
+<li><a href="#best-practices-and-recommendations" id="toc-best-practices-and-recommendations">Best Practices and
+Recommendations</a>
+<ul>
+<li><a href="#data-quality" id="toc-data-quality">1. Data
+Quality</a></li>
+<li><a href="#interpretation" id="toc-interpretation">2.
+Interpretation</a></li>
+<li><a href="#parameter-tuning" id="toc-parameter-tuning">3. Parameter
+Tuning</a></li>
+</ul></li>
+<li><a href="#future-enhancements" id="toc-future-enhancements">Future
+Enhancements</a>
+<ul>
+<li><a href="#advanced-algorithms" id="toc-advanced-algorithms">1.
+Advanced Algorithms</a></li>
+<li><a href="#data-integration" id="toc-data-integration">2. Data
+Integration</a></li>
+<li><a href="#dynamic-updates" id="toc-dynamic-updates">3. Dynamic
+Updates</a></li>
+</ul></li>
+<li><a href="#references-and-further-reading" id="toc-references-and-further-reading">References and Further
+Reading</a></li>
+<li><a href="#conclusion" id="toc-conclusion">Conclusion</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="explanatory-note-calculateorthologsimilarity-function" class="section level1">
+<h1>Explanatory Note: calculateOrthologSimilarity Function</h1>
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>The <code>calculateOrthologSimilarity</code> function implements a
+comprehensive framework for calculating similarity metrics between
+orthologous genes across different species. This function provides
+multiple similarity measures that reflect different aspects of gene
+conservation and evolutionary relationships.</p>
+</div>
+<div id="function-signature" class="section level2">
+<h2>Function Signature</h2>
+<details class="chunk-details" open><summary class="chunk-summary"><span class="chunk-summary-text">Code</span></summary>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Example function call (not executed in this explanatory vignette)</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">calculateOrthologSimilarity</span>(ortholog_data, species1, species2, </span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>                          <span class="at">similarity_type =</span> <span class="st">&quot;composite&quot;</span>, <span class="at">use_cache =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>                          <span class="at">verbose =</span> <span class="cn">FALSE</span>, <span class="at">debug =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
+</details>
+</div>
+<div id="underlying-calculations-and-methodology" class="section level2">
+<h2>Underlying Calculations and Methodology</h2>
+<div id="sequence-similarity-calculation" class="section level3">
+<h3>1. Sequence Similarity Calculation</h3>
+<p><strong>Purpose</strong>: Measures the degree of sequence
+conservation between orthologous genes.</p>
+<p><strong>Calculation Method</strong>: - <strong>Sequence
+Identity</strong>: Percentage of identical amino acids/nucleotides at
+aligned positions - <strong>Sequence Coverage</strong>: Proportion of
+the reference sequence covered by the alignment - <strong>Sequence
+Similarity</strong>: Overall similarity score incorporating gaps and
+substitutions</p>
+<p><strong>Mathematical Basis</strong>:</p>
+<pre><code>Sequence Identity = (Identical Positions / Total Aligned Positions) * 100
+Sequence Coverage = (Aligned Length / Reference Length) * 100
+Sequence Similarity = Weighted average of identity, coverage, and gap penalties</code></pre>
+<p><strong>Scientific Context</strong>: Sequence similarity reflects the
+evolutionary conservation of protein-coding regions and can indicate
+functional importance.</p>
+</div>
+<div id="functional-similarity-calculation" class="section level3">
+<h3>2. Functional Similarity Calculation</h3>
+<p><strong>Purpose</strong>: Assesses the functional conservation of
+orthologous genes based on biological annotations.</p>
+<p><strong>Calculation Components</strong>: - <strong>GO Term
+Overlap</strong>: Jaccard similarity of Gene Ontology terms -
+<strong>Pathway Similarity</strong>: Shared metabolic or signaling
+pathways - <strong>Functional Similarity</strong>: Composite score of
+functional annotations</p>
+<p><strong>Mathematical Basis</strong>:</p>
+<pre><code>GO Term Overlap = |GO_A ∩ GO_B| / |GO_A ∪ GO_B|
+Pathway Similarity = Shared Pathways / Total Pathways
+Functional Similarity = Weighted combination of GO and pathway scores</code></pre>
+<p><strong>Scientific Context</strong>: Functional similarity indicates
+whether orthologs perform similar biological roles despite sequence
+divergence.</p>
+</div>
+<div id="evolutionary-similarity-calculation" class="section level3">
+<h3>3. Evolutionary Similarity Calculation</h3>
+<p><strong>Purpose</strong>: Quantifies the evolutionary distance
+between species pairs using molecular clock estimates.</p>
+<p><strong>Calculation Method</strong>: - <strong>Evolutionary
+Distance</strong>: Normalized distance based on molecular clock
+estimates (0-1 scale) - <strong>Evolutionary Similarity</strong>: 1 -
+Evolutionary Distance - <strong>Divergence Time</strong>: Rough estimate
+in millions of years</p>
+<p><strong>Mathematical Basis</strong>:</p>
+<pre><code>Evolutionary Distance = Molecular clock estimate (normalized 0-1)
+Evolutionary Similarity = 1 - Evolutionary Distance
+Divergence Time (MYA) = Evolutionary Distance * 100</code></pre>
+<p><strong>Scientific Context</strong>: Evolutionary distance reflects
+the time since species divergence and provides context for interpreting
+sequence and functional similarities.</p>
+</div>
+<div id="composite-similarity-score" class="section level3">
+<h3>4. Composite Similarity Score</h3>
+<p><strong>Purpose</strong>: Combines multiple similarity measures into
+a single comprehensive score.</p>
+<p><strong>Weighting Scheme</strong>: - <strong>Sequence
+Weight</strong>: 0.4 (40%) - Primary importance for functional
+conservation - <strong>Functional Weight</strong>: 0.35 (35%) -
+Biological relevance - <strong>Evolutionary Weight</strong>: 0.25 (25%)
+- Phylogenetic context</p>
+<p><strong>Mathematical Basis</strong>:</p>
+<pre><code>Composite Score = (Sequence Similarity * 0.4) + 
+                 (Functional Similarity * 0.35) + 
+                 (Evolutionary Similarity * 0.25)</code></pre>
+<p><strong>Confidence Levels</strong>: - <strong>High</strong>: &gt;=
+0.9 - Strong evidence of orthology - <strong>Medium</strong>: 0.7-0.9 -
+Good evidence of orthology - <strong>Low</strong>: 0.5-0.7 - Moderate
+evidence of orthology - <strong>Very Low</strong>: &lt; 0.5 - Weak
+evidence of orthology</p>
+</div>
+</div>
+<div id="scientific-principles-and-assumptions" class="section level2">
+<h2>Scientific Principles and Assumptions</h2>
+<div id="orthology-definition" class="section level3">
+<h3>1. Orthology Definition</h3>
+<ul>
+<li><strong>Orthologs</strong>: Genes in different species that evolved
+from a common ancestral gene through speciation</li>
+<li><strong>Paralogs</strong>: Genes that evolved through gene
+duplication within the same species</li>
+<li><strong>Xenologs</strong>: Genes that evolved through horizontal
+gene transfer</li>
+</ul>
+</div>
+<div id="molecular-clock-assumption" class="section level3">
+<h3>2. Molecular Clock Assumption</h3>
+<ul>
+<li><strong>Constant Rate</strong>: Assumes relatively constant mutation
+rates across lineages</li>
+<li><strong>Neutral Evolution</strong>: Based primarily on neutral
+mutations rather than selection</li>
+<li><strong>Calibration</strong>: Uses well-established divergence times
+for calibration</li>
+</ul>
+</div>
+<div id="functional-conservation" class="section level3">
+<h3>3. Functional Conservation</h3>
+<ul>
+<li><strong>Deep Homology</strong>: Assumes that orthologs often
+maintain similar functions</li>
+<li><strong>Functional Divergence</strong>: Acknowledges that functions
+can diverge over evolutionary time</li>
+<li><strong>Gene Ontology</strong>: Uses standardized functional
+annotations for comparison</li>
+</ul>
+</div>
+</div>
+<div id="data-sources-and-validation" class="section level2">
+<h2>Data Sources and Validation</h2>
+<div id="evolutionary-distances" class="section level3">
+<h3>1. Evolutionary Distances</h3>
+<ul>
+<li><strong>Source</strong>: Molecular clock estimates from phylogenetic
+studies</li>
+<li><strong>Validation</strong>: Cross-referenced with multiple
+independent studies</li>
+<li><strong>Uncertainty</strong>: Acknowledged through confidence
+intervals and fallback values</li>
+</ul>
+</div>
+<div id="sequence-data" class="section level3">
+<h3>2. Sequence Data</h3>
+<ul>
+<li><strong>Source</strong>: GenBank, Ensembl, and other genomic
+databases</li>
+<li><strong>Alignment</strong>: Uses established alignment algorithms
+(BLAST, ClustalW, etc.)</li>
+<li><strong>Quality</strong>: Filters for high-quality alignments and
+coverage</li>
+</ul>
+</div>
+<div id="functional-annotations" class="section level3">
+<h3>3. Functional Annotations</h3>
+<ul>
+<li><strong>Source</strong>: Gene Ontology, KEGG, Reactome
+databases</li>
+<li><strong>Standardization</strong>: Uses controlled vocabularies for
+consistency</li>
+<li><strong>Coverage</strong>: Acknowledges incomplete annotation
+coverage</li>
+</ul>
+</div>
+</div>
+<div id="limitations-and-considerations" class="section level2">
+<h2>Limitations and Considerations</h2>
+<div id="algorithmic-limitations" class="section level3">
+<h3>1. Algorithmic Limitations</h3>
+<ul>
+<li><strong>Alignment Quality</strong>: Depends on quality of sequence
+alignments</li>
+<li><strong>Annotation Coverage</strong>: Limited by available
+functional annotations</li>
+<li><strong>Evolutionary Models</strong>: Assumes molecular clock model
+validity</li>
+</ul>
+</div>
+<div id="biological-limitations" class="section level3">
+<h3>2. Biological Limitations</h3>
+<ul>
+<li><strong>Functional Divergence</strong>: Orthologs may have diverged
+functionally</li>
+<li><strong>Gene Duplication</strong>: Complex evolutionary histories
+may obscure orthology</li>
+<li><strong>Horizontal Transfer</strong>: Xenologs may be misidentified
+as orthologs</li>
+</ul>
+</div>
+<div id="computational-limitations" class="section level3">
+<h3>3. Computational Limitations</h3>
+<ul>
+<li><strong>Scalability</strong>: Performance with large datasets</li>
+<li><strong>Memory Usage</strong>: Handling of large alignment
+files</li>
+<li><strong>Accuracy vs. Speed</strong>: Trade-offs in alignment
+algorithms</li>
+</ul>
+</div>
+</div>
+<div id="best-practices-and-recommendations" class="section level2">
+<h2>Best Practices and Recommendations</h2>
+<div id="data-quality" class="section level3">
+<h3>1. Data Quality</h3>
+<ul>
+<li><strong>High-Quality Alignments</strong>: Use well-curated sequence
+alignments</li>
+<li><strong>Comprehensive Annotations</strong>: Include multiple
+functional databases</li>
+<li><strong>Species-Specific Data</strong>: Consider species-specific
+evolutionary rates</li>
+</ul>
+</div>
+<div id="interpretation" class="section level3">
+<h3>2. Interpretation</h3>
+<ul>
+<li><strong>Context-Dependent</strong>: Consider biological context when
+interpreting scores</li>
+<li><strong>Multi-Level Analysis</strong>: Combine sequence, functional,
+and evolutionary data</li>
+<li><strong>Validation</strong>: Cross-validate with independent
+methods</li>
+</ul>
+</div>
+<div id="parameter-tuning" class="section level3">
+<h3>3. Parameter Tuning</h3>
+<ul>
+<li><strong>Weight Adjustment</strong>: Modify weights based on research
+questions</li>
+<li><strong>Threshold Selection</strong>: Choose appropriate confidence
+thresholds</li>
+<li><strong>Species-Specific Calibration</strong>: Adjust for specific
+species pairs</li>
+</ul>
+</div>
+</div>
+<div id="future-enhancements" class="section level2">
+<h2>Future Enhancements</h2>
+<div id="advanced-algorithms" class="section level3">
+<h3>1. Advanced Algorithms</h3>
+<ul>
+<li><strong>Machine Learning</strong>: Incorporate ML-based similarity
+prediction</li>
+<li><strong>Network Analysis</strong>: Use protein-protein interaction
+networks</li>
+<li><strong>3D Structure</strong>: Include structural similarity
+measures</li>
+</ul>
+</div>
+<div id="data-integration" class="section level3">
+<h3>2. Data Integration</h3>
+<ul>
+<li><strong>Multi-Omics</strong>: Integrate transcriptomic and proteomic
+data</li>
+<li><strong>Expression Patterns</strong>: Include gene expression
+similarity</li>
+<li><strong>Regulatory Elements</strong>: Consider regulatory sequence
+conservation</li>
+</ul>
+</div>
+<div id="dynamic-updates" class="section level3">
+<h3>3. Dynamic Updates</h3>
+<ul>
+<li><strong>Real-Time Data</strong>: Connect to live genomic
+databases</li>
+<li><strong>Community Curation</strong>: Allow community input for
+distance updates</li>
+<li><strong>Version Control</strong>: Track changes in similarity
+calculations</li>
+</ul>
+</div>
+</div>
+<div id="references-and-further-reading" class="section level2">
+<h2>References and Further Reading</h2>
+<ol style="list-style-type: decimal">
+<li><strong>Orthology Detection Methods</strong>: Altenhoff et
+al. (2019) - Standardized benchmarking</li>
+<li><strong>Molecular Clock Theory</strong>: Kumar et al. (2017) -
+TimeTree database</li>
+<li><strong>Functional Annotation</strong>: Ashburner et al. (2000) -
+Gene Ontology</li>
+<li><strong>Sequence Alignment</strong>: Altschul et al. (1990) - BLAST
+algorithm</li>
+<li><strong>Evolutionary Distance</strong>: Nei &amp; Kumar (2000) -
+Molecular evolution</li>
+</ol>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>The <code>calculateOrthologSimilarity</code> function provides a
+comprehensive framework for ortholog analysis that integrates multiple
+biological perspectives. By combining sequence, functional, and
+evolutionary data, it offers a robust approach to understanding gene
+conservation across species. The modular design allows for customization
+based on specific research needs while maintaining scientific rigor and
+transparency in calculations.</p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
