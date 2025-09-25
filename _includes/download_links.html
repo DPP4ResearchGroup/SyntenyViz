@@ -1,0 +1,41 @@
+{% if site.use_latest_release and site.github.latest_release %}
+  {% assign latest_release = site.github.latest_release %}
+  <nav aria-label="Download links">
+    {% if site.release_assets %}
+      {% for asset_config in site.release_assets %}
+        {% for asset in latest_release.assets %}
+          {% if asset.name contains asset_config.pattern %}
+            <a href="{{ asset.browser_download_url }}" class="button" download aria-label="Download {{ asset.name }}">
+              <small>Download</small>
+              {{ asset_config.name }}
+            </a>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    {% else %}
+      {% for asset in latest_release.assets %}
+        <a href="{{ asset.browser_download_url }}" class="button" download aria-label="Download {{ asset.name }}">
+          <small>Download</small>
+          {{ asset.name }}
+        </a>
+      {% endfor %}
+    {% endif %}
+    <!-- Documentation link -->
+    <a href="https://github.com/{{ site.github.username }}/{{ site.github.repository }}/raw/gh-pages/static_files/SyntenyViz_workflow.pdf" class="button" download aria-label="Download documentation PDF">
+      <small>Download</small>
+      Documentation PDF
+    </a>
+  </nav>
+{% else %}
+  <!-- Fallback to static links if GitHub API is not available -->
+  <nav aria-label="Download links">
+    <a href="https://github.com/{{ site.github.username }}/{{ site.github.repository }}/releases/latest" class="button" download aria-label="Download latest release">
+      <small>Download</small>
+      Latest Release
+    </a>
+    <a href="https://github.com/{{ site.github.username }}/{{ site.github.repository }}/raw/gh-pages/static_files/SyntenyViz_workflow.pdf" class="button" download aria-label="Download documentation PDF">
+      <small>Download</small>
+      Documentation PDF
+    </a>
+  </nav>
+{% endif %}

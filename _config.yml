@@ -10,8 +10,29 @@ baseurl: "/SyntenyViz"
 markdown: kramdown
 highlighter: rouge
 permalink: /:categories/:title/
-timezone: UTC
+timezone: UTC+9.5
 encoding: utf-8
+
+# Include directories for Jekyll build
+include:
+  - _includes
+  - _layouts
+  - _sass
+  - assets
+
+# Jekyll build configuration
+keep_files:
+  - _includes
+  - _layouts
+  - _sass
+  - assets
+
+# Collections for custom content
+collections:
+  includes:
+    output: false
+  layouts:
+    output: false
 
 # Theme and plugins
 remote_theme: pages-themes/midnight
@@ -21,14 +42,28 @@ plugins:
   - jekyll-sitemap
   - jekyll-feed
 
+# Jekyll processing options
+safe: false
+lsi: false
+incremental: false
+
 # SEO and social
 show_downloads: true
+
+# Download configuration - uses GitHub API for latest release
+use_latest_release: true
+release_assets:
+  - name: "SyntenyViz Package"
+    pattern: "*.tar.gz"
+  - name: "Source Code"
+    pattern: "*.zip"
 google_analytics: G-BB6PSVP76C
 twitter:
-  username: dpp4researchgroup
+  username: robqiao
 github:
   username: DPP4ResearchGroup
   repository: SyntenyViz
+  latest_release: true
 
 # Exclude files from processing
 exclude:

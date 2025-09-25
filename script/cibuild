@@ -55,6 +55,12 @@ check_prerequisites() {
         exit 1
     fi
     
+    # Check for common Jekyll plugin issues
+    log_info "Checking Jekyll plugin dependencies..."
+    if ! bundle exec jekyll doctor >/dev/null 2>&1; then
+        log_warning "Jekyll doctor found issues, but continuing with build..."
+    fi
+    
     log_success "Prerequisites check passed"
 }
 
@@ -71,6 +77,40 @@ clean_build() {
     if [ -d ".jekyll-cache" ]; then
         rm -rf ".jekyll-cache"
         log_info "Jekyll cache cleared"
+    fi
+}
+
+# Clean deployment directory
+clean_deployment() {
+    log_info "Cleaning deployment directory (docs/)..."
+    
+    if [ -d "docs" ]; then
+        # Count files before cleaning for reporting
+        local file_count=$(find docs -type f | wc -l)
+        local dir_count=$(find docs -type d | wc -l)
+        
+        if [ "$file_count" -gt 0 ] || [ "$dir_count" -gt 1 ]; then
+            log_info "Found $file_count files and $dir_count directories in docs/"
+            
+            # Remove all contents but keep the directory structure
+            find docs -mindepth 1 -delete 2>/dev/null || true
+            log_success "Deployment directory (docs/) cleaned"
+        else
+            log_info "Deployment directory (docs/) is already clean"
+        fi
+    else
+        log_info "No docs directory found, creating it..."
+        mkdir -p docs
+    fi
+    
+    # Verify docs directory is clean
+    if [ -d "docs" ]; then
+        local remaining_files=$(find docs -mindepth 1 | wc -l)
+        if [ "$remaining_files" -eq 0 ]; then
+            log_success "Deployment directory is clean and ready for build"
+        else
+            log_warning "Some files remain in docs directory: $remaining_files items"
+        fi
     fi
 }
 
@@ -94,6 +134,9 @@ build_site() {
             
             if [ $exit_code -eq 124 ]; then
                 log_error "Build timed out after ${TIMEOUT}s"
+            elif [ $exit_code -eq 0 ]; then
+                log_error "Build failed with exit code 0 (dependency error likely)"
+                log_info "This usually indicates a missing gem dependency"
             else
                 log_error "Build failed with exit code $exit_code"
             fi
@@ -249,6 +292,7 @@ main() {
     
     check_prerequisites
     clean_build
+    clean_deployment
     build_site
     validate_html
     run_html_proofer

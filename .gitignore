@@ -45,3 +45,12 @@ logs/
 *.temp
 *.lock
 
+# dev aux
+.github/
+.scripts/
+.vscode/
+.DS_Store
+Thumbs.db
+.idea/
+.iml
+

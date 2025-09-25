@@ -422,7 +422,7 @@ notifications:
     on_success: never
     on_failure: change
   # slack:
-  #   secure: "your-slack-webhook-here"
+  #   secure: "SLACK_WEBHOOK_URL"
 
 # Skip CI for documentation-only changes (use GitHub Actions skip syntax instead)
 # [skip ci] or [ci skip] in commit message
