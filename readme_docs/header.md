@@ -1,1 +1,1 @@
-![Header Image](SynViz-2.png)
+![Header Image](../paper/SynViz.png)

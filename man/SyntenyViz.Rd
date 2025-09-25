@@ -6,7 +6,8 @@
 \alias{SyntenyViz}
 \title{Package SyntenyViz}
 \description{
-Package This R package
+Package This R package provides tools for synteny visualization and analysis,
+including ortholog identification, coordinate retrieval, and synteny block visualization.
 }
 \author{
 \strong{Maintainer}: Robert QIAO \email{robert.qiao@flinders.edu.au} (\href{https://orcid.org/0000-0003-4569-6921}{ORCID})

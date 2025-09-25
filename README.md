@@ -2,21 +2,28 @@
 
 ## SyntenyViz
 
-![Header Image](readme_docs/SynViz-2.png)
+![Header Image](paper/SynViz.png)
 
 ### Summary
 
 #### What is SyntenyViz
 
-SyntenyViz is a R package to visualise conservation of gene order (a.k.a. synteny) across various biological species.
+SyntenyViz is a comprehensive R package for comparative genomics analysis, featuring synteny visualization, ortholog identification, coordinate retrieval, and synteny block analysis across various biological species.
+
+##### Key Capabilities
+- **Synteny Visualization**: Create publication-ready synteny plots for single and multi-species comparisons
+- **Ortholog Analysis**: Identify orthologous genes and retrieve their genomic coordinates
+- **Synteny Block Visualization**: Generate enhanced synteny plots with ortholog connections
+- **Conservation Metrics**: Calculate comprehensive synteny conservation statistics
+- **Evolutionary Analysis**: Integrate phylogenetic distances and evolutionary relationships
 
 #### Motivation
 
-Visualising the synteny across species not only enables intuitive examination and facilitates reconstruction effort of ancestral genomes, but also allow more direct interrogation of gene regulations and gene structures within a gene cluster.
+Visualising the synteny across species not only enables intuitive examination and facilitates reconstruction effort of ancestral genomes, but also allow more direct interrogation of gene regulations and gene structures within a gene cluster. The enhanced ortholog coordinate retrieval and synteny block visualization capabilities provide researchers with powerful tools for detailed comparative genomic analysis.
 
 ### Release Status
 
-#### CI/CD Status
+#### UnitTests and Packaging Status
 
 | Branch    | Status                                                                                                                                                                               |
 |:---------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -25,10 +32,10 @@ Visualising the synteny across species not only enables intuitive examination an
 
 #### Documentation Build/Deploy Status
 
-| Branch    | Status                                                                                                                                               |
-|:---------:|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `master`  |                                                                                                                                                      |
-| `develop` | [![Build Status](https://app.travis-ci.com/DPP4ResearchGroup/SyntenyViz.svg&branch=develop)](https://app.travis-ci.com/DPP4ResearchGroup/SyntenyViz) |
+| Stage                 | Status                                                                                                                                                                                                                          |
+|:---------------------:|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Documentation Build` | [![Travis Build Status](https://app.travis-ci.com/DPP4ResearchGroup/SyntenyViz.svg?token=WzzhMxD5Ap9A9SxynGzn&branch=gh-pages)](https://app.travis-ci.com/DPP4ResearchGroup/SyntenyViz)                                         |
+|  `Manual Deployment`  | [![pages-deployment](https://github.com/DPP4ResearchGroup/SyntenyViz/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/DPP4ResearchGroup/SyntenyViz/actions/workflows/pages/pages-build-deployment) |
 
 ## Operation Manuals
 
@@ -125,9 +132,29 @@ multiplot <- multisynvizPlots(orgmsList)
 
 ![Synteny Conservation around DPP4 gene between various Organisms](vignettes/images/Msplot.png)
 
-### Searching Orthologs in a Target Spices
+### Ortholog Analysis in SyntenyViz
 
-`SyntenyViz` has a dependency on R package `orthogene` of version `1.12.0` or above for orthologs matching mechanism. As of version `1.12.0` stands, the following species are supported and can be searched against.
+`SyntenyViz` provides comprehensive ortholog analysis capabilities, including ortholog identification, coordinate retrieval, and synteny block visualization. The package has a dependency on R package `orthogene` of version `1.12.0` or above for orthologs matching mechanism.
+
+#### Ortholog Functions
+
+##### 1. Ortholog Identification
+- `getOrthHomolog()`: Search for orthologous genes across species
+- Uses the `orthogene` package for high-confidence ortholog identification
+
+##### 2. Ortholog Coordinate Retrieval
+- `getOrthologCoordinates()`: Retrieve genomic coordinates for orthologous genes
+- Maps orthologs to their genomic positions in both source and target species
+- Returns structured data for synteny analysis
+
+##### 3. Synteny Block Visualization
+- `createSyntenyBlockData()`: Create synteny block data structures
+- `plotSyntenyBlocks()`: Visualize synteny blocks with ortholog connections
+- `getOrthologSyntenySummary()`: Generate synteny conservation metrics
+
+#### Supported Species
+
+As of version `1.12.0` stands, the following species are supported and can be searched against:
 
 | Scientific Name               | Taxonomy ID | Source     | ID            | Scientific Name Formatted |
 |-------------------------------|-------------|------------|---------------|---------------------------|
@@ -155,341 +182,38 @@ multiplot <- multisynvizPlots(orgmsList)
 
 ### Working Examples and Vignettes
 
-`SyntenyViz` also includes additional examples and training materials, which can be accessed via vignettes from `RStudio`
+`SyntenyViz` includes comprehensive examples and training materials demonstrating all package capabilities, including the new ortholog coordinate retrieval and synteny block visualization features.
+
+#### Available Examples
+
+##### Comprehensive User Example
+- **File**: `examples/comprehensive_user_example.R`
+- **Features**: Complete workflow including ortholog analysis, coordinate retrieval, and synteny block visualization
+- **New Sections**:
+  - Ortholog coordinate retrieval (Step 5.5)
+  - Synteny block visualization (Step 5.6)
+
+##### Vignettes
+
+Access via `RStudio`:
 
 ```
 install_github("DPP4ResearchGroup/SyntenyViz", build_vignettes = TRUE)
 browseVignettes("SyntenyViz")
 ```
 
-OR a `PDF` can be accessed from `SyntenyViz` [homepage](https://dpp4researchgroup.github.io/SyntenyViz/).
+##### Online Documentation
 
-## Troubleshooting & Debugging
+A `PDF` can be accessed from `SyntenyViz` [homepage](https://dpp4researchgroup.github.io/SyntenyViz/).
 
-### SyntenyViz Package Debugging Guide
+#### New Features Demonstrated
 
-#### Overview
+- **Ortholog Coordinate Retrieval**: `getOrthologCoordinates()` function usage
+- **Synteny Block Data Creation**: `createSyntenyBlockData()` workflow
+- **Enhanced Visualization**: `plotSyntenyBlocks()` with comparative and overlay plot types
+- **Conservation Metrics**: `getOrthologSyntenySummary()` for quantitative analysis
 
-This guide provides comprehensive debugging techniques for the SyntenyViz R package.
-
-#### Quick Start
-
-##### 1. Load Package for Development
-
-```r
-# In R console or RStudio
-devtools::load_all()
-```
-
-##### 2. Run Debugging Script
-
-```r
-# Source the debugging script
-source("debug_package.R")
-
-# Run comprehensive debugging
-main_debug()
-```
-
-##### 3. Test Individual Functions
-
-```r
-# Test the main function with debug mode
-getOrthHomolog("mouse", "ENSG00000139618", debug = TRUE)
-
-# Test with verbose mode
-getOrthHomolog("mouse", "ENSG00000139618", verbose = TRUE)
-
-# Test the new similarity function
-orthologs <- getOrthHomolog("mouse", "ENSG00000139618")
-similarity <- calculateOrthologSimilarity(orthologs, "human", "mouse", debug = TRUE)
-```
-
-#### Debugging Functions Available
-
-##### `test_getOrthHomolog()`
-
-Tests the main function with various scenarios:
-- Normal cases
-- Missing parameters
-- Invalid inputs
-- Error conditions
-- Different input types
-
-##### `test_calculateOrthologSimilarity()`
-
-Tests the new similarity calculation function:
-- Different similarity types (sequence, functional, evolutionary, composite, all)
-- Various species pairs
-- Error handling
-- Input validation
-
-##### `check_package_structure()`
-
-Checks the package structure:
-- DESCRIPTION file
-- R files
-- Test files
-- Documentation files
-
-##### `check_dependencies()`
-
-Verifies all required packages are installed:
-- orthogene
-- dplyr
-- BiocManager
-- GenomicRanges
-- Gviz
-- stringr
-- rlist
-- grid
-
-##### `test_with_sample_data()`
-
-Tests the function with various sample data:
-- Different species (mouse, rat, human)
-- Different gene types (ensembl, symbol)
-- Multiple gene IDs
-
-##### `run_package_checks()`
-
-Runs comprehensive package checks:
-- devtools::check()
-- devtools::test()
-
-#### Common Debugging Techniques
-
-##### 1. Interactive Debugging
-
-```r
-# Set breakpoint in function
-debug(getOrthHomolog)
-
-# Call function (will pause at breakpoint)
-getOrthHomolog("mouse", "ENSG00000139618")
-
-# Remove debug mode
-undebug(getOrthHomolog)
-```
-
-##### 2. Step-by-Step Debugging
-
-```r
-# Add browser() statement in function
-getOrthHomolog <- function(species, gene_id, ...) {
-    browser()  # Execution will pause here
-    # ... rest of function
-}
-```
-
-##### 3. Error Recovery
-
-```r
-# Enable error recovery
-options(error = recover)
-
-# Call function that might error
-getOrthHomolog("invalid", "invalid")
-
-# Disable error recovery
-options(error = NULL)
-```
-
-##### 4. Trace Function Calls
-
-```r
-# Trace function execution
-trace(getOrthHomolog, browser)
-
-# Call function (will pause at each line)
-getOrthHomolog("mouse", "ENSG00000139618")
-
-# Remove trace
-untrace(getOrthHomolog)
-```
-
-#### Testing Commands
-
-##### Run All Tests
-
-```r
-devtools::test()
-```
-
-##### Run Specific Test File
-
-```r
-devtools::test_file("tests/testthat/test_getOrthHomology.R")
-```
-
-##### Run Package Checks
-
-```r
-devtools::check()
-```
-
-##### Build Package
-
-```r
-devtools::build()
-```
-
-##### Install Package
-
-```r
-devtools::install()
-```
-
-#### Common Issues and Solutions
-
-##### 1. Package Not Found
-
-```r
-# Install missing package
-BiocManager::install("orthogene")
-```
-
-##### 2. Function Not Found
-
-```r
-# Check if function is exported
-ls("package:SyntenyViz")
-```
-
-##### 3. Documentation Issues
-
-```r
-# Generate documentation
-devtools::document()
-```
-
-##### 4. Test Failures
-
-```r
-# Run tests with verbose output
-devtools::test(reporter = "verbose")
-```
-
-#### Debugging Checklist
-
-- [ ] All required packages installed
-- [ ] Package loads without errors
-- [ ] Functions are properly exported
-- [ ] Documentation is complete
-- [ ] Tests pass
-- [ ] Package checks pass
-- [ ] Error handling works correctly
-- [ ] Edge cases are handled
-- [ ] Performance is acceptable
-
-#### Performance Debugging
-
-##### Profile Function Performance
-
-```r
-# Install profvis if not available
-if (!requireNamespace("profvis", quietly = TRUE)) {
-    install.packages("profvis")
-}
-
-# Profile function
-profvis::profvis({
-    getOrthHomolog("mouse", "ENSG00000139618")
-})
-```
-
-##### Memory Usage
-
-```r
-# Check memory usage
-pryr::mem_used()
-
-# Profile memory
-pryr::mem_change({
-    result <- getOrthHomolog("mouse", "ENSG00000139618")
-})
-```
-
-#### Advanced Debugging
-
-##### 1. Mock Dependencies
-
-```r
-# Mock orthogene package for testing
-mock_orthogene <- function(...) {
-    data.frame(
-        orthologous_gene = "MOCK_GENE",
-        species = "mouse",
-        stringsAsFactors = FALSE
-    )
-}
-
-# Replace function temporarily
-assignInNamespace("get_orthologs", mock_orthogene, "orthogene")
-```
-
-##### 2. Logging
-
-```r
-# Add logging to function
-getOrthHomolog <- function(species, gene_id, ...) {
-    message("DEBUG: Function called with species=", species, " gene_id=", gene_id)
-    # ... rest of function
-}
-```
-
-##### 3. Unit Testing with Mocks
-
-```r
-# Use testthat with mocking
-library(testthat)
-library(mockery)
-
-test_that("function works with mocked data", {
-    mock_get_orthologs <- mock(data.frame(gene = "test"))
-    with_mock(
-        get_orthologs = mock_get_orthologs,
-        {
-            result <- getOrthHomolog("mouse", "test")
-            expect_equal(nrow(result), 1)
-        }
-    )
-})
-```
-
-#### Troubleshooting
-
-##### Common Error Messages
-
-1. **"Package 'orthogene' is required but not installed"**
-   - Solution: `BiocManager::install("orthogene")`
-
-2. **"Function not found"**
-   - Solution: Check if function is exported in NAMESPACE
-
-3. **"Invalid 'gene_id_type'"**
-   - Solution: Use only "ensembl_gene_id" or "symbol"
-
-4. **"Both 'species' and 'gene_id' must be provided"**
-   - Solution: Provide both parameters
-
-##### Getting Help
-
-1. Check the function documentation: `?getOrthHomolog`
-2. Run the debugging script: `source("debug_package.R")`
-3. Check package status: `devtools::check()`
-4. Review test results: `devtools::test()`
-
-#### Best Practices
-
-1. **Always test with debug mode first**
-2. **Use tryCatch for error handling**
-3. **Validate inputs thoroughly**
-4. **Test edge cases**
-5. **Keep tests up to date**
-6. **Document all functions**
-7. **Use meaningful error messages**
-8. **Profile performance regularly**
+## Troubleshooting
 
 ### Common Issues in SyntenyViz
 
@@ -589,14 +313,14 @@ Below are some frequently encountered issues when using the SyntenyViz package, 
   source("debug_package.R")
   main_debug()
   ```
-- Check the [Debugging Guide](#syntenyviz-package-debugging-guide) for more detailed instructions.
+- Check the [Debugging Guide](readme_docs/DEBUGGING_GUIDE.md) for more detailed instructions.
 - If you encounter a new issue, try to isolate it with a minimal reproducible example.
 
 ---
 
 If your issue is not listed here, please consult the [Issue Tracker](#issue-tracking) or open a new issue with detailed information.
 
-## WIP
+## Maintenance
 
 ### CI/Unit Testing
 

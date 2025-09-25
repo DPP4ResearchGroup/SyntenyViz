@@ -1,13 +1,14 @@
 Package: SyntenyViz
-Title: Visualize the synteny of a gene structure across species
-Version: 0.9.0
+Title: Visualise the synteny of a gene structure across species
+Version: 0.9.1
+Author: Robert QIAO <robert.qiao@flinders.edu.au> [aut, cre] (<https://orcid.org/0000-0003-4569-6921>)
+Maintainer: Robert QIAO <robert.qiao@flinders.edu.au>
 Authors@R: person(given = "Robert", family = "QIAO", email = "robert.qiao@flinders.edu.au",
                   comment = c(ORCID = "0000-0003-4569-6921"),
                   role = c("aut", "cre"))
-Description: SyntenyViz provides a quick and easy visualization of synteny across various species with transcriptomics evidence.
-  Synteny between related species often used to refer the preserved order of genes on chromosomes.
-  Synteny is a strong indicator of evolutionary conservation and often be used to track the common ancestor through phylogeny.
-  Visualizing the synteny across species enables intuitive examination and facilitates reconstruction effort of ancestral genomes.
+Description: SyntenyViz provides quick and easy visualization of synteny across various species with transcriptomics evidence.
+  Synteny refers to the preserved order of genes on chromosomes between related species and is a strong indicator of evolutionary conservation.
+  This package enables intuitive examination of synteny patterns and facilitates reconstruction of ancestral genomes through phylogeny.
 Depends: R (>= 4.4.0)
 License: MIT + file LICENSE
 Encoding: UTF-8
@@ -15,18 +16,22 @@ LazyData: true
 RoxygenNote: 7.3.2
 Imports:
     dplyr (>= 0.8.3),
-    BiocManager,
+    BiocManager (> 1.30.20),
     GenomicRanges,
     Gviz,
     orthogene,
     stringr (>= 1.4),
     grid (>= 3.6),
     yaml (>= 2.2.1),
-    rlist
+    rlist,
+    S4Vectors,
+    R.rsp
 Suggests:
     testthat,
     usethis,
     knitr,
-    R.rsp,
     rmarkdown
 VignetteBuilder: knitr, R.rsp
+URL: https://github.com/DPP4ResearchGroup/SyntenyViz
+BugReports: https://github.com/DPP4ResearchGroup/SyntenyViz/issues
+biocViews: Genetics, Genomics, ComparativeGenomics, Visualization, Software

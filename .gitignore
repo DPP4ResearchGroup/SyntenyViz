@@ -13,6 +13,7 @@ exclude/
 
 # ignore R vignettes cache
 vignettes/SyntenyViz_workflow_cache/
+.Rd2pdf*/
 
 # ignore logs
 *.log
@@ -20,3 +21,12 @@ vignettes/SyntenyViz_workflow_cache/
 # ignore aux
 *.swp
 .DS_Store
+
+prompts/
+*dev-docs/features/
+*secret*
+
+*node_modules/
+*package-lock.json
+*package.json
+/Meta/

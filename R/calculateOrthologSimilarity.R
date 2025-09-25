@@ -113,7 +113,7 @@ calculateOrthologSimilarity <- function(ortholog_data, species1, species2,
         # Calculate evolutionary similarity
         if (similarity_type %in% c("evolutionary", "composite", "all")) {
             if (debug) cat("DEBUG: Calculating evolutionary similarity\n")
-            result <- calculateEvolutionarySimilarity(result, species1, species2, debug)
+            result <- calculateOrthologEvolutionarySimilarity(result, species1, species2, debug)
         }
         
         # Calculate composite score if requested
@@ -206,7 +206,8 @@ calculateFunctionalSimilarity <- function(data, species1, species2, debug = FALS
 #' @param species2 Target species
 #' @param debug Debug mode
 #' @return Data frame with evolutionary similarity scores
-calculateEvolutionarySimilarity <- function(data, species1, species2, debug = FALSE) {
+#' @export
+calculateOrthologEvolutionarySimilarity <- function(data, species1, species2, debug = FALSE) {
     
     if (debug) cat("DEBUG: Starting evolutionary similarity calculation\n")
     
