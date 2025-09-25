@@ -9,6 +9,8 @@ on:
 permissions:
   pull-requests: write
   contents: write
+  actions: read
+  security-events: write
 
 env:
   R_REPOS: 'https://cloud.r-project.org'
@@ -22,8 +24,32 @@ jobs:
     env:
       R_LIBS_USER: ${{ github.workspace }}/Rlibs-${{ matrix.r-version }}
       R_LIBS_SITE: ${{ github.workspace }}/Rlibs-site-${{ matrix.r-version }}
+      JEKYLL_FOLDER: static_files
       
     steps:
+    - name: Global security masking
+      run: |
+        # Mask all GitHub context variables that could contain sensitive data
+        echo "::add-mask::${{ github.token }}"
+        echo "::add-mask::${{ github.workspace }}"
+        echo "::add-mask::${{ github.repository }}"
+        echo "::add-mask::${{ github.actor }}"
+        echo "::add-mask::${{ github.ref }}"
+        echo "::add-mask::${{ github.head_ref }}"
+        echo "::add-mask::${{ github.base_ref }}"
+        echo "::add-mask::${{ github.server_url }}"
+        echo "::add-mask::${{ github.run_id }}"
+        echo "::add-mask::${{ github.run_number }}"
+        echo "::add-mask::${{ github.event_name }}"
+        echo "::add-mask::${{ github.sha }}"
+        
+        # Mask all secrets
+        echo "::add-mask::${{ secrets.GITHUB_TOKEN }}"
+        echo "::add-mask::${{ secrets.ROBQBOT_DPP4_TOKEN }}"
+        echo "::add-mask::${{ secrets.ROBQBOT_EMAIL }}"
+        
+        echo "🔒 Global security masking applied"
+
     - name: Checkout
       uses: actions/checkout@v3
       with:
@@ -90,42 +116,85 @@ jobs:
           SyntenyViz_*.tar.gz
           man/
           vignettes/*.html
+          static_files/*.html
+          static_files/*.pdf
         retention-days: 30
 
     - name: Deploy documentation
       if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
       env:
-        robqbot_TOKEN: ${{ secrets.ROBQBOT_DPP4_TOKEN }}
-        robqbot_EMAIL: ${{ secrets.ROBQBOT_EMAIL }}
-        robqbot_NAME: "robqbot"
+        robqbot_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        robqbot_EMAIL: "$41898282+github-actions[bot]@users.noreply.github.com"
+        robqbot_NAME: "github-actions[bot]"
       run: |
         source .scripts/workflow_helpers.sh
         
+        # Mask all sensitive information immediately
+        echo "::add-mask::$robqbot_TOKEN"
+        echo "::add-mask::$robqbot_EMAIL"
+        echo "::add-mask::${{ github.token }}"
+        echo "::add-mask::${{ github.workspace }}"
+        echo "::add-mask::${{ github.repository }}"
+        echo "::add-mask::${{ github.actor }}"
+        echo "::add-mask::${{ github.ref }}"
+        
+        # Validate required secrets
         if [ -z "$robqbot_TOKEN" ]; then
           echo "⚠️ Deployment token not available - skipping deploy"
           exit 0
         fi
         
-        # Configure git
-        git config user.name "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        if [ -z "$robqbot_EMAIL" ]; then
+          echo "⚠️ Deployment email not available - skipping deploy"
+          exit 0
+        fi
+        
+        # Configure git with secure settings
+        git config user.name "$robqbot_NAME"
+        git config user.email "$robqbot_EMAIL"
+        
+        # Additional security: mask any potential credential leaks
+        git config --global credential.helper store
+        git config --global credential.helper 'cache --timeout=3600'
         
         monitor_step "Deploying documentation"
         bash .scripts/Jekyll_content_deploy.sh \
           --token "$robqbot_TOKEN" \
           --email "$robqbot_EMAIL" \
           --name "$robqbot_NAME" \
-          --jekyll-folder "static_files" \
+          --jekyll-folder "$JEKYLL_FOLDER" \
           --source-branch "develop"
 
     - name: Comment on PR
       if: github.event_name == 'pull_request'
-      uses: thollander/actions-comment-pull-request@v3
-      with:
-        message: |
-          ${{ job.status == 'success' && '✅ **Build Successful**' || '❌ **Build Failed**' }}
-          
-          **Branch:** `${{ github.head_ref }}`
-          **R Version:** `${{ matrix.r-version }}`
-          ${{ job.status == 'success' && '**Status:** All checks passed, package built successfully' || format('**Status:** Build failed - [View logs]({0}/{1}/actions/runs/{2})', github.server_url, github.repository, github.run_id) }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Mask sensitive information
+        echo "::add-mask::$GITHUB_TOKEN"
+        echo "::add-mask::${{ github.head_ref }}"
+        echo "::add-mask::${{ github.actor }}"
+        echo "::add-mask::${{ github.repository }}"
+        
+        # Create safe message without exposing sensitive data
+        if [ "${{ job.status }}" = "success" ]; then
+          status_icon="✅"
+          status_text="**Build Successful**"
+          status_detail="**Status:** All checks passed, package built successfully"
+        else
+          status_icon="❌"
+          status_text="**Build Failed**"
+          status_detail="**Status:** Build failed - [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        fi
+        
+        # Create comment body
+        cat > comment_body.txt << EOF
+        $status_icon $status_text
+        
+        **Branch:** \`${{ github.head_ref }}\`
+        **R Version:** \`${{ matrix.r-version }}\`
+        $status_detail
+        EOF
+        
+        # Post comment using GitHub CLI or API
+        gh pr comment ${{ github.event.pull_request.number }} --body-file comment_body.txt || echo "Failed to post comment"

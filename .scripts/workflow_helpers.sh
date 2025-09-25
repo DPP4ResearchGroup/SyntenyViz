@@ -158,12 +158,84 @@ build_package() {
   echo "📖 Building vignettes..."
   if Rscript -e "${r_cmd_prefix}; devtools::build_vignettes()" 2>/dev/null; then
     echo "✅ Vignettes built successfully"
+    
+    # Copy vignette outputs to static_files (always copy, use current dir if jekyll-folder not specified)
+    local jekyll_folder="${JEKYLL_FOLDER:-.}"
+    copy_vignette_outputs "$jekyll_folder"
   else
     echo "⚠️ Vignette building failed - continuing without vignettes"
     echo "   This is often due to missing system dependencies or compilation issues"
   fi
   
   echo "✅ Package build completed"
+}
+
+# Copy vignette outputs to static_files folder
+copy_vignette_outputs() {
+  local jekyll_folder="$1"
+  local static_files_dir
+  
+  # If jekyll_folder is specified and not current directory, use it directly
+  if [ "$jekyll_folder" != "." ] && [ -n "$jekyll_folder" ]; then
+    static_files_dir="$jekyll_folder"
+  else
+    # Default to static_files folder
+    static_files_dir="${STATIC_FILES_DIR:-static_files}"
+  fi
+  
+  monitor_step "Copying vignette outputs to destination directory"
+  
+  # Create static_files directory if it doesn't exist
+  mkdir -p "$static_files_dir"
+  
+  # Clear all content from static_files_dir if it exists
+  if [ -d "$static_files_dir" ]; then
+    echo "🧹 Clearing existing content from $static_files_dir..."
+    rm -rf "$static_files_dir"/*
+    echo "   ✅ Directory cleared"
+  fi
+  
+  # Find and copy HTML files from vignettes
+  local html_files
+  html_files=$(find . -name "*.html" -path "*/vignettes/*" -o -name "*.html" -path "*/doc/*" 2>/dev/null || true)
+  
+  if [ -n "$html_files" ]; then
+    echo "📄 Copying HTML files (overwriting existing)..."
+    echo "$html_files" | while IFS= read -r file; do
+      if [ -f "$file" ]; then
+        cp -f "$file" "$static_files_dir/"
+        echo "   ✅ Copied: $(basename "$file")"
+      fi
+    done
+  else
+    echo "   ℹ️ No HTML files found in vignettes"
+  fi
+  
+  # Find and copy PDF files from vignettes
+  local pdf_files
+  pdf_files=$(find . -name "*.pdf" -path "*/vignettes/*" -o -name "*.pdf" -path "*/doc/*" 2>/dev/null || true)
+  
+  if [ -n "$pdf_files" ]; then
+    echo "📄 Copying PDF files (overwriting existing)..."
+    echo "$pdf_files" | while IFS= read -r file; do
+      if [ -f "$file" ]; then
+        cp -f "$file" "$static_files_dir/"
+        echo "   ✅ Copied: $(basename "$file")"
+      fi
+    done
+  else
+    echo "   ℹ️ No PDF files found in vignettes"
+  fi
+  
+  # List contents of static_files directory
+  if [ -d "$static_files_dir" ] && [ "$(ls -A "$static_files_dir" 2>/dev/null)" ]; then
+    echo "📁 Contents of $static_files_dir:"
+    ls -la "$static_files_dir" | grep -E '\.(html|pdf)$' || echo "   No HTML/PDF files found"
+  else
+    echo "   ⚠️ static_files directory is empty or doesn't exist"
+  fi
+  
+  echo "✅ Vignette outputs copied to: $static_files_dir (overwriting existing files)"
 }
 
 # Verify package installation
@@ -214,5 +286,6 @@ export -f install_package_batch
 export -f setup_r_environment
 export -f install_system_deps
 export -f build_package
+export -f copy_vignette_outputs
 export -f verify_package
 export -f validate_description
