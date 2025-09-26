@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+<loc>https://dpp4researchgroup.github.io/SyntenyViz/</loc>
+</url>
+<url>
+<loc>https://dpp4researchgroup.github.io/SyntenyViz/_includes/analytics.html</loc>
+<lastmod>2025-09-26T08:55:36+00:00</lastmod>
+</url>
+<url>
+<loc>https://dpp4researchgroup.github.io/SyntenyViz/_includes/download_links.html</loc>
+<lastmod>2025-09-26T08:55:36+00:00</lastmod>
+</url>
+<url>
+<loc>https://dpp4researchgroup.github.io/SyntenyViz/static_files/SyntenyViz_comprehensive_workflow.html</loc>
+<lastmod>2025-09-26T08:55:37+00:00</lastmod>
+</url>
+<url>
+<loc>https://dpp4researchgroup.github.io/SyntenyViz/static_files/SyntenyViz_synteny_similarity.html</loc>
+<lastmod>2025-09-26T08:55:37+00:00</lastmod>
+</url>
+<url>
+<loc>https://dpp4researchgroup.github.io/SyntenyViz/static_files/SyntenyViz_workflow.html</loc>
+<lastmod>2025-09-26T08:55:37+00:00</lastmod>
+</url>
+<url>
+<loc>https://dpp4researchgroup.github.io/SyntenyViz/static_files/SyntenyViz_workflow.pdf</loc>
+<lastmod>2025-09-26T08:55:37+00:00</lastmod>
+</url>
+<url>
+<loc>https://dpp4researchgroup.github.io/SyntenyViz/static_files/calculateOrthologSimilarity_Explanatory.html</loc>
+<lastmod>2025-09-26T08:55:37+00:00</lastmod>
+</url>
+</urlset>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>SyntenyViz | SyntenyViz</title>
+    <meta name="description" content="A synteny visualization R package for comparative genomics">
+
+    
+      <link rel="stylesheet" href="/SyntenyViz/assets/css/style.css?v=">
+    
+    <link rel="stylesheet" href="/SyntenyViz/assets/css/print.css" media="print">
+
+    
+  <!-- Google Analytics 4 (GA4) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-BB6PSVP76C" crossorigin="anonymous"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-BB6PSVP76C', {
+      'anonymize_ip': true,
+      'cookie_flags': 'SameSite=Strict;Secure'
+    });
+    
+    
+  </script>
+
+
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <h1><a href="/SyntenyViz/">SyntenyViz</a></h1>
+        <h2>A synteny visualization R package for comparative genomics</h2>
+
+        
+          <section id="downloads">
+            <!-- View on GitHub link -->
+<li><a href="https://github.com/DPP4ResearchGroup/SyntenyViz">View On GitHub</a></li>
+
+<!-- Documentation PDF -->
+<li><a href="https://github.com/DPP4ResearchGroup/SyntenyViz/raw/gh-pages/static_files/SyntenyViz_workflow.pdf">Documentation PDF</a></li>
+
+          </section>
+        
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h1 id="what-is-syntenyviz">What is SyntenyViz</h1>
+
+<p>SyntenyViz is a R package to visualise synteny across various biological species.</p>
+
+<h2 id="motivation">Motivation</h2>
+
+<p>Visualising the synteny across species not only enables intuitive examination and facilitates reconstruction effort of ancestral genomes, but also allow more direct interrogation of gene regulations and gene structures within a gene cluster.</p>
+
+<h2 id="installation">Installation</h2>
+
+<h3 id="install-from-rstudio">Install from RStudio</h3>
+
+<ul>
+  <li>Install and load <code class="language-plaintext highlighter-rouge">devtools</code>
+    <div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">install.packages</span><span class="p">(</span><span class="s2">"devtools"</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">devtools</span><span class="p">)</span><span class="w">
+</span></code></pre></div>    </div>
+  </li>
+  <li>Install and load <code class="language-plaintext highlighter-rouge">SyntenyViz</code> from <code class="language-plaintext highlighter-rouge">GitHub</code>
+    <div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">install_github</span><span class="p">(</span><span class="s2">"DPP4ResearchGroup/SyntenyViz"</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">SyntenyViz</span><span class="p">)</span><span class="w">
+</span></code></pre></div>    </div>
+  </li>
+</ul>
+
+<p>To allow build vignettes, <code class="language-plaintext highlighter-rouge">build_vignettes = TRUE</code> options can be used as</p>
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">install_github</span><span class="p">(</span><span class="s2">"DPP4ResearchGroup/SyntenyViz"</span><span class="p">,</span><span class="w"> </span><span class="n">build_vignettes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">SyntenyViz</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Developing version can be accessed via <code class="language-plaintext highlighter-rouge">develop</code> as</p>
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">install_github</span><span class="p">(</span><span class="s2">"DPP4ResearchGroup/SyntenyViz"</span><span class="p">,</span><span class="w"> </span><span class="n">ref</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"develop"</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">SyntenyViz</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="quick-start-for-the-impatient">Quick Start for the Impatient</h2>
+
+<p>Quick and minimum steps to get started with a synteny conservation analysis using SyntenyViz.</p>
+
+<h3 id="define-an-investigation-range">Define an investigation range</h3>
+
+<p>We need to first define an investigation range to cover the target range in gene coordinates. We will use a mouse dipeptidyl dipeptidase 4 gene (DPP4-mm) in this example, where DPP4-mm locates at chromosome number 2 between 62,330,073-62,412,231 bp.</p>
+
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># orgm is a handle for organism</span><span class="w">
+</span><span class="n">orgmName</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Mmusculus"</span><span class="w">
+</span><span class="c1"># mycoords.list is the investigation range handler</span><span class="w">
+</span><span class="n">mycoords</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"2:6.0e7:6.5e7"</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="convert-coordinates-into-a-grange-object">Convert coordinates into a GRange object</h3>
+
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">mycoords.gr</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">SyntenyViz</span><span class="o">::</span><span class="n">coordFormat</span><span class="p">(</span><span class="n">mycoords.list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mycoords</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p>It is always a good habit to double check the input, so:</p>
+
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">mycoords.gr</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="construct-a-single-synteny-graph">Construct a single synteny graph</h3>
+
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">synvizPlot</span><span class="p">(</span><span class="n">mycoords.gr</span><span class="p">,</span><span class="w"> </span><span class="n">orgmName</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p><img src="assets/images/Hsplot.png" alt="Synteny around DPP4 gene in Humans" /></p>
+
+<h3 id="construct-a-multi-synteny-graph">Construct a multi-synteny graph</h3>
+
+<p>Pick a few targets:</p>
+
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">orgm.1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Hsapiens"</span><span class="w">
+</span><span class="n">mycoords.list.1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"2:15.95e7:16.45e7"</span><span class="w">
+</span><span class="n">orgm.2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Mmusculus"</span><span class="w">
+</span><span class="n">mycoords.list.2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"2:6.0e7:6.5e7"</span><span class="w">
+</span><span class="n">orgm.3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Rnorvegicus"</span><span class="w">
+</span><span class="n">mycoords.list.3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"3:4.6e7:5.1e7"</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Then construct a multiple synteny query:</p>
+
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">orgmsList</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">orgmsCollection.init</span><span class="p">(</span><span class="n">orgmsList</span><span class="p">)</span><span class="w">
+</span><span class="n">orgmsList</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">orgmsAdd</span><span class="p">(</span><span class="n">orgm.1</span><span class="p">,</span><span class="w"> </span><span class="n">orgmTxDB</span><span class="p">,</span><span class="w"> </span><span class="n">mycoords.list.1</span><span class="p">,</span><span class="w"> </span><span class="n">orgmsList</span><span class="p">)</span><span class="w">
+</span><span class="n">orgmsList</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">orgmsAdd</span><span class="p">(</span><span class="n">orgm.2</span><span class="p">,</span><span class="w"> </span><span class="n">orgmTxDB</span><span class="p">,</span><span class="w"> </span><span class="n">mycoords.list.2</span><span class="p">,</span><span class="w"> </span><span class="n">orgmsList</span><span class="p">)</span><span class="w">
+</span><span class="n">orgmsList</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">orgmsAdd</span><span class="p">(</span><span class="n">orgm.3</span><span class="p">,</span><span class="w"> </span><span class="n">orgmTxDB</span><span class="p">,</span><span class="w"> </span><span class="n">mycoords.list.3</span><span class="p">,</span><span class="w"> </span><span class="n">orgmsList</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Now, construct a comparative multi-synteny graph:</p>
+
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">multiplot</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">multisynvizPlots</span><span class="p">(</span><span class="n">orgmsList</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p><img src="assets/images/Msplot.png" alt="Synteny Conservation around DPP4 gene between various Organisms" /></p>
+
+<h2 id="examples">Examples</h2>
+
+<p><code class="language-plaintext highlighter-rouge">SyntenyViz</code> also includes training material, which can be accessed via vignettes from <code class="language-plaintext highlighter-rouge">RStudio</code>:</p>
+
+<div class="language-r highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">install_github</span><span class="p">(</span><span class="s2">"DPP4ResearchGroup/SyntenyViz"</span><span class="p">,</span><span class="w"> </span><span class="n">build_vignettes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+</span><span class="n">browseVignettes</span><span class="p">(</span><span class="s2">"SyntenyViz"</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p>OR a <code class="language-plaintext highlighter-rouge">PDF</code> can be accessed from the <a href="https://dpp4researchgroup.github.io/SyntenyViz/">SyntenyViz homepage</a>.</p>
+
+<h2 id="contribution">Contribution</h2>
+
+<ol>
+  <li>Fork to your contributing account</li>
+  <li>Create your feature branch (<code class="language-plaintext highlighter-rouge">git checkout -b my-new-feature</code>)</li>
+  <li>Commit your changes (<code class="language-plaintext highlighter-rouge">git commit -am 'Added some feature'</code>)</li>
+  <li>Push to the feature branch (<code class="language-plaintext highlighter-rouge">git push origin my-new-feature</code>)</li>
+  <li>Create a new PR</li>
+</ol>
+
+<h2 id="issue-tracking">Issue Tracking</h2>
+
+<p>Issues and bugs can be raised and tracked through the <a href="https://github.com/DPP4ResearchGroup/SyntenyViz/issues">GitHub issue tracker for SyntenyViz</a>.</p>
+
+<h2 id="unit-testing">Unit Testing</h2>
+
+<p>Travis CI testing implements <code class="language-plaintext highlighter-rouge">R CMD check</code>. The function integrity is checked by <code class="language-plaintext highlighter-rouge">R</code> native <code class="language-plaintext highlighter-rouge">testthat</code>, which can also be invoked by utility function <code class="language-plaintext highlighter-rouge">devtools::test()</code> from RStudio.</p>
+
+      </section>
+    </div>
+
+    <footer>
+      <div class="container">
+        <p>
+          <small>
+            This project is maintained by <a href="https://github.com/DPP4ResearchGroup">DPP4ResearchGroup</a><br>
+            Hosted on GitHub Pages — Theme by <a href="https://github.com/pages-themes/midnight">pages-themes/midnight</a>
+          </small>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
