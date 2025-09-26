@@ -71,8 +71,20 @@ jobs:
         - script/cibuild
         - script/deploy
 
+# Skip builds if the last commit was made by robqbot to prevent infinite loops
 # Cache validation and cleanup to prevent corruption
 before_install:
+  - |
+    echo "Checking if last commit was made by the configured bot user..."
+    LAST_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
+    echo "Last commit author: $LAST_COMMIT_AUTHOR"
+    echo "Configured bot name: ${robqbot_Name:-'not set'}"
+    if [ "$LAST_COMMIT_AUTHOR" = "${robqbot_Name:-}" ]; then
+      echo "❌ Last commit was made by the configured bot user. Skipping build to prevent infinite loop."
+      echo "This prevents the bot from triggering itself when it commits changes."
+      exit 0
+    fi
+    echo "✅ Last commit was not made by the configured bot user. Proceeding with build."
   - |
     echo "Validating cache integrity..."
     # Check for corrupted cache entries that could cause issues
