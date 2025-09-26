@@ -1,40 +1,5 @@
-{% if site.use_latest_release and site.github.latest_release %}
-  {% assign latest_release = site.github.latest_release %}
-  {% assign tar_asset = null %}
-  {% assign zip_asset = null %}
-  
-  <!-- Find tar.gz and zip assets from latest release -->
-  {% for asset in latest_release.assets %}
-    {% if asset.name contains '.tar.gz' %}
-      {% assign tar_asset = asset %}
-    {% elsif asset.name contains '.zip' %}
-      {% assign zip_asset = asset %}
-    {% endif %}
-  {% endfor %}
-  
-  <!-- TAR download link -->
-  {% if tar_asset %}
-    <li><a href="{{ tar_asset.browser_download_url }}">TAR</a></li>
-  {% else %}
-    <li><a href="https://github.com/{{ site.github.username }}/{{ site.github.repository }}/archive/refs/heads/master.tar.gz">TAR</a></li>
-  {% endif %}
-  
-  <!-- ZIP download link -->
-  {% if zip_asset %}
-    <li><a href="{{ zip_asset.browser_download_url }}">ZIP</a></li>
-  {% else %}
-    <li><a href="https://github.com/{{ site.github.username }}/{{ site.github.repository }}/archive/refs/heads/master.zip">ZIP</a></li>
-  {% endif %}
-  
-  <!-- View on GitHub link -->
-  <li><a href="{{ site.github.repository_url }}">View On GitHub</a></li>
-  
-  <!-- Documentation PDF -->
-  <li><a href="https://github.com/{{ site.github.username }}/{{ site.github.repository }}/raw/gh-pages/static_files/SyntenyViz_workflow.pdf">Documentation PDF</a></li>
-{% else %}
-  <!-- Fallback links when GitHub API is not available -->
-  <li><a href="https://github.com/{{ site.github.username }}/{{ site.github.repository }}/archive/refs/heads/master.tar.gz">TAR</a></li>
-  <li><a href="https://github.com/{{ site.github.username }}/{{ site.github.repository }}/archive/refs/heads/master.zip">ZIP</a></li>
-  <li><a href="{{ site.github.repository_url }}">View On GitHub</a></li>
-  <li><a href="https://github.com/{{ site.github.username }}/{{ site.github.repository }}/raw/gh-pages/static_files/SyntenyViz_workflow.pdf">Documentation PDF</a></li>
-{% endif %}
+<!-- View on GitHub link -->
+<li><a href="{{ site.github.repository_url | default: 'https://github.com/DPP4ResearchGroup/SyntenyViz' }}">View On GitHub</a></li>
+
+<!-- Documentation PDF -->
+<li><a href="https://github.com/{{ site.github.username | default: 'DPP4ResearchGroup' }}/{{ site.github.repository | default: 'SyntenyViz' }}/raw/gh-pages/static_files/SyntenyViz_workflow.pdf">Documentation PDF</a></li>

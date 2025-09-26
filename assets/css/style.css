@@ -1,0 +1,306 @@
+/* Midnight theme styles for SyntenyViz */
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #1a1a1a;
+  color: #e6e6e6;
+  line-height: 1.6;
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header */
+header {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  border-bottom: 3px solid #3498db;
+  padding: 2rem 0;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+header h1 a {
+  color: #3498db;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+header h1 a:hover {
+  color: #5dade2;
+}
+
+header h2 {
+  font-size: 1.2rem;
+  color: #bdc3c7;
+  font-weight: 400;
+}
+
+/* Downloads section */
+#downloads {
+  margin-top: 1rem;
+}
+
+#downloads ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+#downloads li {
+  margin: 0;
+  flex: 0 1 auto;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+#downloads a {
+  display: block;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  padding: 0.875rem 1.25rem;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid transparent;
+  white-space: nowrap;
+}
+
+#downloads a:hover {
+  background: linear-gradient(135deg, #2980b9 0%, #1f5f8b 100%);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  border-color: #5dade2;
+}
+
+/* Legacy download link styles (kept for compatibility) */
+.zip_download_link,
+.tar_download_link {
+  display: inline-block;
+  background: #3498db;
+  color: white;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  border-radius: 4px;
+  margin-right: 0.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.zip_download_link:hover,
+.tar_download_link:hover {
+  background: #2980b9;
+  color: white;
+}
+
+/* Main content */
+#main_content {
+  background: #2c2c2c;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  margin-bottom: 2rem;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  color: #3498db;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 2.2rem;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 0.5rem;
+}
+
+h2 {
+  font-size: 1.8rem;
+  border-bottom: 1px solid #34495e;
+  padding-bottom: 0.3rem;
+}
+
+h3 {
+  font-size: 1.4rem;
+}
+
+p {
+  margin-bottom: 1rem;
+  color: #e6e6e6;
+}
+
+/* Links */
+a {
+  color: #3498db;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #5dade2;
+  text-decoration: underline;
+}
+
+/* Lists */
+ul, ol {
+  margin-left: 2rem;
+  margin-bottom: 1rem;
+}
+
+li {
+  margin-bottom: 0.5rem;
+  color: #e6e6e6;
+}
+
+/* Code blocks */
+pre {
+  background: #1a1a1a;
+  border: 1px solid #34495e;
+  border-radius: 4px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+code {
+  background: #1a1a1a;
+  color: #e74c3c;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+}
+
+pre code {
+  background: transparent;
+  color: #e6e6e6;
+  padding: 0;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin: 1rem 0;
+}
+
+/* Footer */
+footer {
+  background: #1a1a1a;
+  border-top: 1px solid #34495e;
+  padding: 2rem 0;
+  margin-top: 2rem;
+  text-align: left;
+}
+
+footer p {
+  color: #95a5a6;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+footer a {
+  color: #3498db;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 15px;
+  }
+  
+  header h1 {
+    font-size: 2rem;
+  }
+  
+  header h2 {
+    font-size: 1rem;
+  }
+  
+  #main_content {
+    padding: 1.5rem;
+  }
+  
+  h1 {
+    font-size: 1.8rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  /* Mobile download links */
+  #downloads ul {
+    flex-direction: row;
+    gap: 0.75rem;
+    justify-content: flex-start;
+  }
+  
+  #downloads li {
+    min-width: auto;
+    max-width: none;
+    flex: 1;
+  }
+  
+  #downloads a {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  header {
+    background: white;
+    border-bottom: 1px solid #ccc;
+  }
+  
+  #main_content {
+    background: white;
+    box-shadow: none;
+  }
+  
+  a {
+    color: #0066cc;
+  }
+}

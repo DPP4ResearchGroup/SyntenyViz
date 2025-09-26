@@ -38,6 +38,17 @@ plugins:
   - jekyll-sitemap
   - jekyll-feed
 
+# GitHub Pages specific settings
+github: [metadata]
+
+# GitHub user information
+github:
+  username: DPP4ResearchGroup
+  repository: SyntenyViz
+  repository_url: https://github.com/DPP4ResearchGroup/SyntenyViz
+  is_project_page: true
+  latest_release: true
+
 # Jekyll processing options
 safe: false
 lsi: false
@@ -61,6 +72,8 @@ release_assets:
     pattern: "*.tar.gz"
   - name: "Source Code"
     pattern: "*.zip"
+
+# GitHub API for latest release metadata is enabled above
 # Google Analytics 4 (GA4) configuration
 google_analytics: G-BB6PSVP76C
 
@@ -68,11 +81,6 @@ google_analytics: G-BB6PSVP76C
 analytics_debug: false
 twitter:
   username: robqiao
-github:
-  username: DPP4ResearchGroup
-  repository: SyntenyViz
-  repository_url: "https://github.com/DPP4ResearchGroup/SyntenyViz"
-  latest_release: true
 
 # Exclude files from processing
 exclude:
